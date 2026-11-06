@@ -1,0 +1,17 @@
+# Local credentials and runtime data
+.env
+.env.*
+!.env.example
+server/.venv/
+**/__pycache__/
+*.py[cod]
+.pytest_cache/
+.pytest_tmp/
+.ruff_cache/
+*.egg-info/
+server/data/
+server/.coverage
+server/htmlcov/
+*.log
+node_modules/
+.next/
