@@ -1,0 +1,1887 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>前端调色板 · 小猫严选</title>
+<style>
+/* ================= 全局 ================= */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg: #f4f5f7;
+  --panel: #ecedef;
+  --card: #fff;
+  --line: #e3e5e8;
+  --line-dark: #cfd3d9;
+  --ink: #17181c;
+  --gray: #8a8f98;
+  --blue: #3b82f6;
+  --amber: #f59e0b;
+  --teal: #14b8a6;
+  --green: #22c55e;
+  --red: #ef4444;
+  --screen: #22304c;
+  --r-card: 16px;
+  --r-in: 10px;
+  --shadow-lift: 0 16px 36px rgba(23, 24, 28, .12);
+  --ease: cubic-bezier(.22, 1, .36, 1);
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  padding: 0 16px 90px;
+  overflow-x: hidden;
+  line-height: 1.6;
+}
+
+.wrap { max-width: 1280px; margin: 0 auto; }
+
+code, .mono { font-family: Consolas, "SF Mono", Menlo, monospace; }
+
+/* ================= 顶栏 ================= */
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  height: 58px;
+  background: rgba(244, 245, 247, .92);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--line);
+}
+
+.brand { display: flex; align-items: center; gap: 10px; }
+.brand-mark {
+  width: 30px; height: 30px;
+  border-radius: 9px;
+  background: var(--ink);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.brand-mark svg { width: 19px; height: 19px; stroke: #fff; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.brand-text { font-size: 16px; font-weight: 700; letter-spacing: .3px; }
+.brand-sub { font-size: 11px; color: var(--gray); margin-left: 2px; }
+
+.top-nav { display: flex; align-items: center; gap: 6px; }
+.nav-chip {
+  padding: 5px 13px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--card);
+  color: var(--ink);
+  font-size: 12px;
+  font-family: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background .2s, color .2s, border-color .2s, transform .15s;
+}
+.nav-chip:hover { transform: translateY(-1px); border-color: var(--line-dark); }
+.nav-chip.on { background: var(--ink); color: #fff; border-color: var(--ink); }
+
+.top-stat { display: flex; align-items: center; gap: 18px; }
+.stat { text-align: center; line-height: 1.2; }
+.stat b { display: block; font-size: 15px; font-variant-numeric: tabular-nums; }
+.stat span { font-size: 10px; color: var(--gray); }
+
+/* ================= 主视觉 ================= */
+.hero {
+  margin: 18px 0 8px;
+  padding: 34px 30px 26px;
+  border-radius: 20px;
+  border: 1px solid var(--line);
+  background:
+    radial-gradient(rgba(0, 0, 0, .045) 1px, transparent 1px),
+    linear-gradient(180deg, #fff, #f7f8fa);
+  background-size: 24px 24px, 100% 100%;
+}
+.hero-inner { display: flex; align-items: center; justify-content: space-between; gap: 28px; flex-wrap: wrap; }
+.hero-copy { flex: 1 1 420px; min-width: 0; }
+
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  font-size: 11px;
+  color: var(--gray);
+  margin-bottom: 14px;
+}
+.eyebrow i {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--teal);
+  animation: tc-blink 1.6s ease infinite;
+}
+
+h1 { font-size: clamp(28px, 4.4vw, 42px); line-height: 1.2; letter-spacing: -.5px; margin-bottom: 12px; }
+h1 em { font-style: normal; position: relative; z-index: 0; white-space: nowrap; }
+h1 em::after {
+  content: "";
+  position: absolute;
+  left: -2px; right: -2px; bottom: 3px;
+  height: 11px;
+  background: rgba(20, 184, 166, .3);
+  border-radius: 3px;
+  z-index: -1;
+  transform: rotate(-.6deg);
+}
+
+.hero-lede { font-size: 15px; color: var(--gray); max-width: 580px; margin-bottom: 20px; }
+.hero-lede b { color: var(--ink); font-weight: 700; }
+
+.hero-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 18px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  font-size: 13px;
+  font-family: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform .16s var(--ease), background .2s, box-shadow .2s;
+}
+.btn:hover { transform: translateY(-2px); }
+.btn-dark { background: var(--ink); color: #fff; box-shadow: 0 6px 16px rgba(23, 24, 28, .18); }
+.btn-ghost { background: var(--card); color: var(--ink); border-color: var(--line); }
+.btn-ghost:hover { border-color: var(--line-dark); }
+
+.hero-crew {
+  flex: 0 1 440px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 4px;
+  padding: 66px 0 6px;
+}
+.crew-item { position: relative; width: 25%; max-width: 112px; }
+.crew-item .cat { width: 100%; height: auto; display: block; }
+
+.bubble {
+  position: absolute;
+  top: -34px; left: 50%;
+  transform: translateX(-50%);
+  padding: 5px 11px;
+  background: #fff;
+  border: 1.5px solid var(--ink);
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+  box-shadow: 2px 3px 0 rgba(23, 24, 28, .12);
+  opacity: 0;
+  animation: bub-up .5s var(--ease) both;
+}
+.bubble::after {
+  content: "";
+  position: absolute;
+  left: 50%; bottom: -6px;
+  width: 9px; height: 9px;
+  background: #fff;
+  border-right: 1.5px solid var(--ink);
+  border-bottom: 1.5px solid var(--ink);
+  transform: translateX(-50%) rotate(45deg);
+}
+.crew-item:nth-child(1) .bubble { animation-delay: .15s; }
+.crew-item:nth-child(2) .bubble { animation-delay: .35s; top: -46px; }
+.crew-item:nth-child(3) .bubble { animation-delay: .55s; }
+.crew-item:nth-child(4) .bubble { animation-delay: .75s; top: -46px; }
+
+@keyframes bub-up {
+  from { opacity: 0; transform: translateX(-50%) translateY(10px) scale(.85); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
+}
+
+/* ================= 换肤实验台 ================= */
+.lab {
+  margin: 20px 0 8px;
+  border-radius: 20px;
+  border: 1px solid var(--line);
+  background: var(--card);
+  overflow: hidden;
+}
+
+.lab-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 22px;
+  border-bottom: 1px solid var(--line);
+  flex-wrap: wrap;
+}
+.lab-title { font-size: 17px; font-weight: 700; letter-spacing: -.2px; }
+.lab-note { font-size: 12px; color: var(--gray); }
+.lab-hint {
+  margin-left: auto;
+  padding: 3px 11px;
+  border-radius: 999px;
+  background: var(--panel);
+  color: var(--gray);
+  font-size: 11px;
+}
+
+/* 色板选择 */
+.picker {
+  display: flex;
+  gap: 8px;
+  padding: 14px 22px;
+  overflow-x: auto;
+  border-bottom: 1px solid var(--line);
+  background: #fafbfc;
+}
+.swatch {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 13px 7px 8px;
+  border: 1.5px solid var(--line);
+  border-radius: 999px;
+  background: var(--card);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 12px;
+  color: var(--ink);
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: border-color .2s, box-shadow .2s, transform .15s;
+}
+.swatch:hover { transform: translateY(-2px); border-color: var(--line-dark); }
+.swatch.on {
+  border-color: var(--ink);
+  box-shadow: 0 4px 12px rgba(23, 24, 28, .13);
+}
+.swatch-dots { display: flex; }
+.swatch-dots i {
+  width: 15px; height: 15px;
+  border-radius: 50%;
+  border: 2px solid var(--card);
+  margin-left: -5px;
+}
+.swatch-dots i:first-child { margin-left: 0; }
+.swatch small { color: var(--gray); font-size: 10px; }
+
+/* 实验台主体 */
+.lab-body {
+  display: grid;
+  grid-template-columns: 1.15fr .85fr;
+  gap: 0;
+}
+@media (max-width: 900px) { .lab-body { grid-template-columns: 1fr; } }
+
+.lab-stage {
+  padding: 22px;
+  background: var(--demo-bg, #fafafa);
+  transition: background .4s var(--ease);
+  border-right: 1px solid var(--line);
+}
+@media (max-width: 900px) { .lab-stage { border-right: 0; border-bottom: 1px solid var(--line); } }
+
+.lab-side {
+  padding: 22px;
+  background: var(--card);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.side-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .4px;
+  color: var(--gray);
+  text-transform: uppercase;
+}
+
+/* —— 样例界面（模仿你的中台） —— */
+.mock-panel {
+  background: var(--demo-surface, #fff);
+  border: 1px solid var(--demo-line, rgba(23,23,23,.08));
+  border-radius: 16px;
+  padding: 14px 16px;
+  margin-bottom: 12px;
+  transition: background .4s var(--ease), border-color .4s var(--ease);
+}
+.mock-panel:last-child { margin-bottom: 0; }
+
+.mock-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.mock-title { font-size: 13px; font-weight: 700; color: var(--demo-ink, #171717); }
+.mock-sub { font-size: 11px; color: var(--demo-ink3, #737373); }
+
+/* 工位卡 */
+.station {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 12px;
+  border-radius: 12px;
+  background: var(--demo-raised, #f4f4f5);
+  transition: background .4s var(--ease);
+}
+.station-art {
+  width: 46px; height: 46px;
+  border-radius: 11px;
+  background: var(--demo-accent-soft, rgba(194,65,12,.1));
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  transition: background .4s var(--ease);
+}
+.station-art svg { width: 22px; height: 22px; stroke: var(--demo-accent, #c2410c); fill: none; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; transition: stroke .4s var(--ease); }
+.station-main { flex: 1; min-width: 0; }
+.station-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2.5px 11px;
+  border-radius: 999px;
+  background: var(--demo-surface, #fff);
+  border: 1px solid var(--demo-line, rgba(23,23,23,.08));
+  font-size: 11px;
+  color: var(--demo-ink, #171717);
+}
+.station-task {
+  margin-top: 5px;
+  font-size: 11px;
+  color: var(--demo-ink3, #737373);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lamp-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  background: var(--demo-accent-soft, rgba(194,65,12,.1));
+  color: var(--demo-accent, #c2410c);
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: background .4s var(--ease), color .4s var(--ease);
+}
+.lamp-chip i {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--demo-accent, #c2410c);
+  transition: background .4s var(--ease);
+}
+
+/* 状态灯四色 */
+.lamps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.lamp {
+  padding: 10px 6px 9px;
+  border-radius: 11px;
+  background: var(--demo-raised, #f4f4f5);
+  text-align: center;
+  transition: background .4s var(--ease);
+}
+.lamp b {
+  display: block;
+  width: 9px; height: 9px;
+  border-radius: 50%;
+  margin: 0 auto 6px;
+  transition: background .4s var(--ease);
+}
+.lamp span { font-size: 10px; color: var(--demo-ink2, #525252); display: block; }
+
+/* 按钮组 */
+.btn-row { display: flex; flex-wrap: wrap; gap: 8px; }
+
+.m-btn {
+  padding: 7px 15px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  font-size: 12px;
+  font-family: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all .25s var(--ease);
+}
+.m-btn.primary {
+  background: var(--demo-accent, #c2410c);
+  color: #fff;
+}
+.m-btn.primary:hover { filter: brightness(1.08); transform: translateY(-1px); }
+.m-btn.outline {
+  background: transparent;
+  border-color: var(--demo-accent, #c2410c);
+  color: var(--demo-accent, #c2410c);
+}
+.m-btn.soft {
+  background: var(--demo-accent-soft, rgba(194,65,12,.1));
+  color: var(--demo-accent, #c2410c);
+}
+.m-btn.ghost {
+  background: transparent;
+  border-color: var(--demo-line-strong, rgba(23,23,23,.14));
+  color: var(--demo-ink2, #525252);
+}
+.m-btn.text {
+  background: transparent;
+  color: var(--demo-accent, #c2410c);
+  padding-left: 6px; padding-right: 6px;
+}
+.m-btn.danger {
+  background: var(--demo-bad, #b91c1c);
+  color: #fff;
+}
+
+/* 进度条 + 链接 */
+.bar {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--demo-track, #e7e6e3);
+  overflow: hidden;
+}
+.bar i {
+  display: block;
+  height: 100%;
+  width: 62%;
+  border-radius: 999px;
+  background: var(--demo-accent, #c2410c);
+  transition: background .4s var(--ease);
+}
+.link-line {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 11px;
+  color: var(--demo-ink3, #737373);
+}
+.link-line a {
+  color: var(--demo-accent, #c2410c);
+  text-decoration: none;
+  border-bottom: 1px solid var(--demo-accent-soft, rgba(194,65,12,.1));
+  transition: color .4s var(--ease);
+}
+.tag-demo {
+  padding: 2px 9px;
+  border-radius: 6px;
+  background: var(--demo-ok-soft, rgba(22,163,74,.12));
+  color: var(--demo-ok, #16a34a);
+  font-size: 10px;
+  font-weight: 600;
+  transition: all .4s var(--ease);
+}
+
+/* 代码块 */
+.codebox {
+  position: relative;
+  background: var(--screen);
+  border-radius: 12px;
+  padding: 14px 15px;
+  overflow: auto;
+}
+.codebox pre {
+  margin: 0;
+  font-family: Consolas, "SF Mono", Menlo, monospace;
+  font-size: 11px;
+  line-height: 1.85;
+  color: #c9d5ea;
+  white-space: pre;
+}
+.codebox .k { color: #7cc4ff; }
+.codebox .v { color: #9be8a8; }
+.codebox .c { color: #6b7c99; }
+.codebox .p { color: #f0b872; }
+
+.code-copy {
+  position: absolute;
+  top: 10px; right: 10px;
+  padding: 4px 11px;
+  border: 1px solid rgba(255, 255, 255, .18);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .08);
+  color: #c9d5ea;
+  font-size: 11px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background .2s, color .2s;
+}
+.code-copy:hover { background: #fff; color: var(--ink); }
+.code-copy.done { background: var(--green); border-color: var(--green); color: #fff; }
+.code-copy.fail { background: var(--red); border-color: var(--red); color: #fff; }
+
+.side-note {
+  font-size: 11.5px;
+  color: var(--gray);
+  line-height: 1.7;
+}
+.side-note b { color: var(--ink); }
+
+/* 对比条 */
+.compare {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+@media (max-width: 520px) { .compare { grid-template-columns: 1fr; } }
+.compare-cell {
+  padding: 11px 12px;
+  border-radius: 11px;
+  border: 1px solid var(--demo-line, rgba(23,23,23,.08));
+  background: var(--demo-surface, #fff);
+  transition: background .4s var(--ease), border-color .4s var(--ease);
+}
+.compare-cell h5 {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .3px;
+  color: var(--demo-ink3, #737373);
+  margin-bottom: 7px;
+}
+.compare-dots { display: flex; gap: 5px; }
+.compare-dots b { width: 15px; height: 15px; border-radius: 5px; }
+
+/* ================= 分类区块 ================= */
+.group { margin-top: 38px; scroll-margin-top: 76px; }
+
+.group-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+.group-no {
+  width: 30px; height: 30px;
+  border-radius: 9px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.group-title { font-size: 20px; font-weight: 700; letter-spacing: -.2px; }
+.group-note { font-size: 12px; color: var(--gray); }
+.group-count {
+  margin-left: auto;
+  padding: 3px 11px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
+  gap: 14px;
+}
+
+/* ================= 工具卡 ================= */
+.card {
+  --accent: var(--blue);
+  --accent-soft: rgba(59, 130, 246, .14);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px 14px 12px;
+  border: 2px solid transparent;
+  border-radius: var(--r-card);
+  background:
+    radial-gradient(rgba(0, 0, 0, .05) 1px, transparent 1px),
+    var(--panel);
+  background-size: 26px 26px;
+  transition: border-color .35s, box-shadow .35s, transform .35s;
+}
+.card:hover {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 4px var(--accent-soft), var(--shadow-lift);
+  transform: translateY(-5px);
+}
+.card[data-accent="blue"]  { --accent: var(--blue);  --accent-soft: rgba(59, 130, 246, .14); }
+.card[data-accent="amber"] { --accent: var(--amber); --accent-soft: rgba(245, 158, 11, .16); }
+.card[data-accent="teal"]  { --accent: var(--teal);  --accent-soft: rgba(20, 184, 166, .16); }
+.card[data-accent="green"] { --accent: var(--green); --accent-soft: rgba(34, 197, 94, .16); }
+
+.card-head { display: flex; align-items: center; gap: 9px; }
+.card-no {
+  width: 24px; height: 24px;
+  border-radius: 8px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.card-name {
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -.1px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.card-name small {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--gray);
+  margin-left: 6px;
+  letter-spacing: 0;
+}
+.card-chip {
+  margin-left: auto;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: #fff;
+  border: 1px solid var(--line);
+  font-size: 11px;
+  color: var(--gray);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.card-chip.hot { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+.scene {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  padding: 20px 2px 0;
+}
+.monitor { width: 56%; flex-shrink: 0; }
+.screen {
+  position: relative;
+  height: 118px;
+  border-radius: 10px;
+  background: linear-gradient(160deg, #22304c, #1a2740);
+  box-shadow: inset 0 0 0 3px #22304c, 0 6px 14px rgba(34, 48, 76, .25);
+  overflow: hidden;
+}
+.screen::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(115deg, transparent 42%, rgba(255, 255, 255, .07) 50%, transparent 58%);
+  pointer-events: none;
+}
+.stand { width: 34%; height: 7px; margin: 3px auto 0; border-radius: 0 0 6px 6px; background: var(--screen); }
+.stand-base { width: 52%; height: 5px; margin: 0 auto; border-radius: 4px; background: #2c3d5e; }
+
+.cat-wrap {
+  width: 44%;
+  display: flex;
+  justify-content: center;
+  position: relative;
+  z-index: 2;
+}
+.cat { width: 100%; max-width: 132px; height: auto; display: block; }
+.card:hover .cat .tail { animation: cat-tail-fast 1.1s ease-in-out infinite; }
+.card:hover .cat .paw-l { animation: cat-type .32s ease-in-out infinite alternate; }
+.card:hover .cat .paw-r { animation: cat-type .32s ease-in-out infinite alternate-reverse; }
+
+.spark {
+  position: absolute;
+  z-index: 4;
+  font-size: 13px;
+  color: var(--accent);
+  opacity: 0;
+  pointer-events: none;
+}
+.card:hover .spark { animation: spark-pop 1s ease both; }
+.spark.s1 { top: 22px; left: 54%; }
+.spark.s2 { top: 52px; left: 46%; animation-delay: .18s !important; }
+.spark.s3 { top: 36px; right: 6%; animation-delay: .32s !important; }
+
+.card-body { display: flex; flex-direction: column; gap: 9px; }
+.card-desc { font-size: 13px; color: var(--ink); line-height: 1.62; }
+
+.tag-row { display: flex; flex-wrap: wrap; gap: 5px; }
+.tag {
+  padding: 2.5px 9px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.tag.plain { background: #fff; color: var(--gray); border: 1px solid var(--line); }
+
+.use-line { display: flex; gap: 7px; font-size: 12px; color: var(--gray); line-height: 1.55; }
+.use-line b { flex-shrink: 0; color: var(--accent); font-weight: 700; }
+
+.install {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: auto;
+  padding: 8px 8px 8px 12px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--r-in);
+}
+.install code {
+  flex: 1;
+  min-width: 0;
+  font-family: Consolas, "SF Mono", Menlo, monospace;
+  font-size: 11.5px;
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.copy-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 11px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--gray);
+  font-size: 11px;
+  font-family: inherit;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background .2s, color .2s, border-color .2s;
+}
+.copy-btn:hover { background: var(--ink); color: #fff; border-color: var(--ink); }
+.copy-btn.done { background: var(--green); border-color: var(--green); color: #fff; }
+.copy-btn.fail { background: var(--red); border-color: var(--red); color: #fff; }
+
+/* 网页工具：没有安装命令，给个说明条 */
+.install-web { background: var(--accent-soft); border-color: transparent; }
+.install-web code { color: var(--accent); font-weight: 600; }
+
+.link-row { display: flex; gap: 8px; font-size: 11px; }
+.link-row a {
+  color: var(--gray);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: color .2s;
+}
+.link-row a:hover { color: var(--accent); }
+.link-row a::after { content: "↗"; font-size: 10px; opacity: .7; }
+
+/* ================= 屏幕内容 ================= */
+.scr { position: absolute; inset: 0; padding: 11px; font-size: 8.5px; color: #c9d5ea; }
+
+.code {
+  font-family: Consolas, "SF Mono", Menlo, monospace;
+  font-size: 8.5px;
+  line-height: 1.75;
+  white-space: pre;
+  color: #b9c7e0;
+}
+.code .k { color: #7cc4ff; }
+.code .s { color: #9be8a8; }
+.code .n { color: #f0b872; }
+.code .c { color: #6b7c99; }
+
+/* 色板墙 */
+.pal-wall { display: flex; flex-direction: column; gap: 5px; padding-top: 3px; }
+.pal-row { display: flex; gap: 4px; }
+.pal-row b { flex: 1; height: 15px; border-radius: 3px; }
+
+/* 按钮演示墙 */
+.btn-wall { display: flex; flex-direction: column; gap: 6px; padding-top: 6px; }
+.btn-wall .bw {
+  height: 17px;
+  border-radius: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 7.5px;
+  font-weight: 600;
+}
+
+/* 色阶条 */
+.ramp { display: flex; flex-direction: column; gap: 5px; padding-top: 8px; }
+.ramp-row { display: flex; gap: 3px; }
+.ramp-row b { flex: 1; height: 13px; border-radius: 3px; }
+.ramp-row:first-child b { border-radius: 3px 3px 0 0; }
+.ramp-row:last-child b { border-radius: 0 0 3px 3px; }
+
+/* 混色演示 */
+.mix-demo { display: flex; align-items: center; gap: 7px; padding-top: 22px; }
+.mix-demo b { width: 34px; height: 34px; border-radius: 9px; flex-shrink: 0; }
+.mix-demo em {
+  font-style: normal;
+  font-size: 12px;
+  color: #8fa5c4;
+}
+
+/* 深浅色切换 */
+.theme-demo {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding-top: 10px;
+}
+.theme-demo .td {
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 8.5px;
+  line-height: 1.5;
+}
+.theme-demo .td.light { background: #fff; color: #17181c; }
+.theme-demo .td.dark { background: #17181c; color: #fff; }
+
+/* ================= 你这项目怎么改 ================= */
+.fix {
+  margin-top: 42px;
+  padding: 26px;
+  border-radius: 20px;
+  border: 1px solid var(--line);
+  background:
+    radial-gradient(rgba(0, 0, 0, .045) 1px, transparent 1px),
+    var(--card);
+  background-size: 24px 24px;
+}
+.fix h2 { font-size: 19px; margin-bottom: 4px; letter-spacing: -.2px; }
+.fix > p { font-size: 13px; color: var(--gray); margin-bottom: 18px; max-width: 720px; }
+
+.fix-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+  gap: 12px;
+}
+.fix-item {
+  padding: 15px 16px;
+  border-radius: 13px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+}
+.fix-item h4 {
+  font-size: 13px;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.fix-item h4 u {
+  width: 18px; height: 18px;
+  border-radius: 6px;
+  background: var(--ink);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  text-decoration: none;
+  flex-shrink: 0;
+}
+.fix-item p { font-size: 12px; color: var(--gray); line-height: 1.7; margin-bottom: 9px; }
+.fix-item p b { color: var(--ink); font-weight: 600; }
+
+.mini-code {
+  background: var(--screen);
+  border-radius: 9px;
+  padding: 10px 11px;
+  overflow-x: auto;
+}
+.mini-code pre {
+  margin: 0;
+  font-family: Consolas, "SF Mono", Menlo, monospace;
+  font-size: 10.5px;
+  line-height: 1.8;
+  color: #c9d5ea;
+  white-space: pre;
+}
+.mini-code .k { color: #7cc4ff; }
+.mini-code .v { color: #9be8a8; }
+.mini-code .c { color: #6b7c99; }
+
+/* ================= 怎么挑 ================= */
+.pick {
+  margin-top: 34px;
+  padding: 26px;
+  border-radius: 20px;
+  border: 1px solid var(--line);
+  background:
+    radial-gradient(rgba(0, 0, 0, .045) 1px, transparent 1px),
+    var(--card);
+  background-size: 24px 24px;
+}
+.pick h2 { font-size: 19px; margin-bottom: 4px; letter-spacing: -.2px; }
+.pick > p { font-size: 13px; color: var(--gray); margin-bottom: 18px; }
+
+.pick-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 12px;
+}
+.pick-item {
+  display: flex;
+  gap: 12px;
+  padding: 14px;
+  border-radius: 13px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+}
+.pick-item .pick-ava {
+  width: 54px;
+  height: 54px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--card);
+  border: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+.pick-item .cat { width: 78%; height: auto; display: block; margin-top: 6%; }
+.pick-item h4 { font-size: 13px; margin-bottom: 4px; }
+.pick-item p { font-size: 12px; color: var(--gray); line-height: 1.6; }
+.pick-item p b { color: var(--ink); font-weight: 600; }
+
+/* ================= 页脚 ================= */
+.foot {
+  margin-top: 36px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+  font-size: 11.5px;
+  color: var(--gray);
+}
+.foot-note { max-width: 620px; line-height: 1.7; }
+
+/* ================= 小猫 ================= */
+.cat .fur       { fill: var(--fur1); }
+.cat .fur-dark  { fill: var(--fur2); }
+.cat .belly     { fill: var(--belly); }
+.cat .inner-ear { fill: #f2a2a2; }
+.cat .nose      { fill: #e58a8a; }
+.cat .line      { stroke: rgba(23, 24, 28, .35); fill: none; stroke-width: 2.4; stroke-linecap: round; }
+.cat .eye-white { fill: #fff; }
+.cat .pupil     { fill: #2b2f36; }
+.cat .glint     { fill: #fff; }
+
+.cat .body-grp  { transform-box: fill-box; transform-origin: center bottom; animation: cat-breath 3.2s ease-in-out infinite; }
+.cat .head-grp  { transform-box: fill-box; transform-origin: center bottom; }
+.cat .tail      { transform-box: fill-box; transform-origin: left bottom; animation: cat-tail 3s ease-in-out infinite; }
+.cat .eyes      { transform-box: fill-box; transform-origin: center; animation: cat-blink 4.6s infinite; }
+.cat .paw       { transform-box: fill-box; transform-origin: center top; }
+
+@keyframes cat-breath { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(2.5px); } }
+@keyframes cat-tail   { 0%, 100% { transform: rotate(-5deg); } 50% { transform: rotate(8deg); } }
+@keyframes cat-tail-fast { 0%, 100% { transform: rotate(-9deg); } 50% { transform: rotate(13deg); } }
+@keyframes cat-blink  { 0%, 92%, 100% { transform: scaleY(1); } 95% { transform: scaleY(.08); } }
+@keyframes cat-type   { from { transform: translateY(0); } to { transform: translateY(3.5px); } }
+
+@keyframes tc-blink { 0%, 100% { opacity: 1; } 50% { opacity: .35; } }
+@keyframes spark-pop {
+  0%   { opacity: 0; transform: scale(.2) rotate(0); }
+  45%  { opacity: 1; transform: scale(1.25) rotate(20deg); }
+  100% { opacity: 0; transform: scale(.9) rotate(35deg) translateY(-12px); }
+}
+
+/* ================= 响应式 ================= */
+@media (max-width: 980px) {
+  .top-stat { display: none; }
+  .hero-crew { flex-basis: 100%; }
+}
+@media (max-width: 720px) {
+  body { padding: 0 12px 70px; }
+  .top-nav { display: none; }
+  .hero { padding: 24px 18px 20px; }
+  .grid { grid-template-columns: 1fr; }
+  .group-count { display: none; }
+  .lab-head, .picker, .lab-stage, .lab-side { padding-left: 16px; padding-right: 16px; }
+}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <!-- ============ 顶栏 ============ -->
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-mark">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 0 18"/><circle cx="12" cy="12" r="3.2"/></svg>
+      </div>
+      <div>
+        <div class="brand-text">前端调色板</div>
+        <div class="brand-sub">小猫严选 · 2026</div>
+      </div>
+    </div>
+
+    <nav class="top-nav" id="topNav">
+      <button class="nav-chip on" data-target="lab">换肤实验台</button>
+      <button class="nav-chip" data-target="g-kit">组件库</button>
+      <button class="nav-chip" data-target="g-pal">色板体系</button>
+      <button class="nav-chip" data-target="g-tool">调色工具</button>
+      <button class="nav-chip" data-target="g-native">原生就行</button>
+      <button class="nav-chip" data-target="fix">你这项目</button>
+    </nav>
+
+    <div class="top-stat">
+      <div class="stat"><b id="statCount">13</b><span>件工具</span></div>
+      <div class="stat"><b id="statPal">6</b><span>套色板</span></div>
+      <div class="stat"><b>0</b><span>付费墙</span></div>
+    </div>
+  </header>
+
+  <!-- ============ 主视觉 ============ -->
+  <section class="hero">
+    <div class="hero-inner">
+      <div class="hero-copy">
+        <div class="eyebrow"><i></i>针对「整站只有一个彩色」这件事</div>
+        <h1>不是不够花哨，<br>是<em>色相太少了</em></h1>
+        <p class="hero-lede">
+          你现在这套界面里，<b>21 个颜色变量只有 1 个是彩色的</b>，剩下全是灰阶。
+          这里给两件事：<b>能直接上色的组件库</b>，和<b>管整套配色的色板工具</b>——
+          中间那个实验台点一下就能看效果，色板代码可以直接抄进你的 <code>css/style.css</code>。
+        </p>
+        <div class="hero-actions">
+          <button class="btn btn-dark" id="goLab">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M3 12h18"/><circle cx="12" cy="12" r="9"/></svg>
+            去实验台试色
+          </button>
+          <button class="btn btn-ghost" id="goFix">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a4 4 0 0 1-5 5L4 17v3h3l5.7-5.7a4 4 0 0 1 5-5l2.6-2.6-2.3-2.3z"/></svg>
+            直接看我这项目改哪儿
+          </button>
+        </div>
+      </div>
+
+      <div class="hero-crew" id="heroCrew"></div>
+    </div>
+  </section>
+
+  <!-- ============ 换肤实验台 ============ -->
+  <section class="lab" id="lab">
+    <div class="lab-head">
+      <div class="lab-title">换肤实验台</div>
+      <div class="lab-note">左边是你界面的样例，点上面的色板整块换色，右边代码跟着变</div>
+      <div class="lab-hint">共 6 套</div>
+    </div>
+
+    <div class="picker" id="picker"></div>
+
+    <div class="lab-body">
+      <div class="lab-stage" id="stage">
+
+        <div class="mock-panel">
+          <div class="mock-head">
+            <div class="mock-title">票据处理 · 工位</div>
+            <div class="mock-sub">2/2 在线</div>
+          </div>
+          <div class="station">
+            <div class="station-art">
+              <svg viewBox="0 0 24 24"><rect x="2.5" y="4" width="19" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+            </div>
+            <div class="station-main">
+              <span class="station-name">票据录入</span>
+              <div class="station-task">正在识别 INV-233 · 3 月票据核对</div>
+            </div>
+            <span class="lamp-chip"><i></i>工作中</span>
+          </div>
+        </div>
+
+        <div class="mock-panel">
+          <div class="mock-head">
+            <div class="mock-title">状态灯</div>
+            <div class="mock-sub">四个状态要有四个颜色</div>
+          </div>
+          <div class="lamps" id="lamps">
+            <div class="lamp"><b data-lamp="work"></b><span>工作中</span></div>
+            <div class="lamp"><b data-lamp="idle"></b><span>空闲</span></div>
+            <div class="lamp"><b data-lamp="urgent"></b><span>紧急</span></div>
+            <div class="lamp"><b data-lamp="sleep"></b><span>休眠</span></div>
+          </div>
+        </div>
+
+        <div class="mock-panel">
+          <div class="mock-head">
+            <div class="mock-title">按钮</div>
+            <div class="mock-sub">同一套主色，五种用法</div>
+          </div>
+          <div class="btn-row">
+            <button class="m-btn primary">派单</button>
+            <button class="m-btn outline">启动</button>
+            <button class="m-btn soft">暂停</button>
+            <button class="m-btn ghost">复位</button>
+            <button class="m-btn text">详情</button>
+            <button class="m-btn danger">紧急</button>
+          </div>
+          <div style="height:11px"></div>
+          <div class="bar"><i></i></div>
+          <div style="height:11px"></div>
+          <div class="link-line">
+            <a href="#" onclick="return false">查看调用记录</a>
+            <span class="tag-demo">账务比对 99.2%</span>
+            <span>负载 62%</span>
+          </div>
+        </div>
+
+        <div class="compare">
+          <div class="compare-cell">
+            <h5>改之前 · 只有 1 个色相</h5>
+            <div class="compare-dots">
+              <b style="background:#c2410c"></b>
+              <b style="background:#737373"></b>
+              <b style="background:#b91c1c"></b>
+              <b style="background:#c9c7c4"></b>
+              <b style="background:#fafafa;border:1px solid #e3e3e3"></b>
+              <b style="background:#171717"></b>
+            </div>
+          </div>
+          <div class="compare-cell">
+            <h5>改之后 · 当前这套色板</h5>
+            <div class="compare-dots" id="afterDots"></div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="lab-side">
+        <div class="side-label">CSS 变量 · 可直接抄</div>
+        <div class="codebox">
+          <button class="code-copy" id="copyVars">复制</button>
+          <pre id="varsCode"></pre>
+        </div>
+        <div class="side-label" style="margin-top:4px">这套色板的脾气</div>
+        <div class="side-note" id="palNote"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 工具列表 ============ -->
+  <main id="groups"></main>
+
+  <!-- ============ 你这项目怎么改 ============ -->
+  <section class="fix" id="fix">
+    <h2>你这个项目，具体改哪几行</h2>
+    <p>对照 <code>css/style.css</code> 里的设计令牌。不换库也能让页面颜色立起来，改下面三处就够了。</p>
+    <div class="fix-grid">
+
+      <div class="fix-item">
+        <h4><u>1</u>给「强调色」配一个兄弟色</h4>
+        <p>现在 <b>--accent</b> 一个人扛所有重点，哪儿都是橙的，反而哪儿都不重点。加一个 <b>--accent-2</b> 用来做「区分」而不是「强调」，比如图表的第二条线、Tab 的选中态。</p>
+        <div class="mini-code"><pre><span class="c">/* 在 --accent 下面加两行 */</span>
+<span class="k">--accent</span>: <span class="v">#c2410c</span>;
+<span class="k">--accent-2</span>: <span class="v">#0891b2</span>;   <span class="c">/* 青，跟橙互补 */</span>
+<span class="k">--accent-2-soft</span>: <span class="v">rgba(8,145,178,.1)</span>;</pre></div>
+      </div>
+
+      <div class="fix-item">
+        <h4><u>2</u>状态灯拉大色相差</h4>
+        <p>你这四个灯是「橙 / 灰 / 红 / 浅灰」—— <b>只有 2 个色相</b>，扫一眼分不出轻重。四个状态就该四个颜色，跨着色轮放。</p>
+        <div class="mini-code"><pre><span class="k">--lamp-working</span>: <span class="v">#c2410c</span>;  <span class="c">/* 橙 · 干着活 */</span>
+<span class="k">--lamp-idle</span>:    <span class="v">#0891b2</span>;  <span class="c">/* 青 · 待命 */</span>
+<span class="k">--lamp-urgent</span>:  <span class="v">#b91c1c</span>;  <span class="c">/* 红 · 出事 */</span>
+<span class="k">--lamp-dormant</span>: <span class="v">#a8a29e</span>;  <span class="c">/* 灰 · 下班 */</span></pre></div>
+      </div>
+
+      <div class="fix-item">
+        <h4><u>3</u>别再手写一堆浅色了</h4>
+        <p>硬编码 <b>rgba(194,65,12,.1)</b> 这种浅色，换主题时得一个一个改。浏览器现在自带混色函数，从主色现算就行。</p>
+        <div class="mini-code"><pre><span class="k">--accent-soft</span>:
+  <span class="v">color-mix(in oklab, var(--accent) 12%, transparent)</span>;
+<span class="k">--track</span>:
+  <span class="v">color-mix(in oklab, var(--accent) 8%, #fff)</span>;</pre></div>
+      </div>
+
+      <div class="fix-item">
+        <h4><u>4</u>背景别纯灰，带点色温</h4>
+        <p>整站 <b>--bg: #fafafa</b> 是无彩的中性灰，配什么都发闷。往主色那边偏一点点（5% 以内），画面立刻有温度，又不会显脏。</p>
+        <div class="mini-code"><pre><span class="k">--bg</span>:      <span class="v">color-mix(in oklab, var(--accent) 3%, #fff)</span>;
+<span class="k">--raised</span>:  <span class="v">color-mix(in oklab, var(--accent) 6%, #fff)</span>;
+<span class="k">--hairline</span>: <span class="v">color-mix(in oklab, var(--accent) 12%, transparent)</span>;</pre></div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ============ 怎么挑 ============ -->
+  <section class="pick" id="pick">
+    <h2>拿不准用哪个？看这三条</h2>
+    <p>按你现在想解决的问题挑，不用全上。</p>
+    <div class="pick-grid">
+      <div class="pick-item" id="pickA"></div>
+      <div class="pick-item" id="pickB"></div>
+      <div class="pick-item" id="pickC"></div>
+    </div>
+  </section>
+
+  <footer class="foot">
+    <div class="foot-note">
+      色板代码用的是 CSS 原生的 <code>color-mix()</code> 和变量，不装任何东西就能跑。
+      组件库那几张卡是给上 Tailwind / React / Vue 的项目用的，纯 HTML 项目走实验台这套就够了。
+    </div>
+    <div>小猫调色板 · 纯 HTML 打开即用</div>
+  </footer>
+
+</div>
+
+<script>
+/* ================= 小猫 ================= */
+const FUR = {
+  blue:  { fur1: "#F6B26B", fur2: "#E89B4E", belly: "#FFE9CE" },
+  amber: { fur1: "#A9B6C8", fur2: "#8C9BB0", belly: "#E7EDF4" },
+  teal:  { fur1: "#EFE3D4", fur2: "#D9C7B2", belly: "#FBF6EF" },
+  green: { fur1: "#5B6472", fur2: "#47505D", belly: "#C9D2DE" },
+};
+
+const CAT_HEAD = `
+    <g class="head-grp">
+      <path class="fur" d="M62 52 L56 12 L92 38 Z"/>
+      <path class="fur" d="M138 52 L144 12 L108 38 Z"/>
+      <path class="inner-ear" d="M66 48 L62 22 L86 40 Z"/>
+      <path class="inner-ear" d="M134 48 L138 22 L114 40 Z"/>
+      <ellipse class="fur" cx="100" cy="72" rx="41" ry="38"/>
+      <path class="fur-dark" d="M88 38 Q92 30 96 38 Q92 34 88 38" opacity=".7"/>
+      <path class="fur-dark" d="M104 38 Q108 30 112 38 Q108 34 104 38" opacity=".7"/>
+      <g class="eyes">
+        <ellipse class="eye-white" cx="82" cy="70" rx="9.5" ry="11"/>
+        <ellipse class="eye-white" cx="118" cy="70" rx="9.5" ry="11"/>
+        <circle class="pupil" cx="83" cy="71.5" r="5.6"/>
+        <circle class="pupil" cx="119" cy="71.5" r="5.6"/>
+        <circle class="glint" cx="85.6" cy="68" r="2.1"/>
+        <circle class="glint" cx="121.6" cy="68" r="2.1"/>
+      </g>
+      <ellipse cx="66" cy="88" rx="8" ry="5" fill="#f79e9e" opacity=".5"/>
+      <ellipse cx="134" cy="88" rx="8" ry="5" fill="#f79e9e" opacity=".5"/>
+      <ellipse class="belly" cx="100" cy="90" rx="21" ry="14"/>
+      <path class="nose" d="M100 81 l6 4.5 -6 5 -6 -5 z"/>
+      <path class="line" d="M100 90.5 q-5 6 -10 1.5"/>
+      <path class="line" d="M100 90.5 q5 6 10 1.5"/>
+      <path class="line" d="M74 84 L52 78" opacity=".5"/>
+      <path class="line" d="M74 91 L51 91" opacity=".5"/>
+      <path class="line" d="M126 84 L148 78" opacity=".5"/>
+      <path class="line" d="M126 91 L149 91" opacity=".5"/>
+    </g>`;
+
+function catSVG(accent) {
+  const f = FUR[accent] || FUR.blue;
+  return `
+  <svg class="cat" viewBox="0 0 200 190"
+       style="--fur1:${f.fur1};--fur2:${f.fur2};--belly:${f.belly}">
+    <path class="tail fur-dark" d="M150 172 Q192 160 180 116"
+          fill="none" stroke="${f.fur2}" stroke-width="15" stroke-linecap="round"/>
+    <path class="body-grp">
+      <path class="fur" d="M60 178 Q56 112 100 110 Q144 112 140 178 Z"/>
+      <ellipse class="belly" cx="100" cy="154" rx="27" ry="24"/>
+      <ellipse class="paw paw-l fur-dark" cx="80" cy="176" rx="13" ry="9"/>
+      <ellipse class="paw paw-r fur-dark" cx="120" cy="176" rx="13" ry="9"/>
+    </path>${CAT_HEAD}
+  </svg>`;
+}
+
+function catHeadSVG(accent) {
+  const f = FUR[accent] || FUR.blue;
+  return `
+  <svg class="cat" viewBox="46 4 108 106"
+       style="--fur1:${f.fur1};--fur2:${f.fur2};--belly:${f.belly}">${CAT_HEAD}
+  </svg>`;
+}
+
+/* ================= 六套色板 ================= */
+const PALETTES = [
+  {
+    id: "ember", name: "信号橙", tag: "你现在这套",
+    accent: "#c2410c", accent2: "#0891b2",
+    lamp: { work: "#c2410c", idle: "#737373", urgent: "#b91c1c", sleep: "#c9c7c4" },
+    ok: "#16a34a", bad: "#b91c1c",
+    bg: "#fafafa", surface: "#ffffff", raised: "#f4f4f5",
+    ink: "#171717", ink2: "#525252", ink3: "#737373",
+    track: "#e7e6e3", fill: "#bdbcb9",
+    note: "稳、专业、不抢戏。缺点是<b>只有一个色相</b>，状态灯里三个是灰的，扫一眼看不出轻重 —— 就是你现在的处境。"
+  },
+  {
+    id: "dusk", name: "暮蓝", tag: "后台 / 中台",
+    accent: "#2563eb", accent2: "#f59e0b",
+    lamp: { work: "#2563eb", idle: "#0d9488", urgent: "#e11d48", sleep: "#cbd5e1" },
+    ok: "#059669", bad: "#e11d48",
+    bg: "#f7f9fc", surface: "#ffffff", raised: "#eef2f8",
+    ink: "#0f172a", ink2: "#475569", ink3: "#94a3b8",
+    track: "#e2e8f0", fill: "#94a3b8",
+    note: "四个状态灯跨了<b>蓝 / 青 / 红 / 灰</b>四个位置，一眼能分。最稳的一种后台配色，不容易翻车。"
+  },
+  {
+    id: "mint", name: "薄荷", tag: "清爽 / 工具类",
+    accent: "#0d9488", accent2: "#e11d48",
+    lamp: { work: "#0d9488", idle: "#7c3aed", urgent: "#e11d48", sleep: "#cbd5e1" },
+    ok: "#16a34a", bad: "#e11d48",
+    bg: "#f4faf9", surface: "#ffffff", raised: "#e8f4f2",
+    ink: "#0f2e2a", ink2: "#3f6b64", ink3: "#7fa8a2",
+    track: "#d8eae7", fill: "#7fa8a2",
+    note: "青绿打底，配一点紫和红做对比。<b>最适合长时间盯着看</b>的界面，眼睛不容易累。"
+  },
+  {
+    id: "violet", name: "紫电", tag: "数据 / 看板",
+    accent: "#7c3aed", accent2: "#06b6d4",
+    lamp: { work: "#7c3aed", idle: "#06b6d4", urgent: "#f43f5e", sleep: "#d4d4d8" },
+    ok: "#10b981", bad: "#f43f5e",
+    bg: "#f8f7fc", surface: "#ffffff", raised: "#f0eefa",
+    ink: "#1e1b33", ink2: "#514c6e", ink3: "#8f8aa8",
+    track: "#e5e2f0", fill: "#8f8aa8",
+    note: "紫 + 青做主次，红只留给紧急。<b>数据看板最上镜</b>，但正文别用紫，阅读性会掉。"
+  },
+  {
+    id: "forest", name: "森绿", tag: "稳重 / 金融",
+    accent: "#059669", accent2: "#d97706",
+    lamp: { work: "#059669", idle: "#0284c7", urgent: "#dc2626", sleep: "#cbd5e1" },
+    ok: "#059669", bad: "#dc2626",
+    bg: "#f5faf7", surface: "#ffffff", raised: "#eaf3ee",
+    ink: "#12241c", ink2: "#3d5c4c", ink3: "#7b9c8c",
+    track: "#ddebe3", fill: "#7b9c8c",
+    note: "对账、票据、风控这类<b>要显得可靠</b>的场景最搭。绿主色天然带「通过」的暗示，省掉一层解释。"
+  },
+  {
+    id: "clay", name: "赤陶", tag: "活泼 / 面向用户",
+    accent: "#e11d48", accent2: "#7c3aed",
+    lamp: { work: "#e11d48", idle: "#7c3aed", urgent: "#b45309", sleep: "#d6d3d1" },
+    ok: "#16a34a", bad: "#b45309",
+    bg: "#fdf7f8", surface: "#ffffff", raised: "#f9ecef",
+    ink: "#2b1219", ink2: "#6b3b47", ink3: "#a9818c",
+    track: "#f2dde2", fill: "#a9818c",
+    note: "玫红打头，紫和琥珀陪衬。<b>颜色最有劲</b>的一套，适合面向用户的页面；纯数据后台会显得吵。"
+  },
+];
+
+/* ================= 屏幕内容 ================= */
+const SCREENS = {
+  daisy: `<div class="scr"><div class="btn-wall">
+  <div class="bw" style="background:#570df8;color:#fff">btn-primary</div>
+  <div class="bw" style="background:#f00078;color:#fff">btn-secondary</div>
+  <div class="bw" style="background:#36d399;color:#fff">btn-accent</div>
+  <div class="bw" style="background:rgba(255,255,255,.12);color:#c9d5ea">btn-ghost</div>
+</div></div>`,
+
+  antd: `<div class="scr"><div class="btn-wall">
+  <div class="bw" style="background:#1677ff;color:#fff">primary</div>
+  <div class="bw" style="background:transparent;border:1px solid #d9d9d9;color:#c9d5ea">default</div>
+  <div class="bw" style="background:rgba(22,119,255,.22);color:#8fc2ff">ConfigProvider</div>
+</div></div>`,
+
+  heroui: `<div class="scr"><div class="btn-wall">
+  <div class="bw" style="background:linear-gradient(90deg,#7c3aed,#06b6d4);color:#fff">Primary</div>
+  <div class="bw" style="background:rgba(6,182,212,.22);color:#7de3f5">Secondary</div>
+  <div class="bw" style="background:rgba(244,63,94,.22);color:#ff9db1">Danger</div>
+</div></div>`,
+
+  radix: `<div class="scr"><div class="pal-wall">
+  <div class="pal-row"><b style="background:#11181c"></b><b style="background:#1b2428"></b><b style="background:#252e33"></b><b style="background:#2e393e"></b><b style="background:#39444a"></b><b style="background:#465259"></b></div>
+  <div class="pal-row"><b style="background:#e5484d"></b><b style="background:#eb6367"></b><b style="background:#f27d80"></b><b style="background:#f89598"></b><b style="background:#fdaaa9"></b><b style="background:#ffc1bd"></b></div>
+  <div class="pal-row"><b style="background:#30a46c"></b><b style="background:#3cb179"></b><b style="background:#4cc38a"></b><b style="background:#5dd49b"></b><b style="background:#6fe2a8"></b><b style="background:#81f1b1"></b></div>
+  <div class="pal-row"><b style="background:#0091ff"></b><b style="background:#42a7ff"></b><b style="background:#6ab8ff"></b><b style="background:#8cc7ff"></b><b style="background:#add2ff"></b><b style="background:#c8daff"></b></div>
+</div></div>`,
+
+  tailwind: `<div class="scr"><div class="code"><span class="c">/* app.css */</span>
+<span class="k">@import</span> <span class="s">"tailwindcss"</span>;
+<span class="k">@theme</span> {
+  <span class="n">--color-brand</span>: <span class="s">#0d9488</span>;
+  <span class="n">--color-brand-50</span>: <span class="s">#f0fdfa</span>;
+  <span class="n">--color-brand-500</span>: <span class="s">#14b8a6</span>;
+}</div></div>`,
+
+  leonardo: `<div class="scr">
+  <div class="ramp">
+    <div class="ramp-row"><b style="background:#0b3d5c"></b><b style="background:#0d5c85"></b><b style="background:#0f7bb0"></b><b style="background:#2b9ad6"></b></div>
+    <div class="ramp-row"><b style="background:#5cb8e8"></b><b style="background:#8ed0f2"></b><b style="background:#bfe5f8"></b><b style="background:#e8f5fc"></b></div>
+  </div>
+  <div style="margin-top:7px;font-size:8px;color:#8fa5c4">对比度 4.5 : 1 自动校准</div>
+</div>`,
+
+  realtime: `<div class="scr"><div class="code"><span class="c">// 拖一拖就知道好不好看</span>
+<span class="n">Primary</span>  <span class="s">████████</span> #2563eb
+<span class="n">Text</span>     <span class="s">████████</span> #0f172a
+<span class="n">Background</span> <span class="s">████</span> #f7f9fc
+
+<span class="c">// 实时套到你的界面上</span></div></div>`,
+
+  hues: `<div class="scr"><div class="pal-wall">
+  <div class="pal-row"><b style="background:#264653"></b><b style="background:#2a9d8f"></b><b style="background:#e9c46a"></b></div>
+  <div class="pal-row"><b style="background:#f4a261"></b><b style="background:#e76f51"></b><b style="background:#ffffff"></b></div>
+  <div class="pal-row"><b style="background:#2b2d42"></b><b style="background:#8d99ae"></b><b style="background:#edf2f4"></b></div>
+</div></div>`,
+
+  oklch: `<div class="scr">
+  <div class="ramp">
+    <div class="ramp-row"><b style="background:oklch(30% .18 250)"></b><b style="background:oklch(45% .18 250)"></b><b style="background:oklch(60% .18 250)"></b><b style="background:oklch(75% .18 250)"></b></div>
+    <div class="ramp-row"><b style="background:oklch(85% .18 250)"></b><b style="background:oklch(92% .18 250)"></b><b style="background:oklch(96% .18 250)"></b><b style="background:oklch(98% .18 250)"></b></div>
+  </div>
+  <div class="code" style="margin-top:6px">oklch(60% .18 <span class="n">250</span>)  <span class="c">// 只换色相</span></div>
+</div>`,
+
+  colormix: `<div class="scr"><div class="mix-demo">
+  <b style="background:#c2410c"></b><em>+</em>
+  <b style="background:#ffffff"></b><em>=</em>
+  <b style="background:color-mix(in oklab, #c2410c 12%, #ffffff)"></b>
+</div>
+<div class="code" style="margin-top:10px">color-mix(<span class="k">in oklab</span>,
+  <span class="s">var(--accent)</span> <span class="n">12%</span>, <span class="s">#fff</span>)</div></div>`,
+
+  lightdark: `<div class="scr"><div class="theme-demo">
+  <div class="td light">--bg: light-dark(#fff, #17181c);</div>
+  <div class="td dark">跟着系统换，变量只写一次</div>
+</div></div>`,
+
+  datatheme: `<div class="scr"><div class="code"><span class="c">/* 换肤就是换个属性 */</span>
+<span class="k">&lt;html</span> <span class="n">data-theme</span>=<span class="s">"mint"</span><span class="k">&gt;</span>
+
+<span class="k">[data-theme=<span class="s">"mint"</span>]</span> {
+  <span class="n">--accent</span>: <span class="s">#0d9488</span>;
+}
+<span class="k">[data-theme=<span class="s">"dusk"</span>]</span> {
+  <span class="n">--accent</span>: <span class="s">#2563eb</span>;
+}</div></div>`,
+};
+
+/* ================= 工具数据 ================= */
+const GROUPS = [
+  {
+    id: "g-kit", no: "01", title: "直接上色", accent: "blue",
+    note: "组件库自带成套按钮配色，装上就有颜色",
+    items: [
+      {
+        name: "daisyUI", sub: "Tailwind 组件", chip: "35+ 套主题", hot: true,
+        screen: "daisy",
+        desc: "按钮、输入框、弹层全都是现成的，颜色类名直接写：主色、次色、点缀色、成功、警告、错误一整套。换主题只改一行属性。",
+        use: "Tailwind 项目、想要最快见效、需要一键换肤",
+        tags: ["一键换主题", "按钮最全", "写法最简"],
+        cmd: "npm i -D daisyui",
+        links: [["官网", "https://daisyui.com/"], ["npm", "https://www.npmjs.com/package/daisyui"]],
+      },
+      {
+        name: "Ant Design", sub: "企业级组件", chip: "中文生态",
+        screen: "antd",
+        desc: "国内后台的事实标准。按钮分主要、次要、虚线、文字、链接五种，色彩体系成熟，中文文档全，坑基本都有人踩过。",
+        use: "中后台、管理台、团队人多要统一规范",
+        tags: ["中文文档", "五种按钮", "主题可配"],
+        cmd: "npm i antd",
+        links: [["官网", "https://ant.design/"], ["npm", "https://www.npmjs.com/package/antd"]],
+      },
+      {
+        name: "HeroUI", sub: "Tailwind 组件", chip: "原 NextUI",
+        screen: "heroui",
+        desc: "颜值最高的那类。按钮支持实心、描边、浅底、幽灵好几种，还带渐变，改配色走 Tailwind 的色板，不用啃文档。",
+        use: "面向用户的页面、想要好看、Tailwind v4",
+        tags: ["好看", "渐变按钮", "Tailwind v4"],
+        cmd: "npm i @heroui/react",
+        links: [["官网", "https://www.heroui.com/"], ["npm", "https://www.npmjs.com/package/@heroui/react"]],
+      },
+    ],
+  },
+  {
+    id: "g-pal", no: "02", title: "一套色板", accent: "amber",
+    note: "先定好整套颜色，再往里填界面",
+    items: [
+      {
+        name: "Radix Colors", sub: "色板体系", chip: "工业级", hot: true,
+        screen: "radix",
+        desc: "30 个色相，每个色相 12 级明度，深色浅色都给你算好了。不用自己调，照着抄一套就是能用的配色。",
+        use: "想要专业色板、做设计系统、深浅色都要",
+        tags: ["12 级明度", "深浅色成对", "无障碍达标"],
+        cmd: "npm i @radix-ui/colors",
+        links: [["官网", "https://www.radix-ui.com/colors"], ["npm", "https://www.npmjs.com/package/@radix-ui/colors"]],
+      },
+      {
+        name: "Tailwind @theme", sub: "色板自定义", chip: "写在 CSS 里",
+        screen: "tailwind",
+        desc: "Tailwind v4 起，配色就是往 CSS 变量里写。定义一组色板，全项目的按钮、背景、文字自动都能用，改一处全变。",
+        use: "Tailwind 项目、想自己掌控色板",
+        tags: ["变量驱动", "改一处全局变"],
+        cmd: "npm i tailwindcss @tailwindcss/vite",
+        links: [["文档", "https://tailwindcss.com/docs/theme"], ["npm", "https://www.npmjs.com/package/tailwindcss"]],
+      },
+      {
+        name: "Adobe Leonardo", sub: "对比度配色", chip: "能保无障碍",
+        screen: "leonardo",
+        desc: "按「文字要在背景上看清」这条硬标准反推颜色。先把对比度卡死，再生成整套色阶，做出的配色不会有人看不清。",
+        use: "要过无障碍检查、色阶需要均匀",
+        tags: ["对比度驱动", "色阶自动"],
+        web: true,
+        cmd: "不用装 · 打开 leonardocolor.io 就能用",
+        links: [["官网", "https://leonardocolor.io/"]],
+      },
+    ],
+  },
+  {
+    id: "g-tool", no: "03", title: "调色工具", accent: "teal",
+    note: "配色卡住的时候，用这几个找感觉",
+    items: [
+      {
+        name: "Realtime Colors", sub: "实时预览", chip: "边调边看",
+        screen: "realtime",
+        desc: "左边拉颜色，右边就是套用后的完整页面。不用先改代码再刷新看效果，直接在浏览器里拖到满意为止。",
+        use: "挑主色、验证配色搭不搭",
+        tags: ["实时预览", "导出变量"],
+        web: true,
+        cmd: "不用装 · 打开 realtimecolors.com 就能用",
+        links: [["官网", "https://www.realtimecolors.com/"]],
+      },
+      {
+        name: "Happy Hues", sub: "配色灵感", chip: "现成方案",
+        screen: "hues",
+        desc: "别人配好的成套方案，每套都标好哪个色用在哪儿：标题、正文、按钮、背景。抄之前能看懂为什么这么配。",
+        use: "没想法、想知道别人的颜色怎么分工",
+        tags: ["成套方案", "标注用法"],
+        web: true,
+        cmd: "不用装 · 打开 happyhues.co 就能用",
+        links: [["官网", "https://www.happyhues.co/"]],
+      },
+      {
+        name: "OKLCH", sub: "均匀色阶", chip: "CSS 原生",
+        screen: "oklch",
+        desc: "老的取色方式拉色阶，颜色会忽明忽暗。OKLCH 把亮度和色相分开控制，生成的一排色阶深浅是一致的。",
+        use: "自己生成色阶、做同色系深浅",
+        tags: ["浏览器自带", "色阶均匀"],
+        cmd: "oklch(60% .18 250)",
+        links: [["调色工具", "https://oklch.com/"], ["文档", "https://developer.mozilla.org/docs/Web/CSS/color_value/oklch"]],
+      },
+    ],
+  },
+  {
+    id: "g-native", no: "04", title: "原生就行", accent: "green",
+    note: "纯 HTML 项目别装库，浏览器自带的这些更省事",
+    items: [
+      {
+        name: "color-mix()", sub: "混色", chip: "浏览器自带", hot: true,
+        screen: "colormix",
+        desc: "两个颜色当场混出第三个，不用写死一堆浅色值。主色一改，浅底、边框、轨道全跟着变，再也不会忘记改哪几个。",
+        use: "浅色底、边框、阴影、透明度色",
+        tags: ["不用装", "跟着主色走"],
+        cmd: "color-mix(in oklab, var(--accent) 12%, #fff)",
+        links: [["文档", "https://developer.mozilla.org/docs/Web/CSS/color_value/color-mix"]],
+      },
+      {
+        name: "light-dark()", sub: "深浅色", chip: "浏览器自带",
+        screen: "lightdark",
+        desc: "一个变量同时写浅色和深色两套值，跟着系统自动切。不用写两遍变量表，也不用写切换脚本。",
+        use: "要支持深色模式",
+        tags: ["不用装", "跟随系统"],
+        cmd: "color-scheme: light dark;",
+        links: [["文档", "https://developer.mozilla.org/docs/Web/CSS/color_value/light-dark"]],
+      },
+      {
+        name: "data-theme", sub: "自己做换肤", chip: "零依赖",
+        screen: "datatheme",
+        desc: "颜色全存成变量，换肤就是在 html 上换个属性值。实验台上面那六个色板就是这么做的，你照抄就能用。",
+        use: "多套配色、给客户定制、白标",
+        tags: ["零依赖", "换肤只改一处"],
+        cmd: "document.documentElement.dataset.theme = 'mint'",
+        links: [],
+      },
+    ],
+  },
+];
+
+const PICK = [
+  {
+    fur: "blue",
+    title: "「我就想让按钮有颜色」",
+    body: "上 <b>daisyUI</b>，按钮类名直接写，35 套主题换着试。用 Ant Design 或 Vue 的话走 <b>Ant Design</b>，中文文档全。想要好看的走 <b>HeroUI</b>。",
+  },
+  {
+    fur: "amber",
+    title: "「整个界面想一起换」",
+    body: "先把颜色定成变量。要专业色板抄 <b>Radix Colors</b>；要自己掌控走 <b>Tailwind @theme</b>；担心看不清就用 <b>Leonardo</b> 按对比度反推。",
+  },
+  {
+    fur: "green",
+    title: "「我是纯 HTML，不想装东西」",
+    body: "上面那套就够了：颜色全存成 CSS 变量，用 <b>color-mix()</b> 派生浅色，用 <b>data-theme</b> 做换肤。<b>实验台的代码直接抄进你的 css/style.css</b>。",
+  },
+];
+
+/* ================= 渲染 ================= */
+function render() {
+  document.getElementById("heroCrew").innerHTML = ["blue", "amber", "teal", "green"]
+    .map((a, i) => `
+      <div class="crew-item">
+        <div class="bubble">${["换个色相", "整套色板", "跟着主色", "一键换肤"][i]}</div>
+        ${catSVG(a)}
+      </div>`)
+    .join("");
+
+  let n = 0;
+  const SOFT = {
+    blue: "rgba(59,130,246,.14)",
+    amber: "rgba(245,158,11,.16)",
+    teal: "rgba(20,184,166,.16)",
+    green: "rgba(34,197,94,.16)",
+  };
+
+  document.getElementById("groups").innerHTML = GROUPS.map((g) => `
+    <section class="group" id="${g.id}" style="--accent:var(--${g.accent});--accent-soft:${SOFT[g.accent]}">
+      <div class="group-head">
+        <div class="group-no">${g.no}</div>
+        <div class="group-title">${g.title}</div>
+        <div class="group-note">${g.note}</div>
+        <div class="group-count">${g.items.length} 件</div>
+      </div>
+      <div class="grid">
+        ${g.items.map((it) => {
+          n += 1;
+          return `
+          <article class="card" data-accent="${g.accent}">
+            <div class="card-head">
+              <div class="card-no">${String(n).padStart(2, "0")}</div>
+              <h3 class="card-name">${it.name}<small>${it.sub}</small></h3>
+              <div class="card-chip ${it.hot ? "hot" : ""}">${it.chip}</div>
+            </div>
+
+            <div class="scene">
+              <div class="monitor">
+                <div class="screen">${SCREENS[it.screen] || ""}</div>
+                <div class="stand"></div>
+                <div class="stand-base"></div>
+              </div>
+              <div class="cat-wrap">${catSVG(g.accent)}</div>
+              <span class="spark s1">✦</span>
+              <span class="spark s2">✦</span>
+              <span class="spark s3">✦</span>
+            </div>
+
+            <div class="card-body">
+              <p class="card-desc">${it.desc}</p>
+              <div class="use-line"><b>什么时候用</b><span>${it.use}</span></div>
+              <div class="tag-row">${it.tags.map((t) => `<span class="tag">${t}</span>`).join("")}</div>
+            </div>
+
+            <div class="install${it.web ? " install-web" : ""}">
+              <code>${it.cmd}</code>
+              ${it.web ? "" : `<button class="copy-btn" data-cmd="${it.cmd}">复制</button>`}
+            </div>
+            <div class="link-row">
+              ${it.links.map(([label, href]) => `<a href="${href}" target="_blank" rel="noopener">${label}</a>`).join("")}
+            </div>
+          </article>`;
+        }).join("")}
+      </div>
+    </section>`)
+    .join("");
+
+  ["pickA", "pickB", "pickC"].forEach((id, i) => {
+    const p = PICK[i];
+    document.getElementById(id).innerHTML =
+      `<div class="pick-ava">${catHeadSVG(p.fur)}</div>` +
+      `<div><h4>${p.title}</h4><p>${p.body}</p></div>`;
+  });
+
+  document.getElementById("statCount").textContent = n;
+  document.getElementById("statPal").textContent = PALETTES.length;
+}
+
+render();
+
+/* ================= 色板切换 ================= */
+const stage = document.getElementById("stage");
+
+function varBlock(p) {
+  return `<span class="c">/* ${p.name} · ${p.tag} */</span>
+<span class="k">:root</span> {
+  <span class="p">--accent</span>:      <span class="v">${p.accent}</span>;
+  <span class="p">--accent-2</span>:    <span class="v">${p.accent2}</span>;
+  <span class="p">--accent-soft</span>: <span class="v">color-mix(in oklab, var(--accent) 12%, transparent)</span>;
+
+  <span class="c">/* 状态灯 · 四个状态四个颜色 */</span>
+  <span class="p">--lamp-working</span>: <span class="v">${p.lamp.work}</span>;
+  <span class="p">--lamp-idle</span>:    <span class="v">${p.lamp.idle}</span>;
+  <span class="p">--lamp-urgent</span>:  <span class="v">${p.lamp.urgent}</span>;
+  <span class="p">--lamp-dormant</span>: <span class="v">${p.lamp.sleep}</span>;
+
+  <span class="p">--positive</span>: <span class="v">${p.ok}</span>;
+  <span class="p">--negative</span>: <span class="v">${p.bad}</span>;
+
+  <span class="p">--bg</span>:      <span class="v">${p.bg}</span>;
+  <span class="p">--surface</span>: <span class="v">${p.surface}</span>;
+  <span class="p">--raised</span>:  <span class="v">${p.raised}</span>;
+  <span class="p">--track</span>:   <span class="v">${p.track}</span>;
+  <span class="p">--fill</span>:    <span class="v">${p.fill}</span>;
+}`;
+}
+
+function plainVars(p) {
+  return `/* ${p.name} · ${p.tag} */
+:root {
+  --accent:      ${p.accent};
+  --accent-2:    ${p.accent2};
+  --accent-soft: color-mix(in oklab, var(--accent) 12%, transparent);
+
+  /* 状态灯 · 四个状态四个颜色 */
+  --lamp-working: ${p.lamp.work};
+  --lamp-idle:    ${p.lamp.idle};
+  --lamp-urgent:  ${p.lamp.urgent};
+  --lamp-dormant: ${p.lamp.sleep};
+
+  --positive: ${p.ok};
+  --negative: ${p.bad};
+
+  --bg:      ${p.bg};
+  --surface: ${p.surface};
+  --raised:  ${p.raised};
+  --track:   ${p.track};
+  --fill:    ${p.fill};
+}`;
+}
+
+let current = PALETTES[0];
+
+function applyPalette(p) {
+  current = p;
+
+  const set = (k, v) => stage.style.setProperty(k, v);
+  set("--demo-accent", p.accent);
+  set("--demo-accent-soft", `color-mix(in oklab, ${p.accent} 12%, transparent)`);
+  set("--demo-bg", p.bg);
+  set("--demo-surface", p.surface);
+  set("--demo-raised", p.raised);
+  set("--demo-ink", p.ink);
+  set("--demo-ink2", p.ink2);
+  set("--demo-ink3", p.ink3);
+  set("--demo-line", `color-mix(in oklab, ${p.accent} 12%, transparent)`);
+  set("--demo-line-strong", `color-mix(in oklab, ${p.accent} 22%, transparent)`);
+  set("--demo-track", p.track);
+  set("--demo-fill", p.fill);
+  set("--demo-ok", p.ok);
+  set("--demo-bad", p.bad);
+  set("--demo-ok-soft", `color-mix(in oklab, ${p.ok} 14%, transparent)`);
+
+  // 状态灯
+  document.querySelector('[data-lamp="work"]').style.background = p.lamp.work;
+  document.querySelector('[data-lamp="idle"]').style.background = p.lamp.idle;
+  document.querySelector('[data-lamp="urgent"]').style.background = p.lamp.urgent;
+  document.querySelector('[data-lamp="sleep"]').style.background = p.lamp.sleep;
+
+  // 状态灯四个也给对应的浅底小灯片
+  const chips = document.querySelectorAll(".lamp");
+  const lampVals = [p.lamp.work, p.lamp.idle, p.lamp.urgent, p.lamp.sleep];
+  chips.forEach((c, i) => {
+    c.style.background = `color-mix(in oklab, ${lampVals[i]} 10%, transparent)`;
+    c.querySelector("span").style.color = lampVals[i];
+  });
+
+  // 名牌上的「工作中」跟着当前状态灯走
+  const lc = document.querySelector(".lamp-chip");
+  lc.style.background = `color-mix(in oklab, ${p.lamp.work} 12%, transparent)`;
+  lc.style.color = p.lamp.work;
+  lc.querySelector("i").style.background = p.lamp.work;
+
+  // 「改之后」对比点
+  document.getElementById("afterDots").innerHTML =
+    [p.accent, p.accent2, p.lamp.work, p.lamp.idle, p.lamp.urgent, p.lamp.sleep]
+      .map((c) => `<b style="background:${c}"></b>`).join("");
+
+  // 代码块
+  document.getElementById("varsCode").innerHTML = varBlock(p);
+  document.getElementById("palNote").innerHTML = p.note;
+
+  // 选中态
+  document.querySelectorAll(".swatch").forEach((s) => {
+    s.classList.toggle("on", s.dataset.id === p.id);
+  });
+}
+
+function renderPicker() {
+  document.getElementById("picker").innerHTML = PALETTES.map((p) => `
+    <button class="swatch" data-id="${p.id}">
+      <span class="swatch-dots">
+        <i style="background:${p.accent}"></i>
+        <i style="background:${p.accent2}"></i>
+        <i style="background:${p.lamp.urgent}"></i>
+      </span>
+      ${p.name}
+      <small>${p.tag}</small>
+    </button>`).join("");
+}
+
+renderPicker();
+applyPalette(PALETTES[0]);
+
+document.getElementById("picker").addEventListener("click", (e) => {
+  const sw = e.target.closest(".swatch");
+  if (!sw) return;
+  const p = PALETTES.find((x) => x.id === sw.dataset.id);
+  if (p) applyPalette(p);
+});
+
+/* ================= 复制 ================= */
+function copyText(text) {
+  const legacy = () => new Promise((res) => {
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.setAttribute("readonly", "");
+    ta.style.cssText = "position:fixed;top:0;left:-9999px;opacity:0";
+    document.body.appendChild(ta);
+    ta.select();
+    ta.setSelectionRange(0, text.length);
+    let ok = false;
+    try { ok = document.execCommand("copy"); } catch (e) { ok = false; }
+    document.body.removeChild(ta);
+    res(ok);
+  });
+
+  if (navigator.clipboard && window.isSecureContext) {
+    return navigator.clipboard.writeText(text).then(() => true).catch(() => legacy());
+  }
+  return legacy();
+}
+
+function flashLabel(el, okText, failText, ok) {
+  const old = el.textContent;
+  el.textContent = ok ? okText : failText;
+  el.classList.toggle("done", ok);
+  el.classList.toggle("fail", !ok);
+  setTimeout(() => {
+    el.textContent = old;
+    el.classList.remove("done", "fail");
+  }, 1600);
+}
+
+document.addEventListener("click", (e) => {
+  const btn = e.target.closest(".copy-btn");
+  if (btn) {
+    copyText(btn.dataset.cmd).then((ok) => flashLabel(btn, "已复制", "没复制上", ok));
+    return;
+  }
+
+  const chip = e.target.closest(".nav-chip");
+  if (chip) {
+    document.querySelectorAll(".nav-chip").forEach((c) => c.classList.remove("on"));
+    chip.classList.add("on");
+    const t = document.getElementById(chip.dataset.target);
+    if (t) t.scrollIntoView({ behavior: "smooth", block: "start" });
+    return;
+  }
+
+  const cb = e.target.closest(".code-copy");
+  if (cb) {
+    copyText(plainVars(current)).then((ok) => flashLabel(cb, "已复制", "没复制上", ok));
+  }
+});
+
+document.getElementById("goLab").addEventListener("click", () => {
+  document.getElementById("lab").scrollIntoView({ behavior: "smooth", block: "start" });
+});
+document.getElementById("goFix").addEventListener("click", () => {
+  document.getElementById("fix").scrollIntoView({ behavior: "smooth", block: "start" });
+});
+</script>
+</body>
+</html>

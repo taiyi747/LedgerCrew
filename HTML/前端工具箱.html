@@ -1,0 +1,1420 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>前端工具箱 · 小猫严选</title>
+<style>
+/* ================= 全局 ================= */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg: #f4f5f7;
+  --panel: #ecedef;
+  --card: #fff;
+  --line: #e3e5e8;
+  --line-dark: #cfd3d9;
+  --ink: #17181c;
+  --gray: #8a8f98;
+  --blue: #3b82f6;
+  --amber: #f59e0b;
+  --teal: #14b8a6;
+  --green: #22c55e;
+  --red: #ef4444;
+  --screen: #22304c;
+  --r-card: 16px;
+  --r-in: 10px;
+  --shadow: 0 6px 18px rgba(23, 24, 28, .07);
+  --shadow-lift: 0 16px 36px rgba(23, 24, 28, .12);
+  --ease: cubic-bezier(.22, 1, .36, 1);
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  padding: 0 16px 90px;
+  overflow-x: hidden;
+  line-height: 1.6;
+}
+
+.wrap { max-width: 1280px; margin: 0 auto; }
+
+/* ================= 顶栏 ================= */
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  height: 58px;
+  background: rgba(244, 245, 247, .92);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--line);
+}
+
+.brand { display: flex; align-items: center; gap: 10px; }
+.brand-mark {
+  width: 30px; height: 30px;
+  border-radius: 9px;
+  background: var(--ink);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.brand-mark svg { width: 19px; height: 19px; stroke: #fff; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.brand-text { font-size: 16px; font-weight: 700; letter-spacing: .3px; }
+.brand-sub { font-size: 11px; color: var(--gray); margin-left: 2px; }
+
+.top-nav { display: flex; align-items: center; gap: 6px; }
+.nav-chip {
+  padding: 5px 13px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--card);
+  color: var(--ink);
+  font-size: 12px;
+  font-family: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background .2s, color .2s, border-color .2s, transform .15s;
+}
+.nav-chip:hover { transform: translateY(-1px); border-color: var(--line-dark); }
+.nav-chip.on { background: var(--ink); color: #fff; border-color: var(--ink); }
+
+.top-stat { display: flex; align-items: center; gap: 18px; }
+.stat { text-align: center; line-height: 1.2; }
+.stat b { display: block; font-size: 15px; font-variant-numeric: tabular-nums; }
+.stat span { font-size: 10px; color: var(--gray); }
+
+/* ================= 主视觉 ================= */
+.hero {
+  position: relative;
+  margin: 18px 0 8px;
+  padding: 34px 30px 26px;
+  border-radius: 20px;
+  border: 1px solid var(--line);
+  background:
+    radial-gradient(rgba(0, 0, 0, .045) 1px, transparent 1px),
+    linear-gradient(180deg, #fff, #f7f8fa);
+  background-size: 24px 24px, 100% 100%;
+  overflow: hidden;
+}
+
+.hero-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 28px;
+  flex-wrap: wrap;
+}
+
+.hero-copy { flex: 1 1 420px; min-width: 0; }
+
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  font-size: 11px;
+  color: var(--gray);
+  margin-bottom: 14px;
+}
+.eyebrow i {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--green);
+  animation: tc-blink 1.6s ease infinite;
+}
+
+h1 {
+  font-size: clamp(28px, 4.6vw, 44px);
+  line-height: 1.18;
+  letter-spacing: -.5px;
+  margin-bottom: 12px;
+}
+h1 em {
+  font-style: normal;
+  position: relative;
+  z-index: 0;
+  white-space: nowrap;
+}
+h1 em::after {
+  content: "";
+  position: absolute;
+  left: -2px; right: -2px; bottom: 3px;
+  height: 11px;
+  background: rgba(245, 158, 11, .32);
+  border-radius: 3px;
+  z-index: -1;
+  transform: rotate(-.6deg);
+}
+
+.hero-lede {
+  font-size: 15px;
+  color: var(--gray);
+  max-width: 560px;
+  margin-bottom: 20px;
+}
+.hero-lede b { color: var(--ink); font-weight: 700; }
+
+.hero-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 18px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  font-size: 13px;
+  font-family: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform .16s var(--ease), background .2s, box-shadow .2s;
+}
+.btn:hover { transform: translateY(-2px); }
+.btn-dark { background: var(--ink); color: #fff; box-shadow: 0 6px 16px rgba(23, 24, 28, .18); }
+.btn-ghost { background: var(--card); color: var(--ink); border-color: var(--line); }
+.btn-ghost:hover { border-color: var(--line-dark); }
+
+/* 主视觉小猫排排坐 */
+.hero-crew {
+  flex: 0 1 460px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 4px;
+  padding: 66px 0 6px;
+}
+.crew-item { position: relative; width: 25%; max-width: 118px; }
+.crew-item .cat { width: 100%; height: auto; display: block; }
+
+.bubble {
+  position: absolute;
+  top: -34px; left: 50%;
+  transform: translateX(-50%);
+  padding: 5px 11px;
+  background: #fff;
+  border: 1.5px solid var(--ink);
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+  box-shadow: 2px 3px 0 rgba(23, 24, 28, .12);
+  opacity: 0;
+  animation: bub-up .5s var(--ease) both;
+}
+.bubble::after {
+  content: "";
+  position: absolute;
+  left: 50%; bottom: -6px;
+  width: 9px; height: 9px;
+  background: #fff;
+  border-right: 1.5px solid var(--ink);
+  border-bottom: 1.5px solid var(--ink);
+  transform: translateX(-50%) rotate(45deg);
+}
+.crew-item:nth-child(1) .bubble { animation-delay: .15s; }
+.crew-item:nth-child(2) .bubble { animation-delay: .35s; top: -46px; }
+.crew-item:nth-child(3) .bubble { animation-delay: .55s; }
+.crew-item:nth-child(4) .bubble { animation-delay: .75s; top: -46px; }
+
+@keyframes bub-up {
+  from { opacity: 0; transform: translateX(-50%) translateY(10px) scale(.85); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
+}
+
+/* ================= 分类区块 ================= */
+.group { margin-top: 34px; scroll-margin-top: 76px; }
+
+.group-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+
+.group-no {
+  width: 30px; height: 30px;
+  border-radius: 9px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+
+.group-title { font-size: 20px; font-weight: 700; letter-spacing: -.2px; }
+.group-note { font-size: 12px; color: var(--gray); }
+.group-count {
+  margin-left: auto;
+  padding: 3px 11px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
+  gap: 14px;
+}
+
+/* ================= 工具卡 ================= */
+.card {
+  --accent: var(--blue);
+  --accent-soft: rgba(59, 130, 246, .14);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px 14px 12px;
+  border: 2px solid transparent;
+  border-radius: var(--r-card);
+  background:
+    radial-gradient(rgba(0, 0, 0, .05) 1px, transparent 1px),
+    var(--panel);
+  background-size: 26px 26px;
+  transition: border-color .35s, box-shadow .35s, transform .35s;
+}
+.card:hover {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 4px var(--accent-soft), var(--shadow-lift);
+  transform: translateY(-5px);
+}
+
+.card[data-accent="blue"]  { --accent: var(--blue);  --accent-soft: rgba(59, 130, 246, .14); }
+.card[data-accent="amber"] { --accent: var(--amber); --accent-soft: rgba(245, 158, 11, .16); }
+.card[data-accent="teal"]  { --accent: var(--teal);  --accent-soft: rgba(20, 184, 166, .16); }
+.card[data-accent="green"] { --accent: var(--green); --accent-soft: rgba(34, 197, 94, .16); }
+
+.card-head { display: flex; align-items: center; gap: 9px; }
+
+.card-no {
+  width: 24px; height: 24px;
+  border-radius: 8px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+
+.card-name {
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -.1px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.card-name small {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--gray);
+  margin-left: 6px;
+  letter-spacing: 0;
+}
+
+.card-chip {
+  margin-left: auto;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: #fff;
+  border: 1px solid var(--line);
+  font-size: 11px;
+  color: var(--gray);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.card-chip.hot {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+/* 舞台：显示器 + 小猫 */
+.scene {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  padding: 20px 2px 0;
+}
+.monitor { width: 56%; flex-shrink: 0; }
+
+.screen {
+  position: relative;
+  height: 122px;
+  border-radius: 10px;
+  background: linear-gradient(160deg, #22304c, #1a2740);
+  box-shadow: inset 0 0 0 3px #22304c, 0 6px 14px rgba(34, 48, 76, .25);
+  overflow: hidden;
+}
+.screen::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(115deg, transparent 42%, rgba(255, 255, 255, .07) 50%, transparent 58%);
+  pointer-events: none;
+}
+.stand {
+  width: 34%; height: 7px;
+  margin: 3px auto 0;
+  border-radius: 0 0 6px 6px;
+  background: var(--screen);
+}
+.stand-base {
+  width: 52%; height: 5px;
+  margin: 0 auto;
+  border-radius: 4px;
+  background: #2c3d5e;
+}
+
+.cat-wrap {
+  width: 44%;
+  display: flex;
+  justify-content: center;
+  position: relative;
+  z-index: 2;
+}
+.cat { width: 100%; max-width: 138px; height: auto; display: block; }
+
+.card:hover .cat .tail { animation: cat-tail-fast 1.1s ease-in-out infinite; }
+.card:hover .cat .paw-l { animation: cat-type .32s ease-in-out infinite alternate; }
+.card:hover .cat .paw-r { animation: cat-type .32s ease-in-out infinite alternate-reverse; }
+
+.spark {
+  position: absolute;
+  z-index: 4;
+  font-size: 13px;
+  color: var(--accent);
+  opacity: 0;
+  pointer-events: none;
+}
+.card:hover .spark { animation: spark-pop 1s ease both; }
+.spark.s1 { top: 22px; left: 54%; }
+.spark.s2 { top: 52px; left: 46%; animation-delay: .18s !important; }
+.spark.s3 { top: 36px; right: 6%; animation-delay: .32s !important; }
+
+.card-body { display: flex; flex-direction: column; gap: 9px; }
+
+.card-desc {
+  font-size: 13px;
+  color: var(--ink);
+  line-height: 1.62;
+}
+
+.tag-row { display: flex; flex-wrap: wrap; gap: 5px; }
+.tag {
+  padding: 2.5px 9px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.tag.plain { background: #fff; color: var(--gray); border: 1px solid var(--line); }
+
+.use-line {
+  display: flex;
+  gap: 7px;
+  font-size: 12px;
+  color: var(--gray);
+  line-height: 1.55;
+}
+.use-line b {
+  flex-shrink: 0;
+  color: var(--accent);
+  font-weight: 700;
+}
+
+/* 安装条 */
+.install {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: auto;
+  padding: 8px 8px 8px 12px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--r-in);
+}
+.install code {
+  flex: 1;
+  min-width: 0;
+  font-family: Consolas, "SF Mono", Menlo, monospace;
+  font-size: 11.5px;
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.copy-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 11px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--gray);
+  font-size: 11px;
+  font-family: inherit;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background .2s, color .2s, border-color .2s;
+}
+.copy-btn:hover { background: var(--ink); color: #fff; border-color: var(--ink); }
+.copy-btn.done { background: var(--green); border-color: var(--green); color: #fff; }
+.copy-btn.fail { background: var(--red); border-color: var(--red); color: #fff; }
+
+.link-row {
+  display: flex;
+  gap: 8px;
+  font-size: 11px;
+}
+.link-row a {
+  color: var(--gray);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: color .2s;
+}
+.link-row a:hover { color: var(--accent); }
+.link-row a::after { content: "↗"; font-size: 10px; opacity: .7; }
+
+/* ================= 屏幕内容 ================= */
+.scr { position: absolute; inset: 0; padding: 11px 11px; font-size: 8.5px; color: #c9d5ea; }
+
+.code {
+  font-family: Consolas, "SF Mono", Menlo, monospace;
+  font-size: 8.5px;
+  line-height: 1.72;
+  white-space: pre;
+  color: #b9c7e0;
+}
+.code .k { color: #7cc4ff; }
+.code .s { color: #9be8a8; }
+.code .n { color: #f0b872; }
+.code .c { color: #6b7c99; }
+
+/* 图标墙 */
+.icon-wall {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 7px;
+  padding-top: 4px;
+}
+.icon-wall i {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 22px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, .08);
+}
+.icon-wall svg { width: 13px; height: 13px; stroke: #9db4d6; fill: none; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+
+/* 迷你柱状图 */
+.bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 7px;
+  height: 84px;
+  padding: 6px 2px 0;
+}
+.bars b {
+  flex: 1;
+  border-radius: 4px 4px 2px 2px;
+  background: linear-gradient(180deg, var(--accent), rgba(255, 255, 255, .18));
+  opacity: .9;
+  animation: bar-grow 1.5s var(--ease) both;
+}
+.bars b:nth-child(1) { height: 42%; animation-delay: .1s; }
+.bars b:nth-child(2) { height: 68%; animation-delay: .22s; }
+.bars b:nth-child(3) { height: 51%; animation-delay: .34s; }
+.bars b:nth-child(4) { height: 88%; animation-delay: .46s; }
+.bars b:nth-child(5) { height: 73%; animation-delay: .58s; }
+.bars b:nth-child(6) { height: 96%; animation-delay: .7s; }
+@keyframes bar-grow { from { transform: scaleY(.05); transform-origin: bottom; opacity: 0; } to { transform: scaleY(1); opacity: .9; } }
+
+.spark-line { margin-top: 6px; }
+.spark-line svg { width: 100%; height: 26px; display: block; }
+.spark-line path { fill: none; stroke: var(--accent); stroke-width: 2.2; stroke-linecap: round; stroke-dasharray: 220; stroke-dashoffset: 220; animation: draw 1.8s var(--ease) .3s both; }
+@keyframes draw { to { stroke-dashoffset: 0; } }
+
+/* 拖拽列表 */
+.drag-list { display: flex; flex-direction: column; gap: 5px; padding-top: 2px; }
+.drag-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 8px;
+  border-radius: 7px;
+  background: rgba(255, 255, 255, .10);
+  font-size: 8.5px;
+  color: #cfdcef;
+}
+.drag-row u {
+  width: 9px; height: 2px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, .28);
+  box-shadow: 0 3px 0 rgba(255, 255, 255, .28), 0 -3px 0 rgba(255, 255, 255, .28);
+  flex-shrink: 0;
+}
+.drag-row.mid {
+  background: rgba(59, 130, 246, .42);
+  transform: translateX(10px) rotate(-1.4deg);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, .22);
+}
+
+/* 提示气泡 / 浮层 */
+.float-demo { position: relative; height: 100%; padding-top: 14px; }
+.float-anchor {
+  position: absolute;
+  left: 12px; top: 46px;
+  padding: 5px 12px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, .12);
+  border: 1px solid rgba(255, 255, 255, .16);
+  font-size: 8.5px;
+  color: #d5e2f5;
+}
+.float-tip {
+  position: absolute;
+  left: 34px; top: 12px;
+  padding: 5px 10px;
+  border-radius: 8px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 8.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  box-shadow: 0 6px 14px rgba(0, 0, 0, .28);
+  animation: tip-float 2.4s ease-in-out infinite;
+}
+.float-tip::after {
+  content: "";
+  position: absolute;
+  left: 18px; bottom: -4px;
+  width: 8px; height: 8px;
+  background: var(--accent);
+  transform: rotate(45deg);
+}
+@keyframes tip-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+
+/* 消息提示 */
+.toast-stack { display: flex; flex-direction: column; gap: 6px; padding-top: 8px; }
+.toast {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 10px;
+  border-radius: 9px;
+  background: rgba(255, 255, 255, .12);
+  border: 1px solid rgba(255, 255, 255, .12);
+  font-size: 8.5px;
+  color: #d8e4f4;
+  animation: toast-in .5s var(--ease) both;
+}
+.toast:nth-child(2) { animation-delay: .35s; opacity: .72; }
+.toast:nth-child(3) { animation-delay: .7s; opacity: .45; }
+.toast i {
+  width: 12px; height: 12px;
+  border-radius: 50%;
+  background: var(--green);
+  flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+}
+.toast i svg { width: 8px; height: 8px; stroke: #fff; fill: none; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+@keyframes toast-in { from { opacity: 0; transform: translateX(18px); } to { opacity: 1; transform: translateX(0); } }
+
+/* 手绘方框 */
+.rough-box {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.rough-box svg { width: 100%; height: 88px; }
+.rough-box .rb { fill: none; stroke: var(--accent); stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 300; stroke-dashoffset: 300; animation: draw 2s var(--ease) .2s both; }
+.rough-box .rf { fill: var(--accent); opacity: .18; }
+
+/* 校验表单 */
+.form-demo { display: flex; flex-direction: column; gap: 6px; padding-top: 6px; }
+.form-demo .fld {
+  padding: 6px 9px;
+  border-radius: 7px;
+  background: rgba(255, 255, 255, .10);
+  border: 1px solid rgba(255, 255, 255, .14);
+  font-size: 8.5px;
+  color: #cfdcef;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+.form-demo .fld.bad { border-color: rgba(239, 68, 68, .7); background: rgba(239, 68, 68, .16); }
+.form-demo .fld.ok  { border-color: rgba(34, 197, 94, .55); }
+.form-demo .fld em { font-style: normal; font-size: 8px; opacity: .85; flex-shrink: 0; }
+.form-demo .msg {
+  font-size: 8px;
+  color: #ff9d9d;
+  padding-left: 2px;
+  animation: bub-in .5s ease both;
+}
+@keyframes bub-in { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+/* 时间条 */
+.time-demo { display: flex; flex-direction: column; gap: 7px; padding-top: 10px; }
+.time-demo .tm {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 9px;
+  border-radius: 7px;
+  background: rgba(255, 255, 255, .10);
+  font-size: 8.5px;
+  color: #cfdcef;
+}
+.time-demo .tm b { color: var(--accent); font-weight: 600; white-space: nowrap; }
+
+/* 假接口 */
+.mock-demo { display: flex; flex-direction: column; gap: 5px; padding-top: 6px; }
+.mock-demo .mh {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 8px; color: #8fa5c4;
+}
+.mock-demo .mh u {
+  padding: 1.5px 6px;
+  border-radius: 4px;
+  background: rgba(34, 197, 94, .28);
+  color: #7fe6a4;
+  text-decoration: none;
+  font-family: Consolas, monospace;
+  font-size: 7.5px;
+}
+.mock-demo pre {
+  margin: 0;
+  padding: 7px 9px;
+  border-radius: 7px;
+  background: rgba(255, 255, 255, .08);
+  font-family: Consolas, monospace;
+  font-size: 7.8px;
+  line-height: 1.65;
+  color: #a9c3e6;
+  overflow: hidden;
+}
+.mock-demo .tagline {
+  font-size: 7.5px;
+  color: #7fe6a4;
+  padding-left: 2px;
+}
+
+/* ================= 怎么挑 ================= */
+.pick {
+  margin-top: 42px;
+  padding: 26px 26px 22px;
+  border-radius: 20px;
+  border: 1px solid var(--line);
+  background:
+    radial-gradient(rgba(0, 0, 0, .045) 1px, transparent 1px),
+    var(--card);
+  background-size: 24px 24px;
+}
+.pick h2 { font-size: 19px; margin-bottom: 4px; letter-spacing: -.2px; }
+.pick > p { font-size: 13px; color: var(--gray); margin-bottom: 18px; }
+
+.pick-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 12px;
+}
+
+.pick-item {
+  display: flex;
+  gap: 12px;
+  padding: 14px;
+  border-radius: 13px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+}
+.pick-item .pick-ava {
+  width: 54px;
+  height: 54px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--card);
+  border: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+.pick-item .cat { width: 78%; height: auto; display: block; margin-top: 6%; }
+.pick-item h4 { font-size: 13px; margin-bottom: 4px; }
+.pick-item p { font-size: 12px; color: var(--gray); line-height: 1.6; }
+.pick-item p b { color: var(--ink); font-weight: 600; }
+
+/* ================= 页脚 ================= */
+.foot {
+  margin-top: 36px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+  font-size: 11.5px;
+  color: var(--gray);
+}
+.foot-note { max-width: 620px; line-height: 1.7; }
+
+/* ================= 小猫 ================= */
+.cat .fur       { fill: var(--fur1); }
+.cat .fur-dark  { fill: var(--fur2); }
+.cat .belly     { fill: var(--belly); }
+.cat .inner-ear { fill: #f2a2a2; }
+.cat .nose      { fill: #e58a8a; }
+.cat .line      { stroke: rgba(23, 24, 28, .35); fill: none; stroke-width: 2.4; stroke-linecap: round; }
+.cat .eye-white { fill: #fff; }
+.cat .pupil     { fill: #2b2f36; }
+.cat .glint     { fill: #fff; }
+
+.cat .body-grp  { transform-box: fill-box; transform-origin: center bottom; animation: cat-breath 3.2s ease-in-out infinite; }
+.cat .head-grp  { transform-box: fill-box; transform-origin: center bottom; }
+.cat .tail      { transform-box: fill-box; transform-origin: left bottom; animation: cat-tail 3s ease-in-out infinite; }
+.cat .eyes      { transform-box: fill-box; transform-origin: center; animation: cat-blink 4.6s infinite; }
+.cat .paw       { transform-box: fill-box; transform-origin: center top; }
+
+@keyframes cat-breath { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(2.5px); } }
+@keyframes cat-tail   { 0%, 100% { transform: rotate(-5deg); } 50% { transform: rotate(8deg); } }
+@keyframes cat-tail-fast { 0%, 100% { transform: rotate(-9deg); } 50% { transform: rotate(13deg); } }
+@keyframes cat-blink  { 0%, 92%, 100% { transform: scaleY(1); } 95% { transform: scaleY(.08); } }
+@keyframes cat-type   { from { transform: translateY(0); } to { transform: translateY(3.5px); } }
+
+@keyframes tc-blink { 0%, 100% { opacity: 1; } 50% { opacity: .35; } }
+@keyframes spark-pop {
+  0%   { opacity: 0; transform: scale(.2) rotate(0); }
+  45%  { opacity: 1; transform: scale(1.25) rotate(20deg); }
+  100% { opacity: 0; transform: scale(.9) rotate(35deg) translateY(-12px); }
+}
+
+/* ================= 响应式 ================= */
+@media (max-width: 980px) {
+  .top-stat { display: none; }
+  .hero-crew { flex-basis: 100%; }
+}
+@media (max-width: 720px) {
+  body { padding: 0 12px 70px; }
+  .top-nav { display: none; }
+  .hero { padding: 24px 18px 20px; }
+  .grid { grid-template-columns: 1fr; }
+  .group-count { display: none; }
+}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <!-- ============ 顶栏 ============ -->
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-mark">
+        <svg viewBox="0 0 24 24"><path d="M4 6 L3 2 L8 5"/><path d="M20 6 L21 2 L16 5"/><path d="M4 6c0 7 3.5 13 8 13s8-6 8-13"/><path d="M9 11h.01M15 11h.01"/></svg>
+      </div>
+      <div>
+        <div class="brand-text">前端工具箱</div>
+        <div class="brand-sub">小猫严选 · 2026</div>
+      </div>
+    </div>
+
+    <nav class="top-nav" id="topNav">
+      <button class="nav-chip on" data-target="all">全部</button>
+      <button class="nav-chip" data-target="g-motion">动起来</button>
+      <button class="nav-chip" data-target="g-draw">画出来</button>
+      <button class="nav-chip" data-target="g-data">对得上</button>
+      <button class="nav-chip" data-target="g-ui">用得顺</button>
+      <button class="nav-chip" data-target="pick">怎么挑</button>
+    </nav>
+
+    <div class="top-stat">
+      <div class="stat"><b id="statCount">13</b><span>件工具</span></div>
+      <div class="stat"><b>4</b><span>个门类</span></div>
+      <div class="stat"><b>0</b><span>付费墙</span></div>
+    </div>
+  </header>
+
+  <!-- ============ 主视觉 ============ -->
+  <section class="hero">
+    <div class="hero-inner">
+      <div class="hero-copy">
+        <div class="eyebrow"><i></i>写界面时真正省事的那些</div>
+        <h1>不用自己造轮子，<br><em>这些先装上</em></h1>
+        <p class="hero-lede">
+          从动效、画图、数据到交互，挑出 <b id="heroCount">13</b> 个能直接上手的前端小工具。
+          每张卡写清楚「它是干嘛的」「什么时候用」，还有装它的命令，点一下就复制。
+        </p>
+        <div class="hero-actions">
+          <button class="btn btn-dark" id="scrollAll">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>
+            开始挑工具
+          </button>
+          <button class="btn btn-ghost" id="copyAll">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+            <span id="copyAllLabel">把 13 条安装命令全复制</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="hero-crew" id="heroCrew"></div>
+    </div>
+  </section>
+
+  <!-- ============ 工具列表（JS 渲染） ============ -->
+  <main id="groups"></main>
+
+  <!-- ============ 怎么挑 ============ -->
+  <section class="pick" id="pick">
+    <h2>拿不准用哪个？看这三条</h2>
+    <p>不用每个都装。按你现在卡在哪一步，挑一个就行。</p>
+    <div class="pick-grid">
+      <div class="pick-item" id="pickA"></div>
+      <div class="pick-item" id="pickB"></div>
+      <div class="pick-item" id="pickC"></div>
+    </div>
+  </section>
+
+  <footer class="foot">
+    <div class="foot-note">
+      页里的命令是 <code style="font-family:Consolas,monospace">npm i …</code>，用 CDN 的项目把包名换成对应链接即可。
+      体积数字是大致量级，装之前跑一下 <code style="font-family:Consolas,monospace">npm info 包名</code> 看最新的。
+    </div>
+    <div>小猫工具箱 · 纯 HTML 打开即用</div>
+  </footer>
+
+</div>
+
+<script>
+/* ================= 小猫毛色 ================= */
+const FUR = {
+  blue:  { fur1: "#F6B26B", fur2: "#E89B4E", belly: "#FFE9CE" },  // 橘猫
+  amber: { fur1: "#A9B6C8", fur2: "#8C9BB0", belly: "#E7EDF4" },  // 蓝灰猫
+  teal:  { fur1: "#EFE3D4", fur2: "#D9C7B2", belly: "#FBF6EF" },  // 奶油猫
+  green: { fur1: "#5B6472", fur2: "#47505D", belly: "#C9D2DE" },  // 玄猫
+};
+
+function catSVG(accent, cls) {
+  const f = FUR[accent] || FUR.blue;
+  return `
+  <svg class="cat ${cls || ""}" viewBox="0 0 200 190"
+       style="--fur1:${f.fur1};--fur2:${f.fur2};--belly:${f.belly}">
+    <path class="tail fur-dark" d="M150 172 Q192 160 180 116"
+          fill="none" stroke="${f.fur2}" stroke-width="15" stroke-linecap="round"/>
+    <path class="body-grp">
+      <path class="fur" d="M60 178 Q56 112 100 110 Q144 112 140 178 Z"/>
+      <ellipse class="belly" cx="100" cy="154" rx="27" ry="24"/>
+      <ellipse class="paw paw-l fur-dark" cx="80" cy="176" rx="13" ry="9"/>
+      <ellipse class="paw paw-r fur-dark" cx="120" cy="176" rx="13" ry="9"/>
+    </path>
+    <g class="head-grp">
+      <path class="fur" d="M62 52 L56 12 L92 38 Z"/>
+      <path class="fur" d="M138 52 L144 12 L108 38 Z"/>
+      <path class="inner-ear" d="M66 48 L62 22 L86 40 Z"/>
+      <path class="inner-ear" d="M134 48 L138 22 L114 40 Z"/>
+      <ellipse class="fur" cx="100" cy="72" rx="41" ry="38"/>
+      <path class="fur-dark" d="M88 38 Q92 30 96 38 Q92 34 88 38" opacity=".7"/>
+      <path class="fur-dark" d="M104 38 Q108 30 112 38 Q108 34 104 38" opacity=".7"/>
+      <g class="eyes">
+        <ellipse class="eye-white" cx="82" cy="70" rx="9.5" ry="11"/>
+        <ellipse class="eye-white" cx="118" cy="70" rx="9.5" ry="11"/>
+        <circle class="pupil" cx="83" cy="71.5" r="5.6"/>
+        <circle class="pupil" cx="119" cy="71.5" r="5.6"/>
+        <circle class="glint" cx="85.6" cy="68" r="2.1"/>
+        <circle class="glint" cx="121.6" cy="68" r="2.1"/>
+      </g>
+      <ellipse cx="66" cy="88" rx="8" ry="5" fill="#f79e9e" opacity=".5"/>
+      <ellipse cx="134" cy="88" rx="8" ry="5" fill="#f79e9e" opacity=".5"/>
+      <ellipse class="belly" cx="100" cy="90" rx="21" ry="14"/>
+      <path class="nose" d="M100 81 l6 4.5 -6 5 -6 -5 z"/>
+      <path class="line" d="M100 90.5 q-5 6 -10 1.5"/>
+      <path class="line" d="M100 90.5 q5 6 10 1.5"/>
+      <path class="line" d="M74 84 L52 78" opacity=".5"/>
+      <path class="line" d="M74 91 L51 91" opacity=".5"/>
+      <path class="line" d="M126 84 L148 78" opacity=".5"/>
+      <path class="line" d="M126 91 L149 91" opacity=".5"/>
+    </g>
+  </svg>`;
+}
+
+/* 只画猫头，用在小尺寸的头像位 */
+function catHeadSVG(accent, cls) {
+  const f = FUR[accent] || FUR.blue;
+  return `
+  <svg class="cat ${cls || ""}" viewBox="46 4 108 106"
+       style="--fur1:${f.fur1};--fur2:${f.fur2};--belly:${f.belly}">
+    <g class="head-grp">
+      <path class="fur" d="M62 52 L56 12 L92 38 Z"/>
+      <path class="fur" d="M138 52 L144 12 L108 38 Z"/>
+      <path class="inner-ear" d="M66 48 L62 22 L86 40 Z"/>
+      <path class="inner-ear" d="M134 48 L138 22 L114 40 Z"/>
+      <ellipse class="fur" cx="100" cy="72" rx="41" ry="38"/>
+      <path class="fur-dark" d="M88 38 Q92 30 96 38 Q92 34 88 38" opacity=".7"/>
+      <path class="fur-dark" d="M104 38 Q108 30 112 38 Q108 34 104 38" opacity=".7"/>
+      <g class="eyes">
+        <ellipse class="eye-white" cx="82" cy="70" rx="9.5" ry="11"/>
+        <ellipse class="eye-white" cx="118" cy="70" rx="9.5" ry="11"/>
+        <circle class="pupil" cx="83" cy="71.5" r="5.6"/>
+        <circle class="pupil" cx="119" cy="71.5" r="5.6"/>
+        <circle class="glint" cx="85.6" cy="68" r="2.1"/>
+        <circle class="glint" cx="121.6" cy="68" r="2.1"/>
+      </g>
+      <ellipse cx="66" cy="88" rx="8" ry="5" fill="#f79e9e" opacity=".5"/>
+      <ellipse cx="134" cy="88" rx="8" ry="5" fill="#f79e9e" opacity=".5"/>
+      <ellipse class="belly" cx="100" cy="90" rx="21" ry="14"/>
+      <path class="nose" d="M100 81 l6 4.5 -6 5 -6 -5 z"/>
+      <path class="line" d="M100 90.5 q-5 6 -10 1.5"/>
+      <path class="line" d="M100 90.5 q5 6 10 1.5"/>
+      <path class="line" d="M74 84 L52 78" opacity=".5"/>
+      <path class="line" d="M74 91 L51 91" opacity=".5"/>
+      <path class="line" d="M126 84 L148 78" opacity=".5"/>
+      <path class="line" d="M126 91 L149 91" opacity=".5"/>
+    </g>
+  </svg>`;
+}
+
+/* ================= 屏幕内容 ================= */
+const SCREENS = {
+  gsap: `<div class="scr"><div class="code"><span class="c">// 排一串动作</span>
+<span class="k">const</span> tl = gsap.<span class="n">timeline</span>();
+tl.<span class="n">to</span>(<span class="s">".box"</span>, { x: <span class="n">200</span> })
+  .<span class="n">to</span>(<span class="s">".box"</span>, { rotate: <span class="n">360</span> })
+  .<span class="n">to</span>(<span class="s">".box"</span>, { scale: <span class="n">0</span> });</div></div>`,
+
+  motion: `<div class="scr"><div class="code"><span class="c">// 松手有惯性</span>
+<span class="n">animate</span>(<span class="s">".card"</span>,
+  { opacity: <span class="n">1</span>, y: <span class="n">0</span> },
+  { type: <span class="s">"spring"</span>,
+    stiffness: <span class="n">320</span> }
+);</div></div>`,
+
+  anime: `<div class="scr"><div class="code"><span class="c">// 五秒学会</span>
+<span class="n">anime</span>({
+  targets: <span class="s">".cat"</span>,
+  rotate: <span class="s">"1turn"</span>,
+  duration: <span class="n">800</span>,
+  easing: <span class="s">"easeOutElastic"</span>
+});</div></div>`,
+
+  lenis: `<div class="scr"><div class="code"><span class="c">// 页面滚动更顺</span>
+<span class="k">const</span> lenis = <span class="k">new</span> <span class="n">Lenis</span>();
+<span class="k">function</span> <span class="n">raf</span>(t) {
+  lenis.<span class="n">raf</span>(t);
+  requestAnimationFrame(raf);
+}</div></div>`,
+
+  lucide: `<div class="scr"><div class="icon-wall">
+  <i><svg viewBox="0 0 24 24"><path d="M3 12h18M12 3v18"/></svg></i>
+  <i><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></i>
+  <i><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></i>
+  <i><svg viewBox="0 0 24 24"><path d="M4 4h16v16H4z"/><path d="M4 9h16"/></svg></i>
+  <i><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></i>
+  <i><svg viewBox="0 0 24 24"><path d="M12 2 15 9l7 .5-5.5 4.5 2 7-6.5-4-6.5 4 2-7L2 9.5 9 9z"/></svg></i>
+  <i><svg viewBox="0 0 24 24"><path d="M4 20v-6a8 8 0 0 1 16 0v6"/><path d="M4 20h16"/></svg></i>
+  <i><svg viewBox="0 0 24 24"><path d="M5 12h14M12 5v14"/><circle cx="12" cy="12" r="9"/></svg></i>
+</div></div>`,
+
+  echarts: `<div class="scr">
+  <div class="bars"><b></b><b></b><b></b><b></b><b></b><b></b></div>
+  <div class="spark-line"><svg viewBox="0 0 200 26" preserveAspectRatio="none"><path d="M2 22 L28 16 L54 19 L80 8 L106 12 L132 5 L158 9 L198 2"/></svg></div>
+</div>`,
+
+  rough: `<div class="scr"><div class="rough-box">
+  <svg viewBox="0 0 160 88" preserveAspectRatio="xMidYMid meet">
+    <path class="rf" d="M16 22 q30-10 62-6 t56 4 l-4 48 q-40 8 -72 3 t-44-2 z"/>
+    <path class="rb" d="M16 22 q30-10 62-6 t56 4"/>
+    <path class="rb" d="M15 24 q-2 26 1 46"/>
+    <path class="rb" d="M134 22 q4 26 2 48"/>
+    <path class="rb" d="M15 71 q40 9 72 4 t44-4"/>
+    <path class="rb" d="M34 42 q26-6 48 0 t40-3"/>
+    <path class="rb" d="M34 56 q22-5 40 1"/>
+  </svg>
+</div></div>`,
+
+  zod: `<div class="scr"><div class="form-demo">
+  <div class="fld ok"><span>邮箱</span><em>✓ 通过</em></div>
+  <div class="fld bad"><span>手机号</span><em>✗ 11 位</em></div>
+  <div class="msg">手机号必须是 11 位数字</div>
+</div></div>`,
+
+  dayjs: `<div class="scr"><div class="time-demo">
+  <div class="tm"><span>需求受理完成</span><b>3 分钟前</b></div>
+  <div class="tm"><span>票据识别完成</span><b>8 分钟前</b></div>
+  <div class="tm"><span>风险评估通过</span><b>2 小时前</b></div>
+</div></div>`,
+
+  msw: `<div class="scr"><div class="mock-demo">
+  <div class="mh"><u>GET</u> /api/v1/workspaces</div>
+  <pre>{
+  "ok": true,
+  "data": [
+    { "id": 1, "name": "票据处理" }
+  ]
+}</pre>
+  <div class="tagline">● 后端没好也能跑</div>
+</div></div>`,
+
+  floating: `<div class="scr"><div class="float-demo">
+  <div class="float-tip">点这里新建</div>
+  <div class="float-anchor">新建工单</div>
+</div></div>`,
+
+  sonner: `<div class="scr"><div class="toast-stack">
+  <div class="toast"><i><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></i>已保存</div>
+  <div class="toast"><i><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></i>已提交</div>
+  <div class="toast"><i><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></i>已归档</div>
+</div></div>`,
+
+  sortable: `<div class="scr"><div class="drag-list">
+  <div class="drag-row"><u></u>需求受理</div>
+  <div class="drag-row mid"><u></u>票据录入</div>
+  <div class="drag-row"><u></u>账务比对</div>
+  <div class="drag-row"><u></u>风险评估</div>
+</div></div>`,
+};
+
+/* ================= 数据 ================= */
+const GROUPS = [
+  {
+    id: "g-motion", no: "01", title: "动起来", accent: "blue",
+    note: "让元素有节奏地动，别再手写 transition 了",
+    items: [
+      {
+        name: "GSAP", sub: "时间线动画", chip: "免费", hot: true,
+        screen: "gsap",
+        desc: "把一串动作排成剧本，谁先动、动多久、怎么停，全部写在一条时间线上。复杂编排它最省心。",
+        use: "滚动到这儿再播、开场动画、SVG 描线、一整段演出",
+        tags: ["时间线", "滚动触发", "SVG 描边"],
+        cmd: "npm i gsap",
+        links: [["官网", "https://gsap.com/"], ["npm", "https://www.npmjs.com/package/gsap"]],
+      },
+      {
+        name: "Motion", sub: "声明式动画", chip: "React / Vue / 原生",
+        screen: "motion",
+        desc: "只说「它该变成什么样」，过程交给它算。带弹簧手感，松手有惯性，换页有过渡，拖拽也归它管。",
+        use: "按钮按压、弹层开关、列表增删、拖拽手势",
+        tags: ["弹簧手感", "布局过渡", "手势"],
+        cmd: "npm i motion",
+        links: [["官网", "https://motion.dev/"], ["npm", "https://www.npmjs.com/package/motion"]],
+      },
+      {
+        name: "anime.js", sub: "轻量动画", chip: "约 5KB",
+        screen: "anime",
+        desc: "小而全，几分钟就上手。DOM、SVG、CSS 变量都能动，做个图标小动作、进度条、小猫眨眼这种最合适。",
+        use: "微动效、加载进度、图标反馈、小零件动画",
+        tags: ["体积小", "上手快", "SVG"],
+        cmd: "npm i animejs",
+        links: [["官网", "https://animejs.com/"], ["npm", "https://www.npmjs.com/package/animejs"]],
+      },
+      {
+        name: "Lenis", sub: "顺滑滚动", chip: "约 4KB",
+        screen: "lenis",
+        desc: "把生硬的滚动变成有阻尼的顺滑滚动。不是必须，但一加上页面立刻「贵」一点。",
+        use: "作品集、落地页、长页面、配合滚动动画",
+        tags: ["平滑滚动", "不挑框架"],
+        cmd: "npm i lenis",
+        links: [["官网", "https://lenis.darkroom.engineering/"], ["npm", "https://www.npmjs.com/package/lenis"]],
+      },
+    ],
+  },
+  {
+    id: "g-draw", no: "02", title: "画出来", accent: "amber",
+    note: "图标、图表、手绘感图形，别从零画",
+    items: [
+      {
+        name: "Lucide", sub: "线性图标", chip: "两千多个", hot: true,
+        screen: "lucide",
+        desc: "一套风格统一的线条图标，按钮、导航、状态灯直接挑着用。还能按需引入，不用全打包进来。",
+        use: "界面图标、按钮符号、空状态插图",
+        tags: ["风格统一", "可按需引入", "免费"],
+        cmd: "npm i lucide",
+        links: [["官网", "https://lucide.dev/"], ["npm", "https://www.npmjs.com/package/lucide"]],
+      },
+      {
+        name: "ECharts", sub: "图表", chip: "中文文档全",
+        screen: "echarts",
+        desc: "折线、柱状、环形、地图、大屏都行。数据一给，图表就出来，还能缩放、筛选、看明细。",
+        use: "仪表盘、数据报表、后台看板、数据大屏",
+        tags: ["图表全", "能交互", "中文文档"],
+        cmd: "npm i echarts",
+        links: [["官网", "https://echarts.apache.org/"], ["npm", "https://www.npmjs.com/package/echarts"]],
+      },
+      {
+        name: "Rough.js", sub: "手绘图形", chip: "漫画风神器",
+        screen: "rough",
+        desc: "把矩形、圆、线条画成手绘草稿的样子——线是歪的，填色像蜡笔涂的。想做漫画风、便签风就靠它。",
+        use: "漫画风界面、白板工具、草图标注、便签卡片",
+        tags: ["手绘质感", "蜡笔填色", "SVG"],
+        cmd: "npm i roughjs",
+        links: [["官网", "https://roughjs.com/"], ["npm", "https://www.npmjs.com/package/roughjs"]],
+      },
+    ],
+  },
+  {
+    id: "g-data", no: "03", title: "对得上", accent: "teal",
+    note: "数据进得来、读得懂、挡得住脏的",
+    items: [
+      {
+        name: "Zod", sub: "数据校验", chip: "前后端通用",
+        screen: "zod",
+        desc: "接口回来的数据先过一遍安检，形状不对就拦住并报出哪错了。写一遍规则，类型还能自动带出来。",
+        use: "接口返回校验、表单校验、前后端约定",
+        tags: ["规则清晰", "类型自动", "报错友好"],
+        cmd: "npm i zod",
+        links: [["官网", "https://zod.dev/"], ["npm", "https://www.npmjs.com/package/zod"]],
+      },
+      {
+        name: "day.js", sub: "日期处理", chip: "约 2KB",
+        screen: "dayjs",
+        desc: "日期加减、格式化、「3 分钟前」这种相对时间，两行搞定。比原生 Date 好写太多。",
+        use: "时间显示、倒计时、区间筛选、相对时间",
+        tags: ["体积小", "写法简单"],
+        cmd: "npm i dayjs",
+        links: [["官网", "https://day.js.org/"], ["npm", "https://www.npmjs.com/package/dayjs"]],
+      },
+      {
+        name: "MSW", sub: "接口仿真", chip: "零侵入",
+        screen: "msw",
+        desc: "后端还没写好？先把接口「演」出来，返回值你定。前端照常开发联调，后端好了把仿真一关就行。",
+        use: "前后端并行开发、演示环境、写测试",
+        tags: ["不改业务代码", "前后端并行"],
+        cmd: "npm i msw -D",
+        links: [["官网", "https://mswjs.io/"], ["npm", "https://www.npmjs.com/package/msw"]],
+      },
+    ],
+  },
+  {
+    id: "g-ui", no: "04", title: "用得顺", accent: "green",
+    note: "那些「每次都要重写一遍」的交互零件",
+    items: [
+      {
+        name: "Floating UI", sub: "浮层定位", chip: "底层引擎",
+        screen: "floating",
+        desc: "气泡、下拉、提示框该出现在哪儿，交给它算。屏幕边角、滚动、缩放都不会把它顶歪。",
+        use: "提示框、下拉菜单、气泡卡片、右键菜单",
+        tags: ["定位精准", "体积极小", "不挑框架"],
+        cmd: "npm i @floating-ui/dom",
+        links: [["官网", "https://floating-ui.com/"], ["npm", "https://www.npmjs.com/package/@floating-ui/dom"]],
+      },
+      {
+        name: "Sonner", sub: "消息提示", chip: "开箱即用",
+        screen: "sonner",
+        desc: "右上角那种「已保存」「提交成功」的小提示，现成的，排队、堆叠、自动消失都做好了，还挺好听。",
+        use: "操作反馈、错误提醒、批量任务进度",
+        tags: ["好看", "自带排队", "无障碍"],
+        cmd: "npm i sonner",
+        links: [["官网", "https://sonner.emilkowal.ski/"], ["npm", "https://www.npmjs.com/package/sonner"]],
+      },
+      {
+        name: "SortableJS", sub: "拖拽排序", chip: "原生可用",
+        screen: "sortable",
+        desc: "列表拖来拖去排顺序，原生 JS 就能跑，Vue / React 也有对应封装。触屏也支持。",
+        use: "看板、待办、表单字段排序、图片排序",
+        tags: ["不挑框架", "支持触屏", "能分组"],
+        cmd: "npm i sortablejs",
+        links: [["官网", "https://sortablejs.github.io/Sortable/"], ["npm", "https://www.npmjs.com/package/sortablejs"]],
+      },
+    ],
+  },
+];
+
+const PICK = [
+  {
+    fur: "blue",
+    title: "「界面太呆了，动不起来」",
+    body: "先装 <b>GSAP</b> 把主流程的动画排一排；只有零碎的小动作，用 <b>anime.js</b> 更轻。想要按钮和弹层带手感，加 <b>Motion</b>。",
+  },
+  {
+    fur: "amber",
+    title: "「图标图表一个都没有」",
+    body: "图标先上 <b>Lucide</b>，风格统一不翻车。要画数据就 <b>ECharts</b>。想做漫画风、手写风界面，<b>Rough.js</b> 是捷径。",
+  },
+  {
+    fur: "green",
+    title: "「接口还没好，卡住了」",
+    body: "用 <b>MSW</b> 把接口演出来继续写；返回数据用 <b>Zod</b> 拦一道；时间显示交给 <b>dayjs</b>。浮层和提示这类零件用 <b>Floating UI</b>、<b>Sonner</b>。",
+  },
+];
+
+/* ================= 渲染 ================= */
+function render() {
+  // 主视觉四只小猫
+  document.getElementById("heroCrew").innerHTML = ["blue", "amber", "teal", "green"]
+    .map((a, i) => `
+      <div class="crew-item">
+        <div class="bubble">${["动起来", "画出来", "对得上", "用得顺"][i]}</div>
+        ${catSVG(a)}
+      </div>`)
+    .join("");
+
+  // 工具卡
+  let n = 0;
+  document.getElementById("groups").innerHTML = GROUPS.map((g) => `
+    <section class="group" id="${g.id}" data-accent="${g.accent}" style="--accent:var(--${g.accent});--accent-soft:${{
+      blue: "rgba(59,130,246,.14)",
+      amber: "rgba(245,158,11,.16)",
+      teal: "rgba(20,184,166,.16)",
+      green: "rgba(34,197,94,.16)",
+    }[g.accent]}">
+      <div class="group-head">
+        <div class="group-no">${g.no}</div>
+        <div class="group-title">${g.title}</div>
+        <div class="group-note">${g.note}</div>
+        <div class="group-count">${g.items.length} 件</div>
+      </div>
+      <div class="grid">
+        ${g.items.map((it) => {
+          n += 1;
+          return `
+          <article class="card" data-accent="${g.accent}">
+            <div class="card-head">
+              <div class="card-no">${String(n).padStart(2, "0")}</div>
+              <h3 class="card-name">${it.name}<small>${it.sub}</small></h3>
+              <div class="card-chip ${it.hot ? "hot" : ""}">${it.chip}</div>
+            </div>
+
+            <div class="scene">
+              <div class="monitor">
+                <div class="screen">${SCREENS[it.screen] || ""}</div>
+                <div class="stand"></div>
+                <div class="stand-base"></div>
+              </div>
+              <div class="cat-wrap">${catSVG(g.accent)}</div>
+              <span class="spark s1">✦</span>
+              <span class="spark s2">✦</span>
+              <span class="spark s3">✦</span>
+            </div>
+
+            <div class="card-body">
+              <p class="card-desc">${it.desc}</p>
+              <div class="use-line"><b>什么时候用</b><span>${it.use}</span></div>
+              <div class="tag-row">${it.tags.map((t) => `<span class="tag">${t}</span>`).join("")}</div>
+            </div>
+
+            <div class="install">
+              <code>${it.cmd}</code>
+              <button class="copy-btn" data-cmd="${it.cmd}">复制</button>
+            </div>
+            <div class="link-row">
+              ${it.links.map(([label, href]) => `<a href="${href}" target="_blank" rel="noopener">${label}</a>`).join("")}
+            </div>
+          </article>`;
+        }).join("")}
+      </div>
+    </section>`)
+    .join("");
+
+  // 怎么挑
+  ["pickA", "pickB", "pickC"].forEach((id, i) => {
+    const p = PICK[i];
+    document.getElementById(id).innerHTML =
+      `<div class="pick-ava">${catHeadSVG(p.fur)}</div>` +
+      `<div><h4>${p.title}</h4><p>${p.body}</p></div>`;
+  });
+
+  document.getElementById("statCount").textContent = n;
+  document.getElementById("heroCount").textContent = n;
+  document.getElementById("copyAllLabel").textContent = `把 ${n} 条安装命令全复制`;
+}
+
+render();
+
+/* ================= 交互 ================= */
+// 复制：优先用剪贴板接口，不行退回选区复制，都失败也给个交代
+function copyText(text) {
+  const legacy = () => new Promise((res) => {
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.setAttribute("readonly", "");
+    ta.style.cssText = "position:fixed;top:0;left:-9999px;opacity:0";
+    document.body.appendChild(ta);
+    ta.select();
+    ta.setSelectionRange(0, text.length);
+    let ok = false;
+    try { ok = document.execCommand("copy"); } catch (e) { ok = false; }
+    document.body.removeChild(ta);
+    res(ok);
+  });
+
+  if (navigator.clipboard && window.isSecureContext) {
+    return navigator.clipboard.writeText(text)
+      .then(() => true)
+      .catch(() => legacy());
+  }
+  return legacy();
+}
+
+function flashLabel(el, okText, failText, ok) {
+  const old = el.textContent;
+  el.textContent = ok ? okText : failText;
+  el.classList.toggle("done", ok);
+  if (!ok) el.classList.add("fail");
+  setTimeout(() => {
+    el.textContent = old;
+    el.classList.remove("done", "fail");
+  }, 1600);
+}
+
+document.addEventListener("click", (e) => {
+  const btn = e.target.closest(".copy-btn");
+  if (btn) {
+    copyText(btn.dataset.cmd).then((ok) => {
+      flashLabel(btn, "已复制", "没复制上", ok);
+    });
+    return;
+  }
+
+  const chip = e.target.closest(".nav-chip");
+  if (chip) {
+    document.querySelectorAll(".nav-chip").forEach((c) => c.classList.remove("on"));
+    chip.classList.add("on");
+    const t = document.getElementById(chip.dataset.target);
+    if (t) t.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+});
+
+document.getElementById("scrollAll").addEventListener("click", () => {
+  document.getElementById("g-motion").scrollIntoView({ behavior: "smooth", block: "start" });
+});
+
+document.getElementById("copyAll").addEventListener("click", () => {
+  const cmds = GROUPS.flatMap((g) => g.items.map((i) => i.cmd));
+  copyText(cmds.join("\n")).then((ok) => {
+    flashLabel(
+      document.getElementById("copyAllLabel"),
+      `${cmds.length} 条命令已复制`,
+      "没复制上，逐条点卡里的复制吧",
+      ok
+    );
+  });
+});
+</script>
+</body>
+</html>
