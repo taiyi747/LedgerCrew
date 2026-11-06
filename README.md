@@ -45,7 +45,7 @@ Junction China 2026 人工智能赛道参赛项目：为小型工作室提供票
 
 前端已提供 HTML/CSS/JavaScript 原型，包含任务流转大屏、接口文档和 Mock 后端，见 [HTML 前端](HTML/index.html) 与 [前端接口文档](HTML/api/接口文档.md)。
 
-后端 v0.1 的第四个开发阶段已提供工作室、模拟订单、文件上传、ZIP 安全解压、资金流水 CSV 导入与确定性票据对账，安装、启动和测试说明见 [server/README.md](server/README.md)。
+后端 v0.1 的第六个开发阶段已提供工作室、模拟订单、文件上传、ZIP 安全解压、资金流水 CSV 导入、确定性票据对账、Agent 集成契约、异常处理和版本化报告交付，安装、启动和测试说明见 [server/README.md](server/README.md)。
 
 第一阶段 AI 模块已实现五个 Agent、真实 MiMo 调用、人工待办、报告草稿和检查点恢复。后端按依赖协议接入正式对账、数据库和 Worker，前端通过后端接口展示结果。
 

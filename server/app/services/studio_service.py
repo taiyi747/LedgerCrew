@@ -18,7 +18,7 @@ async def create_studio(session: AsyncSession, data: StudioCreate, principal: Pr
 
 
 async def list_studios(session: AsyncSession, principal: Principal) -> list[Studio]:
-    return await records.list_studios(session, principal.user_id)
+    return await records.list_studios(session, None if principal.role == "owner" else principal.user_id)
 
 
 async def get_studio(session: AsyncSession, studio_id: str, principal: Principal) -> Studio:

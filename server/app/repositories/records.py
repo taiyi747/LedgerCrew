@@ -8,16 +8,22 @@ async def get_studio(session: AsyncSession, studio_id: str) -> Studio | None:
     return await session.get(Studio, studio_id)
 
 
-async def list_studios(session: AsyncSession, owner_user_id: str) -> list[Studio]:
-    return list((await session.scalars(select(Studio).where(Studio.owner_user_id == owner_user_id).order_by(Studio.created_at.desc()))).all())
+async def list_studios(session: AsyncSession, owner_user_id: str | None) -> list[Studio]:
+    query = select(Studio)
+    if owner_user_id is not None:
+        query = query.where(Studio.owner_user_id == owner_user_id)
+    return list((await session.scalars(query.order_by(Studio.created_at.desc()))).all())
 
 
 async def get_order(session: AsyncSession, order_id: str) -> Order | None:
     return await session.get(Order, order_id)
 
 
-async def list_orders(session: AsyncSession, owner_user_id: str) -> list[Order]:
-    return list((await session.scalars(select(Order).join(Studio).where(Studio.owner_user_id == owner_user_id).order_by(Order.created_at.desc()))).all())
+async def list_orders(session: AsyncSession, owner_user_id: str | None) -> list[Order]:
+    query = select(Order).join(Studio)
+    if owner_user_id is not None:
+        query = query.where(Studio.owner_user_id == owner_user_id)
+    return list((await session.scalars(query.order_by(Order.created_at.desc()))).all())
 
 
 async def get_file(session: AsyncSession, file_id: str) -> UploadedFile | None:

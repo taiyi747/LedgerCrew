@@ -90,9 +90,13 @@ class AgentRun(Base):
     order_id: Mapped[str] = mapped_column(ForeignKey("orders.id"), nullable=False)
     agent_name: Mapped[str] = mapped_column(String(64), nullable=False)
     task_type: Mapped[str] = mapped_column(String(64), nullable=False)
+    input_schema_version: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    idempotency_key: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    correlation_id: Mapped[str | None] = mapped_column(String(100), nullable=True)
     status: Mapped[str] = mapped_column(String(16), default="queued", nullable=False)
     input_data: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
     output_data: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
+    checkpoint_data: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
     error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now, nullable=False)
     started_at: Mapped[datetime | None] = mapped_column(UTCDateTime(), nullable=True)
@@ -105,17 +109,23 @@ class AgentTask(Base):
         UniqueConstraint("run_id", "task_key", name="uq_agent_tasks_run_task_key"),
         CheckConstraint("status IN ('queued','running','paused','succeeded','failed')", name="ck_agent_tasks_status"),
         Index("ix_agent_tasks_order_status", "order_id", "status"),
+        Index("ix_agent_tasks_order_idempotency", "order_id", "idempotency_key", unique=True),
     )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
     order_id: Mapped[str] = mapped_column(ForeignKey("orders.id"), nullable=False)
     run_id: Mapped[str] = mapped_column(ForeignKey("agent_runs.id"), nullable=False)
     task_key: Mapped[str] = mapped_column(String(100), nullable=False)
+    idempotency_key: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    correlation_id: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    input_schema_version: Mapped[str | None] = mapped_column(String(20), nullable=True)
     agent_name: Mapped[str] = mapped_column(String(64), nullable=False)
     task_type: Mapped[str] = mapped_column(String(64), nullable=False)
     status: Mapped[str] = mapped_column(String(16), default="queued", nullable=False)
     input_data: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
     output_data: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
+    provider_metadata: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
+    attempt_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default="0")
     error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now, nullable=False)
     started_at: Mapped[datetime | None] = mapped_column(UTCDateTime(), nullable=True)
@@ -133,6 +143,10 @@ class WorkflowEvent(Base):
     event_type: Mapped[str] = mapped_column(String(100), nullable=False)
     payload: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
     created_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now, nullable=False)
+
+    @property
+    def event_id(self) -> int:
+        return self.id
 
 
 class AuditLog(Base):

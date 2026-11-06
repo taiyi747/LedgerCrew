@@ -8,7 +8,7 @@ from app.repositories import records
 
 async def studio_for_user(session: AsyncSession, studio_id: str, principal: Principal) -> Studio:
     studio = await records.get_studio(session, studio_id)
-    if studio is None or studio.owner_user_id != principal.user_id:
+    if studio is None or (principal.role != "owner" and studio.owner_user_id != principal.user_id):
         raise AppError("not_found", "Studio not found", 404)
     return studio
 
