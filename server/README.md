@@ -1,6 +1,6 @@
-# LedgerCrew 后端（第二阶段）
+# LedgerCrew 后端（v0.1 开发阶段 3）
 
-当前提供工作室、模拟订单、文件上传与安全 ZIP 解压。Agent 调用、CSV 业务解析、对账和报告尚未实现。
+当前提供工作室、模拟订单、文件上传、安全 ZIP 解压和资金流水 CSV 导入。Agent 调用、交易对账和报告尚未实现。
 
 ## 环境与安装
 
@@ -47,12 +47,18 @@ uvicorn app.main:app --reload
 | POST | `/api/v1/orders/{order_id}/archives` | 上传并解压 ZIP |
 | GET | `/api/v1/files/{file_id}` | 文件元数据 |
 | GET | `/api/v1/files/{file_id}/download` | 有权限的原始文件下载 |
+| POST | `/api/v1/orders/{order_id}/imports/csv` | 以已上传 CSV 文件 ID 导入流水 |
+| GET | `/api/v1/orders/{order_id}/transactions` | 查询标准化交易 |
+| GET | `/api/v1/orders/{order_id}/imports` | 查询导入记录及行错误 |
+| GET | `/api/v1/imports/{import_id}` | 查询单次导入结果 |
 
 创建工作室 JSON：`{"name":"示例工作室","business_type":"digital_services"}`。创建订单 JSON：`{"studio_id":"<工作室 ID>","period_start":"2026-10-01","period_end":"2026-10-31","service_scope":"monthly_records"}`。订单编号、`draft` 状态和 `is_simulated=true` 由服务端设置，客户端不能传状态。价格尚未确定，`price_cents` 在本阶段不由 API 填写。
 
 上传使用 multipart：`file_category` 为 `invoice_image`、`bank_statement_csv` 或 `supporting_material`。普通上传字段名为 `files`，单文件也用该字段；ZIP 上传字段名为 `file`，并用 `file_category` 指定解压条目的类别。允许 JPG/JPEG、PNG 图片与 CSV；ZIP 条目不支持的格式会单独登记为 `unsupported`。图片用 Pillow 验证真实格式，CSV 做 UTF-8 文本和基本表格检查。文件结果有 `valid`、`invalid`、`unsupported` 状态；原始文件不会被覆盖。
 
 ZIP 原包始终登记保存。坏包、路径穿越、绝对路径、符号链接、嵌套 ZIP 或超限会使原包标记为 `invalid` 并返回错误。仅允许根目录或一层文件夹中的文件；条目原始路径仅用于审计记录，实际存储键由后端生成。
+
+CSV 默认字段、列名映射、金额规则、导入步骤和模板见 [CSV 格式说明](docs/CSV.md)。
 
 下列限制是 **MVP 初始配置**，可通过 `.env` 调整：
 
@@ -66,6 +72,7 @@ ZIP 原包始终登记保存。坏包、路径穿越、绝对路径、符号链�
 | `MAX_ARCHIVE_ENTRY_BYTES` | 5 MiB |
 | `MAX_ARCHIVE_TOTAL_BYTES` | 50 MiB |
 | `MAX_ARCHIVE_RATIO` | 100:1 |
+| `CSV_MAX_ROWS` | 200 行 |
 
 ## 测试
 

@@ -1,6 +1,7 @@
 from functools import lru_cache
 from typing import Literal
 
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -20,6 +21,16 @@ class Settings(BaseSettings):
     max_archive_entry_bytes: int = 5 * 1024 * 1024
     max_archive_total_bytes: int = 50 * 1024 * 1024
     max_archive_ratio: int = 100
+    csv_max_rows: int = 200
+    csv_date_format: str = "%Y-%m-%d"
+    csv_column_map: dict[str, str] = Field(default_factory=lambda: {
+        "transaction_date": "transaction_date",
+        "counterparty": "counterparty",
+        "direction": "direction",
+        "amount": "amount",
+        "description": "description",
+        "external_id": "external_id",
+    })
 
 
 @lru_cache
