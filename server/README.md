@@ -1,6 +1,6 @@
-# LedgerCrew 后端（v0.1 开发阶段 3）
+# LedgerCrew 后端（v0.1 开发阶段 4）
 
-当前提供工作室、模拟订单、文件上传、安全 ZIP 解压和资金流水 CSV 导入。Agent 调用、交易对账和报告尚未实现。
+当前提供工作室、模拟订单、文件上传、安全 ZIP 解压、资金流水 CSV 导入和确定性票据对账。Agent 调用和报告尚未实现。
 
 ## 环境与安装
 
@@ -51,6 +51,10 @@ uvicorn app.main:app --reload
 | GET | `/api/v1/orders/{order_id}/transactions` | 查询标准化交易 |
 | GET | `/api/v1/orders/{order_id}/imports` | 查询导入记录及行错误 |
 | GET | `/api/v1/imports/{import_id}` | 查询单次导入结果 |
+| POST | `/api/v1/orders/{order_id}/reconciliation/run` | 运行确定性对账并创建新批次 |
+| GET | `/api/v1/orders/{order_id}/reconciliation` | 查询最新对账批次和收支汇总 |
+| GET | `/api/v1/orders/{order_id}/matches` | 查询最新批次的唯一匹配 |
+| GET | `/api/v1/orders/{order_id}/exceptions` | 查询最新批次的异常工单 |
 
 创建工作室 JSON：`{"name":"示例工作室","business_type":"digital_services"}`。创建订单 JSON：`{"studio_id":"<工作室 ID>","period_start":"2026-10-01","period_end":"2026-10-31","service_scope":"monthly_records"}`。订单编号、`draft` 状态和 `is_simulated=true` 由服务端设置，客户端不能传状态。价格尚未确定，`price_cents` 在本阶段不由 API 填写。
 
@@ -59,6 +63,8 @@ uvicorn app.main:app --reload
 ZIP 原包始终登记保存。坏包、路径穿越、绝对路径、符号链接、嵌套 ZIP 或超限会使原包标记为 `invalid` 并返回错误。仅允许根目录或一层文件夹中的文件；条目原始路径仅用于审计记录，实际存储键由后端生成。
 
 CSV 默认字段、列名映射、金额规则、导入步骤和模板见 [CSV 格式说明](docs/CSV.md)。
+
+票据写入契约、确定性匹配与异常规则、收支汇总口径见 [对账说明](docs/RECONCILIATION.md)。本阶段没有票据识别或 Agent 实现；未来集成方通过 `InvoiceRecordCreate` 和 `persist_invoice` 服务写入已验证的票据字段。对账只匹配两个方向均唯一的候选；每次运行保留一个新批次，查询接口返回最新批次。
 
 下列限制是 **MVP 初始配置**，可通过 `.env` 调整：
 
@@ -86,7 +92,7 @@ pytest
 
 - 主键使用 UUID 字符串；事件与审计日志使用递增整数，便于后续事件续传。
 - 时间写入 UTC，ORM 读取为带 UTC 时区的 `datetime`。
-- 金额以整数分存储；当前仅有订单价格字段。
+- 金额以整数分存储；CSV 流水、票据、匹配差异、异常和收支汇总均不使用浮点数。
 - 原始文件存储在本地，元数据记录 SHA256、类别、校验状态和 ZIP 来源；存储键不对外暴露。
 - Agent 原始输入输出和事件扩展载荷使用 JSON；身份、状态、关联、时间等使用独立列。
 
