@@ -1,7 +1,7 @@
 from logging.config import fileConfig
 
 from alembic import context
-from sqlalchemy import create_engine, event
+from sqlalchemy import create_engine
 from sqlalchemy.engine import Engine
 
 from app.core.config import get_settings
@@ -31,14 +31,16 @@ def run_migrations_offline() -> None:
 def run_migrations_online() -> None:
     engine: Engine = create_engine(sync_url())
 
-    @event.listens_for(engine, "connect")
-    def enable_foreign_keys(dbapi_connection, _connection_record) -> None:
-        dbapi_connection.execute("PRAGMA foreign_keys=ON")
-
     with engine.connect() as connection:
+        # SQLite batch migrations recreate tables; referenced tables cannot be
+        # dropped while FK enforcement is enabled. Validate links afterwards.
+        connection.exec_driver_sql("PRAGMA foreign_keys=OFF")
+        connection.commit()
         context.configure(connection=connection, target_metadata=target_metadata, render_as_batch=True)
         with context.begin_transaction():
             context.run_migrations()
+        if connection.exec_driver_sql("PRAGMA foreign_key_check").fetchall():
+            raise RuntimeError("Migration left broken foreign keys")
     engine.dispose()
 
 

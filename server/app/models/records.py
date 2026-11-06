@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime
 from typing import Any
 from uuid import uuid4
 
@@ -15,9 +15,12 @@ def new_id() -> str:
 
 class Studio(Base):
     __tablename__ = "studios"
+    __table_args__ = (Index("ix_studios_owner", "owner_user_id"),)
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
     name: Mapped[str] = mapped_column(String(200), nullable=False)
+    business_type: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    owner_user_id: Mapped[str | None] = mapped_column(String(100), nullable=True)
     created_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now, onupdate=utc_now, nullable=False)
 
@@ -31,14 +34,21 @@ class Order(Base):
         CheckConstraint("price_cents >= 0", name="ck_orders_price_cents"),
         CheckConstraint("status IN ('draft','awaiting_materials','ready_to_process','processing','awaiting_customer','awaiting_owner_review','approved','delivered','failed')", name="ck_orders_status"),
         Index("ix_orders_studio_created", "studio_id", "created_at"),
+        UniqueConstraint("order_no", name="uq_orders_order_no"),
+        CheckConstraint("period_end >= period_start", name="ck_orders_period_range"),
     )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
     studio_id: Mapped[str] = mapped_column(ForeignKey("studios.id"), nullable=False)
+    order_no: Mapped[str] = mapped_column(String(40), nullable=False)
+    period_start: Mapped[date] = mapped_column(nullable=False)
+    period_end: Mapped[date] = mapped_column(nullable=False)
     period_year: Mapped[int] = mapped_column(Integer, nullable=False)
     period_month: Mapped[int] = mapped_column(Integer, nullable=False)
     status: Mapped[str] = mapped_column(String(32), default="draft", nullable=False)
-    price_cents: Mapped[int] = mapped_column(Integer, nullable=False)
+    price_cents: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    service_scope: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    is_simulated: Mapped[bool] = mapped_column(default=True, nullable=False)
     created_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now, onupdate=utc_now, nullable=False)
 
@@ -49,20 +59,23 @@ class UploadedFile(Base):
     __tablename__ = "uploaded_files"
     __table_args__ = (
         UniqueConstraint("storage_key", name="uq_uploaded_files_storage_key"),
-        CheckConstraint("size_bytes >= 0", name="ck_uploaded_files_size_bytes"),
+        CheckConstraint("file_size >= 0", name="ck_uploaded_files_size_bytes"),
         Index("ix_uploaded_files_order", "order_id"),
         Index("ix_uploaded_files_sha256", "sha256"),
     )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
     order_id: Mapped[str] = mapped_column(ForeignKey("orders.id"), nullable=False)
-    original_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    original_filename: Mapped[str] = mapped_column(String(255), nullable=False)
     storage_key: Mapped[str] = mapped_column(String(255), nullable=False)
-    file_kind: Mapped[str] = mapped_column(String(32), nullable=False)
-    content_type: Mapped[str] = mapped_column(String(100), nullable=False)
-    size_bytes: Mapped[int] = mapped_column(Integer, nullable=False)
+    file_category: Mapped[str] = mapped_column(String(32), nullable=False)
+    mime_type: Mapped[str] = mapped_column(String(100), nullable=False)
+    file_size: Mapped[int] = mapped_column(Integer, nullable=False)
     sha256: Mapped[str] = mapped_column(String(64), nullable=False)
-    source_archive_id: Mapped[str | None] = mapped_column(ForeignKey("uploaded_files.id"), nullable=True)
+    upload_source: Mapped[str] = mapped_column(String(16), nullable=False)
+    validation_status: Mapped[str] = mapped_column(String(16), nullable=False)
+    archive_file_id: Mapped[str | None] = mapped_column(ForeignKey("uploaded_files.id"), nullable=True)
+    archive_entry_path: Mapped[str | None] = mapped_column(String(500), nullable=True)
     created_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now, nullable=False)
 
 

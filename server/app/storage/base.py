@@ -1,0 +1,6 @@
+from typing import Protocol
+
+
+class Storage(Protocol):
+    def put(self, key: str, content: bytes) -> None: ...
+    def read(self, key: str) -> bytes: ...
