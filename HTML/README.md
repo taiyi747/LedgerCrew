@@ -5,6 +5,10 @@
 
 ## 功能概览
 
+**两个页面**（底部导航互相切换）：
+- 🖥️ **作战室**（index.html）：四模块任务流转大屏
+- 📊 **仪表盘**（dashboard.html）：全流程数据统计
+
 客户需求下发后，任务依次流经四个模块，每只小猫工位的电脑会播放对应动画：
 
 ```
@@ -20,13 +24,17 @@
 
 ```
 HTML/
-├── index.html          # 主页面（四模块任务流转大屏）
-├── css/style.css       # 样式（小猫插画 / 屏幕动画 / 流转动效）
+├── index.html          # 作战室（四模块任务流转大屏）
+├── dashboard.html      # 仪表盘（KPI / 趋势 / 环形图 / 柱状图 / 任务列表）
+├── css/
+│   ├── style.css       # 全局样式（小猫插画 / 屏幕动画 / 流转动效）
+│   └── dashboard.css   # 仪表盘专用样式
 ├── js/
-│   ├── api.js          # 前端请求层（getOverview/getMessages/getAlerts/getGroups/submitTask）
-│   └── main.js         # 渲染 + 任务流转动画引擎
+│   ├── api.js          # 前端请求层（含 Mock 回退，getDashboard 等）
+│   ├── main.js         # 作战室渲染 + 任务流转动画引擎
+│   └── dashboard.js    # 仪表盘图表渲染引擎（纯 SVG，无第三方库）
 ├── api/
-│   ├── 接口文档.md      # v1.1 前后端对接契约（交后端同学照做）
+│   ├── 接口文档.md      # v1.2 前后端对接契约（交后端同学照做）
 │   └── mock-server.js  # 零依赖 Mock 后端
 ├── preview/            # 效果图截图
 └── design-backup/      # 设计迭代备份（母意象版）

@@ -90,6 +90,54 @@
     }
   }
 
+  /* ---------- 仪表盘 Mock（按时间范围缩放演示数据） ---------- */
+  function mockDashboard(range) {
+    const factor = range === "today" ? 0.3 : range === "30d" ? 3.6 : 1;
+    const scale = (n) => Math.max(1, Math.round(n * factor));
+
+    const labels = range === "today"
+      ? ["09:00", "11:00", "13:00", "15:00", "17:00", "19:00", "21:00"]
+      : range === "30d"
+        ? ["第1周", "第2周", "第3周", "第4周", "第5周", "第6周", "第7周"]
+        : ["周一", "周二", "周三", "周四", "周五", "周六", "周日"];
+
+    return {
+      kpis: [
+        { label: "总任务",  value: scale(128), unit: "",    delta: "+12%",  vs: "较上期", deltaType: "up",   color: "blue",  spark: [8, 12, 10, 16, 14, 20, 24] },
+        { label: "已交付",  value: scale(117), unit: "",    delta: "+9%",   vs: "较上期", deltaType: "up",   color: "green", spark: [6, 10, 9, 14, 13, 18, 22] },
+        { label: "处理中",  value: scale(6),   unit: "",    delta: "并行处理", vs: "4 个模块", deltaType: "warn", color: "amber", spark: [2, 3, 2, 5, 4, 6, 6] },
+        { label: "平均时效", value: 42, unit: "min", delta: "↓ 8min", vs: "更快", deltaType: "down", color: "teal",  spark: [58, 55, 52, 50, 47, 45, 42] },
+        { label: "异常率",  value: "1.2", unit: "%",  delta: "↓ 0.4%", vs: "更稳", deltaType: "down", color: "red",   spark: [2.1, 1.9, 1.8, 1.6, 1.5, 1.3, 1.2] },
+      ],
+      trend: {
+        labels,
+        received: [12, 18, 15, 22, 28, 24, 31].map(scale),
+        delivered: [9, 15, 14, 19, 25, 22, 29].map(scale),
+      },
+      status: {
+        done: scale(117),
+        doing: scale(6),
+        todo: scale(3),
+        err: scale(2),
+      },
+      modules: [
+        { name: "客户接待", accent: "blue",  count: scale(132), avgMinutes: 12 },
+        { name: "票据处理", accent: "amber", count: scale(214), avgMinutes: 28 },
+        { name: "数据核对", accent: "teal",  count: scale(198), avgMinutes: 22 },
+        { name: "风险与交付", accent: "green", count: scale(121), avgMinutes: 15 },
+      ],
+      verify: { checked: scale(1284), pending: scale(12), failed: scale(3) },
+      recent: [
+        { id: "T0128", requirement: "为客户「星辰科技」核对 3 月票据并出具交付报告", module: "风险与交付", status: "done",  duration: "41 分钟",  createdAt: "今天 15:32" },
+        { id: "T0127", requirement: "「蓝海传媒」2 月流水差异复核与说明",           module: "数据核对",  status: "doing", duration: "进行中 18 分钟", createdAt: "今天 14:58" },
+        { id: "T0126", requirement: "「星火教育」Q1 发票批量录入与票面审核",        module: "票据处理",  status: "doing", duration: "进行中 26 分钟", createdAt: "今天 14:21" },
+        { id: "T0125", requirement: "「云间科技」合同票据归档",                    module: "风险与交付", status: "done",  duration: "35 分钟",  createdAt: "今天 11:47" },
+        { id: "T0124", requirement: "「新锐设计」报销单核验（金额不符 2 笔）",      module: "数据核对",  status: "err",   duration: "已挂起",   createdAt: "今天 10:16" },
+        { id: "T0123", requirement: "「明远贸易」客户建档与需求受理",              module: "客户接待",  status: "todo",  duration: "待开始",   createdAt: "今天 09:40" },
+      ],
+    };
+  }
+
   let localTaskSeq = 100;
 
   /* ---------- 对外接口 ---------- */
@@ -102,6 +150,9 @@
     getAlerts: () => request("/api/v1/alerts", MOCK.alerts),
     /** 四大模块与工位 */
     getGroups: () => request("/api/v1/groups", MOCK.groups),
+
+    /** 仪表盘统计（range: today / 7d / 30d） */
+    getDashboard: (range) => request("/api/v1/dashboard?range=" + (range || "7d"), mockDashboard(range || "7d")),
 
     /**
      * 下发客户任务
