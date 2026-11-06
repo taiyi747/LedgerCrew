@@ -25,6 +25,6 @@ Junction China 2026 人工智能赛道参赛项目：为小型工作室提供票
 
 ## 当前状态
 
-后端第一阶段已提供 FastAPI、数据库模型和 Alembic 初始迁移，安装、启动和测试说明见 [server/README.md](server/README.md)。前端及 Agent 应用代码尚未实现；后续按阶段验收联调。
+后端第二阶段已提供工作室、模拟订单、文件上传与 ZIP 安全解压，安装、启动和测试说明见 [server/README.md](server/README.md)。前端及 Agent 应用代码尚未实现；后续按阶段验收联调。
 
 首版交付账目核对报告和异常清单；体验交易明确标注为模拟交易。
