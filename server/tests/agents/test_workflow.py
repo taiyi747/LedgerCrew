@@ -9,7 +9,8 @@ from app.agents.contracts import HumanReply, ReviewRequest, RunIdentity
 from app.agents.errors import ModelOutputError, RequestBudgetExceeded, StaleReviewError
 from app.agents.runner import RequestBudget
 from app.agents.workflow import amount_to_minor, build_workflow, validate_reply
-from tests.support import ScriptedRunner
+
+from .support import ScriptedRunner
 
 IDENTITY = RunIdentity(order_id="demo-order", run_id="demo-run", revision=1)
 

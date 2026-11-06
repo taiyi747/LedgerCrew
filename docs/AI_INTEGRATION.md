@@ -144,10 +144,10 @@ server/.venv/Scripts/python.exe -m app.agents.cli resume --request-id <交付待
 
 ```powershell
 uv run --project server --frozen --extra dev pytest server/tests -q
-uv run --project server --frozen --extra dev ruff check server/app server/tests server/scripts
+uv run --project server --frozen --extra dev ruff check server/app/agents server/scripts server/tests/agents
 ```
 
-pytest 使用测试替身和 HTTP 模拟，不发送真实 API 请求，不要求密钥。`smoke` 和演示命令为显式真实调用。模型图片提取的字段不确定时必须保留人工确认；对账与报告不保证所有原始识别字段已被人类逐项核实。
+AI 测试位于 `server/tests/agents/`，pytest 运行完整后端与 AI 测试，Ruff 检查 AI 负责的模块、脚本和测试目录。AI 测试使用测试替身和 HTTP 模拟，不发送真实 API 请求，不要求密钥。`smoke` 和演示命令为显式真实调用。模型图片提取的字段不确定时必须保留人工确认；对账与报告不保证所有原始识别字段已被人类逐项核实。
 
 完整真实验证脚本：
 

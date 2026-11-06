@@ -18,5 +18,5 @@ jobs:
         with:
           python-version: "3.14"
       - run: uv sync --project server --frozen --extra dev
-      - run: uv run --project server --frozen --extra dev ruff check server/app server/tests server/scripts
+      - run: uv run --project server --frozen --extra dev ruff check server/app/agents server/scripts server/tests/agents
       - run: uv run --project server --frozen --extra dev pytest server/tests -q

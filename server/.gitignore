@@ -11,3 +11,4 @@ pytest-of-*/
 *.db-journal
 *.db-shm
 *.db-wal
+storage_data/

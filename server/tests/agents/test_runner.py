@@ -8,7 +8,8 @@ from app.agents.config import Settings
 from app.agents.contracts import ReconciliationAcknowledgement, ReportNarrative, SupervisorDecision
 from app.agents.errors import AgentError, ModelOutputError, RequestBudgetExceeded
 from app.agents.runner import MiMoRunner, RequestBudget
-from tests.test_workflow import IDENTITY
+
+from .test_workflow import IDENTITY
 
 
 def response(text):
