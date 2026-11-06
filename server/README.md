@@ -1,6 +1,6 @@
-# LedgerCrew 后端（v0.1 开发阶段 4）
+# LedgerCrew 后端（v0.1 开发阶段 5）
 
-当前提供工作室、模拟订单、文件上传、安全 ZIP 解压、资金流水 CSV 导入和确定性票据对账。Agent 调用和报告尚未实现。
+当前提供工作室、模拟订单、文件上传、安全 ZIP 解压、资金流水 CSV 导入、确定性票据对账，以及 Agent 集成契约、运行状态和事件流。真实 Agent 和报告交付尚未实现。
 
 ## 环境与安装
 
@@ -55,6 +55,7 @@ uvicorn app.main:app --reload
 | GET | `/api/v1/orders/{order_id}/reconciliation` | 查询最新对账批次和收支汇总 |
 | GET | `/api/v1/orders/{order_id}/matches` | 查询最新批次的唯一匹配 |
 | GET | `/api/v1/orders/{order_id}/exceptions` | 查询最新批次的异常工单 |
+| GET | `/api/v1/orders/{order_id}/events/stream` | 订单事件 SSE；支持 `Last-Event-ID` 或 `after_id` 续读 |
 
 创建工作室 JSON：`{"name":"示例工作室","business_type":"digital_services"}`。创建订单 JSON：`{"studio_id":"<工作室 ID>","period_start":"2026-10-01","period_end":"2026-10-31","service_scope":"monthly_records"}`。订单编号、`draft` 状态和 `is_simulated=true` 由服务端设置，客户端不能传状态。价格尚未确定，`price_cents` 在本阶段不由 API 填写。
 
@@ -65,6 +66,8 @@ ZIP 原包始终登记保存。坏包、路径穿越、绝对路径、符号链�
 CSV 默认字段、列名映射、金额规则、导入步骤和模板见 [CSV 格式说明](docs/CSV.md)。
 
 票据写入契约、确定性匹配与异常规则、收支汇总口径见 [对账说明](docs/RECONCILIATION.md)。本阶段没有票据识别或 Agent 实现；未来集成方通过 `InvoiceRecordCreate` 和 `persist_invoice` 服务写入已验证的票据字段。对账只匹配两个方向均唯一的候选；每次运行保留一个新批次，查询接口返回最新批次。
+
+五个 Agent 角色的 Pydantic 契约、`AgentGateway` 接入方法、任务状态、Fake 与 SSE 用法见 [Agent 接入说明](docs/agent-integration.md)。本阶段只提供集成层，不调用真实 Agent。`FakeAgentGateway` 仅供开发和测试，生产环境调用会报错。任务创建和调用是可信后端服务接口，不对客户开放 HTTP 写入入口。
 
 下列限制是 **MVP 初始配置**，可通过 `.env` 调整：
 
@@ -79,6 +82,8 @@ CSV 默认字段、列名映射、金额规则、导入步骤和模板见 [CSV �
 | `MAX_ARCHIVE_TOTAL_BYTES` | 50 MiB |
 | `MAX_ARCHIVE_RATIO` | 100:1 |
 | `CSV_MAX_ROWS` | 200 行 |
+| `SSE_POLL_SECONDS` | 1 秒 |
+| `SSE_HEARTBEAT_SECONDS` | 15 秒 |
 
 ## 测试
 
@@ -95,5 +100,6 @@ pytest
 - 金额以整数分存储；CSV 流水、票据、匹配差异、异常和收支汇总均不使用浮点数。
 - 原始文件存储在本地，元数据记录 SHA256、类别、校验状态和 ZIP 来源；存储键不对外暴露。
 - Agent 原始输入输出和事件扩展载荷使用 JSON；身份、状态、关联、时间等使用独立列。
+- Agent 任务有订单内唯一幂等键；运行和任务状态分别持久化，并保留 JSON 检查点、事件与审计记录。
 
 待确认：同一账期是否允许多个订单、订单价格策略、真实认证方式，以及 AgentRun 与 AgentTask 的最终接入语义。第一阶段旧工作室没有所有者，迁移不猜测归属，因此这些旧记录须在未来的管理流程中明确归属后才能由客户访问。

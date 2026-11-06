@@ -23,6 +23,8 @@ class Settings(BaseSettings):
     max_archive_ratio: int = 100
     csv_max_rows: int = 200
     csv_date_format: str = "%Y-%m-%d"
+    sse_poll_seconds: float = Field(default=1.0, gt=0)
+    sse_heartbeat_seconds: float = Field(default=15.0, gt=0)
     csv_column_map: dict[str, str] = Field(default_factory=lambda: {
         "transaction_date": "transaction_date",
         "counterparty": "counterparty",

@@ -40,7 +40,11 @@ def test_migration_creates_tables_and_constraints(tmp_path: Path, monkeypatch) -
     with sqlite3.connect(db_path) as connection:
         names = {row[0] for row in connection.execute("SELECT name FROM sqlite_master WHERE type='table'")}
         assert {"studios", "orders", "uploaded_files", "agent_runs", "agent_tasks", "workflow_events", "audit_logs", "alembic_version", "invoice_records", "reconciliation_batches", "reconciliation_matches", "exception_tickets"} <= names
-        assert connection.execute("SELECT version_num FROM alembic_version").fetchone()[0] == "0005_reconciliation"
+        assert connection.execute("SELECT version_num FROM alembic_version").fetchone()[0] == "0006_agent_integration"
+        task_columns = {row[1] for row in connection.execute("PRAGMA table_info(agent_tasks)")}
+        assert {"idempotency_key", "correlation_id", "input_schema_version", "provider_metadata", "attempt_count"} <= task_columns
+        run_columns = {row[1] for row in connection.execute("PRAGMA table_info(agent_runs)")}
+        assert {"checkpoint_data", "correlation_id", "input_schema_version"} <= run_columns
 
 
 def test_async_database_connection_and_utc_round_trip(tmp_path: Path, monkeypatch) -> None:
