@@ -4,16 +4,18 @@
 
 ## 环境与安装
 
-使用 Python 3.11，在 `server/` 目录执行：
+后端与 AI 模块统一使用 Python 3.14。在 `server/` 目录执行：
 
 ```powershell
-py -3.11 -m venv .venv
+python -m venv .venv
 .venv\Scripts\Activate.ps1
 python -m pip install -e ".[test]"
-Copy-Item .env.example .env
+if (-not (Test-Path .env)) { Copy-Item .env.example .env }
 ```
 
 默认 `DATABASE_URL=sqlite+aiosqlite:///./ledgercrew.db`，数据库文件位置相对于运行命令的当前目录。配置由环境变量或 `.env` 提供；环境变量优先。原始文件保存在 `STORAGE_ROOT` 下，API 不返回实际存储键或路径。
+
+需要同时安装开发工具时，可在仓库根目录执行 `uv sync --project server --frozen --extra dev`。后端配置与 MiMo 配置共用 `.env`，请保留已有密钥。AI 独立演示及后端依赖协议见 [AI 接入说明](../docs/AI_INTEGRATION.md)。
 
 ## 数据库迁移
 

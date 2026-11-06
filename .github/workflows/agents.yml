@@ -1,0 +1,22 @@
+name: AI module
+
+on:
+  push:
+    paths: ["server/**", "fixtures/**", ".github/workflows/agents.yml"]
+  pull_request:
+    paths: ["server/**", "fixtures/**", ".github/workflows/agents.yml"]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.14"
+      - run: uv sync --project server --frozen --extra dev
+      - run: uv run --project server --frozen --extra dev ruff check server/app/agents server/scripts server/tests/agents
+      - run: uv run --project server --frozen --extra dev pytest server/tests -q
