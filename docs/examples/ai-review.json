@@ -1,0 +1,39 @@
+{
+  "identity": {
+    "order_id": "demo-order",
+    "run_id": "demo-run",
+    "revision": 2
+  },
+  "request_id": "57b88b18d1f0beafd02309d2",
+  "kind": "delivery",
+  "question": "请审核本版本报告，批准后由后端发布。",
+  "allowed_actions": [
+    "approve_delivery",
+    "revise_report"
+  ],
+  "evidence_refs": [
+    "difference-invoice-receipt-05",
+    "duplicate-invoice-receipt-06",
+    "invoice-receipt-01",
+    "invoice-receipt-02",
+    "invoice-receipt-03",
+    "invoice-receipt-04",
+    "invoice-receipt-05",
+    "invoice-receipt-06",
+    "missing-invoice-payment-6",
+    "payment-1",
+    "payment-2",
+    "payment-3",
+    "payment-4",
+    "payment-5",
+    "payment-6",
+    "receipt-01",
+    "receipt-02",
+    "receipt-03",
+    "receipt-04",
+    "receipt-05",
+    "receipt-06",
+    "statement"
+  ],
+  "report_version": 1
+}

@@ -1,6 +1,6 @@
 # Agent 接入说明（v0.1 阶段 5）
 
-后端只负责结构化契约、调用边界、状态与事件持久化。本阶段不包含 Prompt、模型调用、OCR、Agent 推理或 Microsoft Agent Framework WorkflowBuilder 实现。其他开发者可以实现 `AgentGateway`，并在其可信编排代码中调用 `agent_service`。当前没有对客户开放的任务创建或调用 HTTP 接口。
+本集成层负责结构化契约、调用边界、状态与事件持久化。独立的真实 MiMo 与 Microsoft Agent Framework 工作流已位于 `app/agents/`，接入说明见 [AI 工作流依赖协议](../../docs/AI_INTEGRATION.md)。通过适配器实现 `AgentGateway` 后，可在可信编排代码中调用 `agent_service`；当前没有对客户开放的任务创建或调用 HTTP 接口。
 
 ## 角色、任务类型与契约
 
@@ -73,6 +73,6 @@ Last-Event-ID: 42
 
 ## 待确认事项
 
-- 真实 Agent 运行框架、任务调度入口和认证方式由后续集成阶段确定。本阶段不会自动执行排队任务。
+- 真实 Agent 运行框架为 Microsoft Agent Framework；网关契约适配、任务调度入口和认证方式在后续联调中接入。本集成层不会自动执行排队任务。
 - 多任务运行与外部文件检查点的生命周期需要与队友的 WorkflowBuilder/FileCheckpointStorage 实现共同确定；当前按一个运行对应一个任务持久化。
 - 客户可见的 Agent 进度文案和事件保留周期尚未定义；事件 API 当前返回已授权订单的原始结构化事件。

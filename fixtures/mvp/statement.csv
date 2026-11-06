@@ -1,0 +1,7 @@
+﻿transaction_id,date,counterparty,amount,direction,remark
+payment-1,2026-10-10,青禾纸业,108.00,out,合成付款样例
+payment-2,2026-10-11,云杉文具,36.90,out,合成付款样例
+payment-3,2026-10-12,林间印务,860.00,out,合成付款样例
+payment-4,2026-10-13,启明网络,450.00,out,合成付款样例
+payment-5,2026-10-14,远山设备,2850.00,out,合成付款样例
+payment-6,2026-10-15,未附票据供应商,129.00,out,缺票样例

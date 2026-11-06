@@ -1,0 +1,208 @@
+{
+  "identity": {
+    "order_id": "demo-order",
+    "run_id": "demo-run",
+    "revision": 2
+  },
+  "report_version": 1,
+  "narrative": {
+    "summary": "本次核对已完成逐笔比对并形成结果记录。部分票据与付款记录已完成对应，其证据来源已在结构化明细中列明。其余事项仍存在差异、重复票据或流水缺少唯一对应票据等情况，原因均未核实，未作任何已解决或已冲销的结论。所有金额与数量以结构化明细展示，本说明不复述数值。",
+    "next_steps": [
+      "向提供方索取差异事项的原因说明及支持材料，核对票据与付款的对应关系",
+      "取得重复票据事项的原始票据资料及编号说明，确认唯一性后另行处理",
+      "补充流水缺少对应票据事项的票据或替代凭证，并核实唯一对应关系",
+      "取得客户所称差额来源的支持材料，未获凭证前维持未解决状态",
+      "完成上述核实后重新出具核对结果，并保留本次记录以便追溯"
+    ],
+    "evidence_notes": [
+      {
+        "evidence_ref": "invoice-receipt-01",
+        "explanation": "列为票据侧来源，用于支持该项票据记录，金额以结构化明细为准"
+      },
+      {
+        "evidence_ref": "receipt-01",
+        "explanation": "列为凭证侧来源，用于支持该项凭证记录，金额以结构化明细为准"
+      },
+      {
+        "evidence_ref": "payment-1",
+        "explanation": "列为付款侧来源，用于支持该项付款记录，金额以结构化明细为准"
+      },
+      {
+        "evidence_ref": "statement",
+        "explanation": "列为流水侧来源，用于支持多项记录的核对基础，未单独确认任何差异原因"
+      },
+      {
+        "evidence_ref": "invoice-receipt-02",
+        "explanation": "列为票据侧来源，用于支持该项票据记录，金额以结构化明细为准"
+      },
+      {
+        "evidence_ref": "receipt-02",
+        "explanation": "列为凭证侧来源，用于支持该项凭证记录，金额以结构化明细为准"
+      },
+      {
+        "evidence_ref": "payment-2",
+        "explanation": "列为付款侧来源，用于支持该项付款记录，金额以结构化明细为准"
+      },
+      {
+        "evidence_ref": "invoice-receipt-03",
+        "explanation": "列为票据侧来源，用于支持该项票据记录，金额以结构化明细为准"
+      },
+      {
+        "evidence_ref": "receipt-03",
+        "explanation": "列为凭证侧来源，用于支持该项凭证记录，金额以结构化明细为准"
+      },
+      {
+        "evidence_ref": "payment-3",
+        "explanation": "列为付款侧来源，用于支持该项付款记录，金额以结构化明细为准"
+      },
+      {
+        "evidence_ref": "invoice-receipt-04",
+        "explanation": "列为票据侧来源，用于支持该项票据记录，金额以结构化明细为准"
+      },
+      {
+        "evidence_ref": "receipt-04",
+        "explanation": "列为凭证侧来源，用于支持该项凭证记录，金额以结构化明细为准"
+      },
+      {
+        "evidence_ref": "payment-4",
+        "explanation": "列为付款侧来源，用于支持该项付款记录，金额以结构化明细为准"
+      },
+      {
+        "evidence_ref": "invoice-receipt-05",
+        "explanation": "列为金额不一致事项的票据侧来源；差异原因未核实"
+      },
+      {
+        "evidence_ref": "receipt-05",
+        "explanation": "列为金额不一致事项的凭证侧来源；差异原因未核实"
+      },
+      {
+        "evidence_ref": "payment-5",
+        "explanation": "列为金额不一致事项的付款侧来源；差异原因未核实"
+      },
+      {
+        "evidence_ref": "invoice-receipt-06",
+        "explanation": "列为票据号码重复事项的票据侧来源；重复原因及唯一性未确认"
+      },
+      {
+        "evidence_ref": "receipt-06",
+        "explanation": "列为票据号码重复事项的凭证侧来源；重复原因及唯一性未确认"
+      },
+      {
+        "evidence_ref": "payment-6",
+        "explanation": "列为缺少唯一对应票据事项的付款侧来源；缺失情况未解决"
+      }
+    ]
+  },
+  "reconciliation": {
+    "identity": {
+      "order_id": "demo-order",
+      "run_id": "demo-run",
+      "revision": 2
+    },
+    "matches": [
+      {
+        "invoice_id": "invoice-receipt-01",
+        "transaction_id": "payment-1",
+        "amount_minor": 10800,
+        "evidence_refs": [
+          "invoice-receipt-01",
+          "receipt-01",
+          "payment-1",
+          "statement"
+        ]
+      },
+      {
+        "invoice_id": "invoice-receipt-02",
+        "transaction_id": "payment-2",
+        "amount_minor": 3690,
+        "evidence_refs": [
+          "invoice-receipt-02",
+          "receipt-02",
+          "payment-2",
+          "statement"
+        ]
+      },
+      {
+        "invoice_id": "invoice-receipt-03",
+        "transaction_id": "payment-3",
+        "amount_minor": 86000,
+        "evidence_refs": [
+          "invoice-receipt-03",
+          "receipt-03",
+          "payment-3",
+          "statement"
+        ]
+      },
+      {
+        "invoice_id": "invoice-receipt-04",
+        "transaction_id": "payment-4",
+        "amount_minor": 45000,
+        "evidence_refs": [
+          "invoice-receipt-04",
+          "receipt-04",
+          "payment-4",
+          "statement"
+        ]
+      }
+    ],
+    "issues": [
+      {
+        "id": "difference-invoice-receipt-05",
+        "kind": "amount_mismatch",
+        "description": "票据与付款金额不同，原因待核实",
+        "invoice_ids": [
+          "invoice-receipt-05"
+        ],
+        "transaction_ids": [
+          "payment-5"
+        ],
+        "difference_minor": 27000,
+        "evidence_refs": [
+          "invoice-receipt-05",
+          "receipt-05",
+          "payment-5",
+          "statement"
+        ]
+      },
+      {
+        "id": "duplicate-invoice-receipt-06",
+        "kind": "duplicate",
+        "description": "票据号码重复",
+        "invoice_ids": [
+          "invoice-receipt-06"
+        ],
+        "transaction_ids": [],
+        "difference_minor": null,
+        "evidence_refs": [
+          "invoice-receipt-06",
+          "receipt-06"
+        ]
+      },
+      {
+        "id": "missing-invoice-payment-6",
+        "kind": "missing_invoice",
+        "description": "流水缺少唯一对应票据",
+        "invoice_ids": [],
+        "transaction_ids": [
+          "payment-6"
+        ],
+        "difference_minor": null,
+        "evidence_refs": [
+          "payment-6",
+          "statement"
+        ]
+      }
+    ],
+    "invoice_total_minor": 403490,
+    "transaction_total_minor": 443390
+  },
+  "unresolved_issue_ids": [
+    "difference-invoice-receipt-05",
+    "duplicate-invoice-receipt-06",
+    "missing-invoice-payment-6"
+  ],
+  "customer_notes": [
+    "合成客户说明：差额可能为运费，暂无凭证；缺票仍待补充。",
+    "老板保留异常的说明：测试操作者：保留全部异常，交付待核实清单。"
+  ]
+}
