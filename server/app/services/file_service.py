@@ -112,6 +112,20 @@ async def upload_files(
     return result
 
 
+async def save_supporting_evidence(
+    session: AsyncSession, storage: Storage, order_id: str, upload: UploadFile,
+    principal: Principal, settings: Settings,
+) -> UploadedFile:
+    """Save one validated evidence image in the caller's transaction."""
+    filename = PureWindowsPath(upload.filename or "unnamed").name
+    content = await read_upload(upload, settings.max_image_bytes)
+    mime, status = classify(filename, "supporting_material", content)
+    if status != "valid":
+        raise AppError("invalid_evidence_file", "Evidence must be a valid JPG or PNG image", 422)
+    return await _save_record(session, storage, order_id, filename, "supporting_material",
+                              content, mime, status, "direct", principal)
+
+
 def _safe_entry(info: zipfile.ZipInfo) -> bool:
     path = info.filename
     normalized = path.replace("\\", "/")

@@ -80,5 +80,6 @@ class ExceptionTicketRead(BaseModel):
     difference_cents: int | None
     status: str
     evidence_json: dict[str, Any]
+    business_classification: str | None
     created_at: datetime
     updated_at: datetime

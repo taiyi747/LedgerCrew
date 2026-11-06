@@ -143,7 +143,7 @@ class ReportDraftInput(StrictContract):
 class ReportDraftOutput(StrictContract):
     order_id: str
     report_version: int = Field(ge=1)
-    report_content: str
+    report_content: str = Field(min_length=1)
     evidence_references: list[str] = Field(default_factory=list)
     unresolved_items: list[str] = Field(default_factory=list)
 

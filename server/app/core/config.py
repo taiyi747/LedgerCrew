@@ -10,6 +10,7 @@ class Settings(BaseSettings):
 
     app_name: str = "LedgerCrew API"
     environment: Literal["development", "test", "production"] = "development"
+    dev_owner_user_ids: list[str] = Field(default_factory=lambda: ["owner"])
     database_url: str = "sqlite+aiosqlite:///./ledgercrew.db"
     sql_echo: bool = False
     storage_root: str = "./storage_data"

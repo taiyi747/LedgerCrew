@@ -34,7 +34,7 @@ async def create_order(session: AsyncSession, data: OrderCreate, principal: Prin
 
 
 async def list_orders(session: AsyncSession, principal: Principal) -> list[Order]:
-    return await records.list_orders(session, principal.user_id)
+    return await records.list_orders(session, None if principal.role == "owner" else principal.user_id)
 
 
 async def get_order(session: AsyncSession, order_id: str, principal: Principal) -> Order:

@@ -105,5 +105,6 @@ class ExceptionTicket(Base):
     difference_cents: Mapped[int | None] = mapped_column(Integer, nullable=True)
     status: Mapped[str] = mapped_column(String(24), default="open", nullable=False)
     evidence_json: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False)
+    business_classification: Mapped[str | None] = mapped_column(String(100), nullable=True)
     created_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now, onupdate=utc_now, nullable=False)

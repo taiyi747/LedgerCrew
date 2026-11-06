@@ -1,6 +1,6 @@
-# LedgerCrew 后端（v0.1 开发阶段 5）
+# LedgerCrew 后端（v0.1 开发阶段 6）
 
-当前提供工作室、模拟订单、文件上传、安全 ZIP 解压、资金流水 CSV 导入、确定性票据对账，以及 Agent 集成契约、运行状态和事件流。真实 Agent 和报告交付尚未实现。
+当前提供工作室、模拟订单、文件上传、安全 ZIP 解压、资金流水 CSV 导入、确定性票据对账、Agent 集成契约、异常处理、报告审批与交付。真实 Agent 内部逻辑尚未实现。
 
 ## 环境与安装
 
@@ -35,7 +35,7 @@ uvicorn app.main:app --reload
 
 ## 开发身份与 API
 
-开发和测试环境的受保护接口必须传 `X-User-Id`，它只是可替换的模拟身份。工作室 `owner_user_id` 由该身份确定，客户端不能指定其他所有者。订单和文件读取均检查工作室归属；无权限对象返回 404。**生产环境禁用这个模拟身份，受保护接口返回 503，接入真实认证前不可用于生产。**
+开发和测试环境的受保护接口必须传 `X-User-Id`，它只是可替换的模拟身份。`DEV_OWNER_USER_IDS`（默认 `["owner"]`）指定平台老板，其他身份为客户。工作室 `owner_user_id` 是客户归属 ID，由创建身份确定；无权限对象返回 404。客户只能读取自己订单的已发布报告。**生产环境禁用模拟身份，受保护接口返回 503，接入真实认证前不可用于生产。**
 
 | 方法 | 路径 | 说明 |
 | --- | --- | --- |
@@ -56,6 +56,14 @@ uvicorn app.main:app --reload
 | GET | `/api/v1/orders/{order_id}/matches` | 查询最新批次的唯一匹配 |
 | GET | `/api/v1/orders/{order_id}/exceptions` | 查询最新批次的异常工单 |
 | GET | `/api/v1/orders/{order_id}/events/stream` | 订单事件 SSE；支持 `Last-Event-ID` 或 `after_id` 续读 |
+| GET | `/api/v1/exceptions/{exception_id}` | 查询异常工单与处理状态 |
+| POST / GET | `/api/v1/exceptions/{exception_id}/supplements` | 客户提交文字或证据图片、查询补充历史 |
+| POST | `/api/v1/exceptions/{exception_id}/decisions` | 老板处理异常 |
+| GET | `/api/v1/orders/{order_id}/reports` | 查询可访问的报告版本 |
+| GET | `/api/v1/reports/{report_id}` | 查询报告 JSON |
+| GET | `/api/v1/reports/{report_id}/download` | 下载可打印 HTML |
+| POST | `/api/v1/reports/{report_id}/submit-review`、`approve`、`reject`、`publish` | 老板审核与发布 |
+| GET | `/api/v1/orders/{order_id}/exports/{export_type}.csv` | 发票、流水、匹配、异常 CSV |
 
 创建工作室 JSON：`{"name":"示例工作室","business_type":"digital_services"}`。创建订单 JSON：`{"studio_id":"<工作室 ID>","period_start":"2026-10-01","period_end":"2026-10-31","service_scope":"monthly_records"}`。订单编号、`draft` 状态和 `is_simulated=true` 由服务端设置，客户端不能传状态。价格尚未确定，`price_cents` 在本阶段不由 API 填写。
 
@@ -67,7 +75,9 @@ CSV 默认字段、列名映射、金额规则、导入步骤和模板见 [CSV �
 
 票据写入契约、确定性匹配与异常规则、收支汇总口径见 [对账说明](docs/RECONCILIATION.md)。本阶段没有票据识别或 Agent 实现；未来集成方通过 `InvoiceRecordCreate` 和 `persist_invoice` 服务写入已验证的票据字段。对账只匹配两个方向均唯一的候选；每次运行保留一个新批次，查询接口返回最新批次。
 
-五个 Agent 角色的 Pydantic 契约、`AgentGateway` 接入方法、任务状态、Fake 与 SSE 用法见 [Agent 接入说明](docs/agent-integration.md)。本阶段只提供集成层，不调用真实 Agent。`FakeAgentGateway` 仅供开发和测试，生产环境调用会报错。任务创建和调用是可信后端服务接口，不对客户开放 HTTP 写入入口。
+五个 Agent 角色的 Pydantic 契约、`AgentGateway` 接入方法、任务状态、Fake 与 SSE 用法见 [Agent 接入说明](docs/agent-integration.md)。Agent 模块只提供集成层，不调用真实 Agent。`FakeAgentGateway` 仅供开发和测试，生产环境调用会报错。任务创建和调用是可信后端服务接口，不对客户开放 HTTP 写入入口。
+
+客户补充、老板决定、报告版本、审批、HTML 与 CSV 导出口径见 [交付说明](docs/DELIVERY.md)。报告草稿由已校验的 `report_draft` 任务输出创建，财务数字仍取自确定性对账批次；客户只能在发布后查看。
 
 下列限制是 **MVP 初始配置**，可通过 `.env` 调整：
 
