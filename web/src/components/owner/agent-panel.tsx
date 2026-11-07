@@ -13,16 +13,17 @@ export function DeskDefinitions() {
   return <div aria-hidden="true" dangerouslySetInnerHTML={{__html:DESK_DEFS}}/>;
 }
 
-const DeskArtwork = memo(function DeskArtwork({visual}:{visual:DeskVisual}) {
-  // Only repository-owned static SVG and constant colors enter this markup.
-  return <span className="warroom-desk-svg" aria-hidden="true" dangerouslySetInnerHTML={{__html:deskSVG(visual)}}/>;
+const DeskArtwork = memo(function DeskArtwork({visual, seed}:{visual:DeskVisual; seed:string}) {
+  // Only repository-owned static SVG and constant colors enter this markup; the
+  // bar widths and step timings are derived from the desk's own id.
+  return <span className="warroom-desk-svg" aria-hidden="true" dangerouslySetInnerHTML={{__html:deskSVG(visual, seed)}}/>;
 });
 
 export function AgentDesk({agent,onOpen,disabled=false}:{agent:OwnerAgent;onOpen:()=>void;disabled?:boolean}) {
   const visual:DeskVisual=agent.status==='running'?'working':agent.status==='failed'?'urgent':['paused','waiting_children','queued'].includes(agent.status)?'dormant':'idle';
   return <button type="button" className="warroom-desk" disabled={disabled} onClick={onOpen} aria-label={`${agent.name} · ${stateLabels[agent.status]||agent.status}`}>
     <span className="warroom-nameplate">{agent.name}</span>
-    <span className="warroom-art-wrap"><DeskArtwork visual={visual}/><Badge variant="secondary" className={`warroom-desk-pill warroom-desk-pill-${visual}`}>{stateLabels[agent.status]||agent.status}</Badge></span>
+    <span className="warroom-art-wrap"><DeskArtwork visual={visual} seed={agent.id}/><Badge variant="secondary" className={`warroom-desk-pill warroom-desk-pill-${visual}`}>{stateLabels[agent.status]||agent.status}</Badge></span>
     <small>{agent.model} · 完成 {agent.completed} · 失败 {agent.failed} · 排队 {agent.queued}</small>
   </button>;
 }
