@@ -29,16 +29,17 @@ npm run dev
 ```
 
 - 品牌首页：http://127.0.0.1:3210/
-- 客户：http://127.0.0.1:3210/upload/
-- 客户演示：http://127.0.0.1:3210/demo/
-- 旧版页面：http://127.0.0.1:3210/workspace/
+- 客户咨询与材料提交：http://127.0.0.1:3210/upload/
+- 客户演示（合成数据）：http://127.0.0.1:3210/demo/
 - 老板：http://127.0.0.1:3210/owner/
-- 仪表盘：http://127.0.0.1:3210/owner/dashboard.html
+- 仪表盘：http://127.0.0.1:3210/owner/dashboard/
 - OpenAPI：http://127.0.0.1:8000/docs
 
 三个进程均需运行。客户默认开发身份为 `local-customer`，老板为 `owner`，通过同源 fetch 的 `X-User-Id` 传递。仍是本机开发身份与模拟订单。客户与老板各开一个页面即可；本轮没有引入正式登录或税务申报。
 
 `server/.env` 需要配置 `MIMO_API_KEY`、`MIMO_BASE_URL=https://api.xiaomimimo.com/v1`、`MIMO_MODEL_PRO=mimo-v2.6-pro`、`MIMO_MODEL_FLASH=mimo-v2.6-flash`。密钥缺失或调用失败时明确失败，不使用 Fake 回退。预算固定为每处理运行 64 次、每问答 6 次，包含 HTTP 重试，恢复和人工重试不清零。
+
+当前客户首页已增加下单前接洽与预检，请优先按 [接单迭代说明](INTAKE_RECEPTION.md) 操作。以下订单 API 和后半程流程继续兼容。
 
 ## 操作
 
@@ -90,7 +91,7 @@ transaction_date,counterparty,direction,amount,description,external_id
 | `GET /owner/agents/{role}/trace` | 老板可见派单、工具成果与决策摘要 |
 | `GET /owner/events/stream` | 跨订单事件续传 |
 
-复用上传、CSV 导入、异常补充/决定、报告审核和下载接口。客户事件按字段白名单过滤，不包含老板决定内容、内部任务载荷、模型私有推理或未发布报告。老板静态资产来自 `sunset@451c88a87d196cb257ceee5d9e4c0eb3d415a291`，仅通过 FastAPI 白名单提供 `HTML/owner/`；旧原型通过独立的 `/workspace/` 路由提供历史演示，不使用真实老板端审批数据。Next 关闭代理压缩以保持 SSE 逐帧到达。
+复用上传、CSV 导入、异常补充/决定、报告审核和下载接口。客户事件按字段白名单过滤，不包含老板决定内容、内部任务载荷、模型私有推理或未发布报告。老板控制台已迁入 Next.js 原生 `/owner/` 路由，保留 `sunset@451c88a87d196cb257ceee5d9e4c0eb3d415a291` 的原作战室布局与工位插画；shadcn/ui 用于按钮、选择器、表单与审批抽屉。FastAPI 仅提供 API，旧 `/console/` 跳转至前端入口，跳转地址可用 `FRONTEND_ORIGIN` 配置。用户与老板页面及其静态资源统一由 `web/` 维护。Next 关闭代理压缩以保持 SSE 逐帧到达。
 
 ## 验证
 

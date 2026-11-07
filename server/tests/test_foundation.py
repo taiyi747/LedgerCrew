@@ -40,9 +40,11 @@ def test_migration_creates_tables_and_constraints(tmp_path: Path, monkeypatch) -
     with sqlite3.connect(db_path) as connection:
         names = {row[0] for row in connection.execute("SELECT name FROM sqlite_master WHERE type='table'")}
         assert {"studios", "orders", "uploaded_files", "agent_runs", "agent_tasks", "workflow_events", "audit_logs", "alembic_version", "invoice_records", "reconciliation_batches", "reconciliation_matches", "exception_tickets", "exception_supplements", "exception_decisions", "report_versions", "report_review_actions"} <= names
-        assert connection.execute("SELECT version_num FROM alembic_version").fetchone()[0] == "0008_live_workflow"
+        assert connection.execute("SELECT version_num FROM alembic_version").fetchone()[0] == "0012_delegation_todos"
         task_columns = {row[1] for row in connection.execute("PRAGMA table_info(agent_tasks)")}
         assert {"idempotency_key", "correlation_id", "input_schema_version", "provider_metadata", "attempt_count"} <= task_columns
+        delegation_columns = {row[1] for row in connection.execute("PRAGMA table_info(workflow_delegations)")}
+        assert {"operation_key", "attempt_count", "receipts", "todos"} <= delegation_columns
         run_columns = {row[1] for row in connection.execute("PRAGMA table_info(agent_runs)")}
         assert {"checkpoint_data", "correlation_id", "input_schema_version"} <= run_columns
 

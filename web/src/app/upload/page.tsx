@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
-import LiveClient from '../live-client';
 import { AccountGuard } from '@/components/account/account-guard';
+import ReceptionClient from '../reception-client';
+import '../customer.css';
 
-export const metadata: Metadata = { title: '账清 · 资料提交与清账结果' };
-export default function UploadPage() { return <AccountGuard><LiveClient/></AccountGuard>; }
+export const metadata: Metadata = { title: '小账房 · 咨询与材料提交' };
+export default function UploadPage() { return <AccountGuard><div className="customer-surface"><ReceptionClient/></div></AccountGuard>; }

@@ -322,10 +322,15 @@ async def snapshot(session, run_id):
     }
 
 
-async def start_run(session, order_id, principal, key, expected_revision):
+async def start_run(session, order_id, principal, key, expected_revision, *, commit=True):
     order = await order_for_user(session, order_id, principal)
     if order.input_revision != expected_revision:
         raise AppError("stale_revision", "材料版本已变化，请刷新后重试。", 409)
+    # Model request ceiling for one processing run. Every recognised image or
+    # document costs one or more requests; 300 covers a couple hundred materials
+    # plus workflow overhead and still bounds a runaway loop. Raise the constant
+    # when bigger batches arrive.
+    request_limit = 300
     existing = await session.scalar(
         select(WorkflowRun).where(WorkflowRun.order_id == order_id, WorkflowRun.idempotency_key == key)
     )
@@ -334,8 +339,10 @@ async def start_run(session, order_id, principal, key, expected_revision):
     active = await current_run(session, order_id)
     if active and active.status in {"queued", "running", "paused", "failed"}:
         if active.status == "paused" and active.input_revision != order.input_revision:
+            active.request_limit = max(active.request_limit, request_limit)
             await wake_supervisor(session, order_id)
-            await session.commit()
+            if commit:
+                await session.commit()
         return active
     run = WorkflowRun(
         order_id=order_id,
@@ -345,11 +352,14 @@ async def start_run(session, order_id, principal, key, expected_revision):
         input_revision=order.input_revision,
         idempotency_key=key,
         created_by=principal.user_id,
+        request_limit=request_limit,
     )
     session.add(run)
     try:
         await session.flush()
     except IntegrityError:
+        if not commit:
+            raise
         await session.rollback()
         winner = await current_run(session, order_id)
         if winner:
@@ -357,11 +367,15 @@ async def start_run(session, order_id, principal, key, expected_revision):
         raise
     state = await snapshot(session, run.id)
     if not state["csv_ready"]:
-        await session.rollback()
+        if commit:
+            await session.rollback()
         raise AppError("missing_statement", "请上传并成功导入一份无错误行的 CSV 流水。", 422)
     order.status = "processing"
     await event(session, order.id, "workflow.queued", {"workflow_run_id": run.id})
-    await session.commit()
+    if commit:
+        await session.commit()
+    else:
+        await session.flush()
     return run
 
 

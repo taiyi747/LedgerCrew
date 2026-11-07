@@ -2,9 +2,9 @@ name: LedgerCrew integration
 
 on:
   push:
-    paths: ["server/**", "fixtures/**", "web/**", "HTML/owner/**", ".github/workflows/agents.yml"]
+    paths: ["server/**", "fixtures/**", "web/**", ".github/workflows/agents.yml"]
   pull_request:
-    paths: ["server/**", "fixtures/**", "web/**", "HTML/owner/**", ".github/workflows/agents.yml"]
+    paths: ["server/**", "fixtures/**", "web/**", ".github/workflows/agents.yml"]
 
 permissions:
   contents: read
@@ -18,7 +18,7 @@ jobs:
         with:
           python-version: "3.14"
       - run: uv sync --project server --frozen --extra dev
-      - run: uv run --project server --frozen --extra dev ruff check server/app/agents server/app/live server/scripts server/tests/agents server/tests/test_live.py server/tests/live_support.py server/tests/browser_stack.py
+      - run: uv run --project server --frozen --extra dev ruff check server/app/agents server/app/live server/app/intake server/scripts server/tests/agents server/tests/test_live.py server/tests/test_intake.py server/tests/test_intake_workspace.py server/tests/test_owner_frontend.py server/tests/live_support.py server/tests/browser_stack.py
       - run: uv run --project server --frozen --extra dev pytest server/tests -q
 
   browser:

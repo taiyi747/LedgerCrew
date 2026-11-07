@@ -1,4 +1,6 @@
+import asyncio
 import csv
+import json
 from pathlib import Path
 from uuid import uuid4
 
@@ -11,6 +13,7 @@ from app.db.session import make_engine
 from app.live import service
 from app.live.models import Delegation, WorkflowRun
 from app.live.worker import execute_run
+from app.models import WorkflowEvent
 
 
 async def run_worker(tmp_path, runner, kind="processing"):
@@ -49,6 +52,127 @@ async def create_live_order(client):
     )
     assert response.status_code == 201, response.text
     return response.json(), headers
+
+
+def test_delegation_todos_are_planned_tracked_and_traced(tmp_path, monkeypatch):
+    async def scenario(client, storage):
+        order_id, _customer, _created_run = await prepare_live_order(client)
+        runner = LiveScriptedRunner()
+        await run_worker(tmp_path, runner)
+        owner = {"X-User-Id": "owner"}
+        trace = (
+            await client.get(
+                f"/api/v1/owner/agents/invoice_processing/trace?order_id={order_id}", headers=owner
+            )
+        ).json()
+        delegations = [d for d in trace["delegations"] if d["task_type"] == "invoice_batch"]
+        assert delegations, trace
+        todos = delegations[0]["todos"]
+        assert todos, delegations[0]
+        assert all(t["title"] and t["status"] == "completed" for t in todos), todos
+        assert [t["id"] for t in todos] == [f"t{i + 1}" for i in range(len(todos))]
+        dashboard = (await client.get("/api/v1/owner/dashboard", headers=owner)).json()
+        agent = next(a for a in dashboard["agents"] if a["id"] == "invoice_processing")
+        assert agent["todos"] == {"done": len(todos), "total": len(todos)}, agent
+        engine = make_engine()
+        sessions = async_sessionmaker(engine, expire_on_commit=False)
+        try:
+            async with sessions() as session:
+                rows = (
+                    await session.scalars(
+                        select(WorkflowEvent).where(WorkflowEvent.event_type == "delegation.todos")
+                    )
+                ).all()
+        finally:
+            await engine.dispose()
+        assert rows, "规划与进度更新应发出 delegation.todos 事件"
+
+    exercise(tmp_path, monkeypatch, scenario)
+
+
+def test_work_tools_refuse_before_the_agent_plans(tmp_path, monkeypatch):
+    async def scenario(client, storage):
+        _order_id, _customer, _created_run = await prepare_live_order(client)
+        refusals = []
+
+        class GuardProbe(LiveScriptedRunner):
+            async def generate(self, role, prompt, schema, budget, *, tools=None, image=None):
+                named = {tool.__name__: tool for tool in tools or []}
+                if "save_customer_message" in named:
+                    refusals.append(json.loads(await named["save_customer_message"]("先不规划直接干。")))
+                return await super().generate(role, prompt, schema, budget, tools=tools, image=image)
+
+        await run_worker(tmp_path, GuardProbe())
+        assert refusals, "业务工具应先拒绝未规划的调用"
+        assert "plan_todos" in refusals[0]["error"], refusals
+
+    exercise(tmp_path, monkeypatch, scenario)
+
+
+def test_run_budget_covers_large_material_batches(tmp_path, monkeypatch):
+    async def scenario(client, storage):
+        order_id, customer, created = await prepare_live_order(client)
+        # 6 张票据图片 + 1 份流水 CSV：运行预算统一 300 次模型请求。
+        assert created["request_limit"] == 300, created
+        state = (await client.get(f"/api/v1/orders/{order_id}/runs/current", headers=customer)).json()
+        assert state["request_limit"] == created["request_limit"], state
+
+    exercise(tmp_path, monkeypatch, scenario)
+
+
+def test_dispatch_runs_batched_delegations_in_parallel(tmp_path, monkeypatch):
+    async def scenario(client, storage):
+        _order_id, _customer, _created_run = await prepare_live_order(client)
+        state = {"active": 0, "peak": 0}
+
+        class ParallelProbe(LiveScriptedRunner):
+            async def generate(self, role, prompt, schema, budget, *, tools=None, image=None):
+                from app.live.contracts import TASK_ROLE, Assignment, SupervisorDecision
+
+                if schema is SupervisorDecision:
+                    named = {tool.__name__: tool for tool in tools or []}
+                    snapshot = json.loads(prompt.split("\n")[-1])
+                    eligible = snapshot["eligible_tasks"]
+                    if len(eligible) >= 2:
+                        # 同批派出两件独立任务，验证 Dispatch 并发执行。
+                        await named["delegate_tasks"](
+                            [
+                                Assignment(
+                                    agent_role=TASK_ROLE[task], task_type=task, goal="同批派出的独立任务"
+                                ).model_dump()
+                                for task in eligible[:2]
+                            ]
+                        )
+                        return SupervisorDecision(action="delegated", summary="同批派出两件独立任务")
+                if schema.__name__ == "RoleResult":
+                    state["active"] += 1
+                    state["peak"] = max(state["peak"], state["active"])
+                    await asyncio.sleep(0.05)
+                    try:
+                        return await super().generate(role, prompt, schema, budget, tools=tools, image=image)
+                    finally:
+                        state["active"] -= 1
+                return await super().generate(role, prompt, schema, budget, tools=tools, image=image)
+
+        await run_worker(tmp_path, ParallelProbe())
+        assert state["peak"] >= 2, f"同批派单应并发执行，实际并发峰值 {state['peak']}"
+
+    exercise(tmp_path, monkeypatch, scenario)
+
+
+def test_owner_facing_notes_reject_machine_text():
+    import pytest
+
+    from app.live.engine import owner_note
+
+    assert owner_note("重复发票一件、缺失发票若干，请决定是否接受未解决。")
+    for bad in (
+        "EX-E014E125933946EB8FD65814020F2651 需要决定",
+        "批次 cc6371fb-aee1-4460-ab04-b2cde7f9e595 存在异常",
+        "eligible_tasks 为空，无法继续派发",
+    ):
+        with pytest.raises(ValueError):
+            owner_note(bad)
 
 
 def test_supervised_live_flow_and_report_delivery(tmp_path, monkeypatch):

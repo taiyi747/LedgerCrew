@@ -27,7 +27,7 @@ ROLE_INSTRUCTIONS = {
     "supervisor": "你是财务运营总管。检查材料并在允许的流程中安排下一项任务。",
     "invoice": "你是票据处理员工。逐字读取图片；不推测缺失号码、日期、金额和交易方。",
     "reconciliation": "你是数据核对员工。必须调用 reconcile_transactions 工具，依据工具结果整理异常。",
-    "customer_service": "你是客户服务员工。根据异常证据编写供老板审核的询问草稿。",
+    "customer_service": "你是客户服务员工。按当前任务接待客户、解释材料预检，或根据异常证据编写供老板审核的询问草稿；不得代客户下单或代老板作决定。",
     "delivery": "你是风险与交付员工。只根据已经核对的记录撰写报告，不自行计算或改写金额。",
 }
 DATA_BOUNDARY = (
@@ -44,7 +44,7 @@ class RequestBudget:
     persisted BEFORE the HTTP request, so a restart does not reset failed attempts.
     """
 
-    def __init__(self, deps: AgentDependencies, identity: RunIdentity, limit: int = 64):
+    def __init__(self, deps: AgentDependencies, identity: RunIdentity, limit: int | None = 64):
         self.deps = deps
         self.identity = identity
         self.limit = limit
@@ -54,7 +54,7 @@ class RequestBudget:
         async with self._lock:
             previous = await self.deps.load_artifact(self.identity, "usage") or {}
             count = int(previous.get("requests", 0))
-            if count >= self.limit:
+            if self.limit is not None and count >= self.limit:
                 raise RequestBudgetExceeded(f"本次运行已达到 {self.limit} 次模型请求上限，请人工处理。")
             await self.deps.save_artifact(
                 self.identity,
@@ -183,7 +183,10 @@ class MiMoRunner:
             client = OpenAIChatCompletionClient(
                 model=model,
                 async_client=openai_client,
-                function_invocation_configuration={"max_iterations": 4, "max_function_calls": 4},
+                function_invocation_configuration={
+                    "max_iterations": self.settings.max_iterations,
+                    "max_function_calls": self.settings.max_function_calls,
+                },
             )
             agent = Agent(
                 client=client,
@@ -243,7 +246,20 @@ class MiMoRunner:
                 )
                 if text.startswith("```"):
                     text = text.removeprefix("```json").removeprefix("```").removesuffix("```").strip()
-                output = schema.model_validate_json(text)
+                try:
+                    output = schema.model_validate_json(text)
+                except ValidationError:
+                    if not (
+                        force_tools
+                        and getattr(schema, "accepts_tool_progress", False)
+                        and any(message.role == "tool" for message in response.messages)
+                    ):
+                        raise
+                    # This is an internal turn receipt, never a completed business result.
+                    # The ReAct controller requires a verified, persisted final candidate.
+                    output = schema.model_validate(
+                        {"summary": "工具回合已结束，继续未完成待办。", "questions": [], "evidence_refs": []}
+                    )
                 usage = response.usage_details
                 await budget.deps.save_artifact(
                     budget.identity,

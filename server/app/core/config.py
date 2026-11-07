@@ -9,6 +9,7 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
     app_name: str = "LedgerCrew API"
+    frontend_origin: str = "http://127.0.0.1:3210"
     environment: Literal["development", "test", "production"] = "development"
     dev_owner_user_ids: list[str] = Field(default_factory=lambda: ["owner"])
     database_url: str = "sqlite+aiosqlite:///./ledgercrew.db"

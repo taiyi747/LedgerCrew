@@ -2,6 +2,8 @@
 
 当前已接通客户页、老板作战室与 `app/live/` 的总管委派工作流。总管实际调用派单工具，专业 Agent 调用现有业务服务完成识别、对账和草稿；后台 Worker 持久化预算、租约及检查点。完整启动和新增接口见 [实时联调说明](../docs/LIVE_INTEGRATION.md)。`app/agents/` 的独立 CLI 保留。
 
+新增 `app/intake/` 接洽与预检模块，沿用同一 Worker；升级至最新 Alembic 迁移后启用。接口和原子确认事务见 [接单说明](../docs/INTAKE_RECEPTION.md)。
+
 ## 环境与安装
 
 后端与 AI 模块统一使用 Python 3.14。在 `server/` 目录执行：
