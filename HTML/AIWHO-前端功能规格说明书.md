@@ -219,8 +219,9 @@
 - 交互：整卡 `role="button" tabindex="0"`，click / Enter 打开抽屉 `openDrawer(agent.id)`；`aria-label="{name} · {状态名}"`。
 
 ### 7. WorkspacePanel（工作区面板，`components/war-room/WorkspacePanel.tsx` / `.panel`）
-- **模块内底 = 全局底色**（`--bg`，不做浮起的白卡，去 `box-shadow`），靠 `1px --hairline-strong` 边框 + **彩色标题**分模块。
-- `aria-label={workspace.name}`；头部 48px（名称用 `--accent-text` **上色** / `onlineCount/agentCount 在线` / `urgentCount>0` 时「N 项待处理」红）。
+- **模块内底 = 全局底色**（`--bg`，不做浮起的白卡，去 `box-shadow`），靠 `1px --hairline-strong` 边框来分模块。**标题文字用 `--text-primary` 深色，不上色**。
+- **底部导航栏 `.dock` 的底色与模块标题栏一致**（都是 `--bg`），靠边框 + `--shadow-float` 浮起来；选中项才用 `--accent` 亮青。
+- `aria-label={workspace.name}`；头部 48px（名称 / `onlineCount/agentCount 在线` / `urgentCount>0` 时「N 项待处理」红）。
 - 底板 `.deck-floor`（只留细网格做结构纹理，底 `var(--bg)`）内工位卡按 `agents` 顺序流式排布（`flex-wrap`、**`justify-content:center` 工作台居中**、`gap:16px`、`padding:16px`）。
 - 进场动画：`.enter`（opacity 0→1 + `translateY(8px→0)`，380ms `cubic-bezier(.22,1,.36,1)`，`both`），每面板延迟 `min(i,5)*50ms`。
 
@@ -590,7 +591,7 @@ level：`escalate→critical`，`cancel/replay→warn`，其余 `info`）。
 | `--text-muted` | `#748f9c` | meta/图标默认色 |
 | `--accent` | `#7ad5ee` | 主青**填充**（按钮、选中态、折线主线、第一名条），上压 `--on-invert` 墨字 |
 | `--accent-strong` | `#5cc6e6` | 主按钮 hover |
-| `--accent-text` | `#0b6c89` | 青当**文字/描边**时的压深版（模块标题、focus 环、按下态图标）——浅底上亮青看不清 |
+| `--accent-text` | `#0b6c89` | 青当**文字/描边**时的压深版（focus 环、按下态图标、调用轨迹 warn 边）——浅底上亮青看不清 |
 | `--accent-soft` | `rgba(122,213,238,.32)` | focus 光环、工具按钮激活底 |
 | `--accent-tint` | `#a8f1ff` | 淡青（色卡第 3 条）：追问 chip hover |
 | `--highlight` | `#fffa8d` | 淡黄（色卡第 4 条）：待办数色块 |

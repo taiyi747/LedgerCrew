@@ -398,7 +398,7 @@ body {
   line-height: 24px;
   font-weight: 600;
   letter-spacing: -.005em;
-  color: var(--accent-text);
+  color: var(--text-primary);
 }
 
 .deck {
@@ -775,7 +775,8 @@ pre.code {
   display: flex;
   gap: 4px;
   padding: 4px;
-  background: var(--surface);
+  /* 底色与模块标题栏一致（全局底），靠边框与投影浮起来 */
+  background: var(--bg);
   border: 1px solid var(--hairline);
   border-radius: var(--r-card);
   box-shadow: var(--shadow-float);
