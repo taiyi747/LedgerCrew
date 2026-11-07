@@ -26,6 +26,8 @@
   --accent-tint: #a8f1ff;
   /* 铺在亮青色带（--accent）上的告警字：红压上去 3.5:1，压深到 5.9:1 */
   --accent-warn: #8f2b26;
+  /* 标题栏底色（用户指定的淡青）；条内文字用 --on-invert 墨字，明暗两套同值 */
+  --title-bar: #e6f8fb;
   --highlight: #fffa8d;
   --highlight-soft: rgba(255, 250, 141, .5);
   --positive: #0e8f6e;
@@ -105,6 +107,7 @@
   --accent-tint: #a8f1ff;
   /* 深色下色带同样是亮青，告警字同色 */
   --accent-warn: #8f2b26;
+  --title-bar: #e6f8fb;
   --highlight: #fffa8d;
   --highlight-soft: rgba(255, 250, 141, .2);
   --positive: #35d6a4;
@@ -393,8 +396,8 @@ body {
   align-items: center;
   gap: 10px;
   padding: 0 20px;
-  /* 标题栏整条铺 --accent —— 与底部导航选中项（作战室）同一个令牌，必然同色 */
-  background: var(--accent);
+  /* 标题栏底色：淡青 --title-bar */
+  background: var(--title-bar);
   color: var(--on-invert);
 }
 .panel-head .grow { flex: 1; }
@@ -406,7 +409,7 @@ body {
   letter-spacing: -.005em;
   color: var(--on-invert);
 }
-.panel-head .t-meta { color: var(--on-invert); opacity: .82; }
+.panel-head .t-meta { color: var(--on-invert); opacity: .72; }
 .panel-head .neg { color: var(--accent-warn); opacity: 1; font-weight: 500; }
 
 .deck {
