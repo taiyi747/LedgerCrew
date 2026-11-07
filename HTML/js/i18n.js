@@ -265,13 +265,17 @@ const I18N = {
     "消息流": "Event stream",
     "完整契约": "Full contract",
     "内置数据": "Built-in data",
-    /* 顶栏：连接状态 / 界面锁定 / 昼夜切换 */
+    /* 顶栏：连接状态 / 界面锁定 / 跳设置；昼夜切换挪进设置页 */
     "连接状态": "Connection status",
     "连接": "Connection",
     "已连上后端": "Backend connected",
     "内置演示数据": "Built-in demo data",
     "锁定界面": "Lock UI",
     "解除锁定": "Unlock",
+    "外观": "Appearance",
+    "昼夜切换": "Day / night",
+    "深色": "Dark",
+    "浅色": "Light",
     "切换到深色": "Switch to dark",
     "切换到浅色": "Switch to light",
     "已连上后端，状态会写进中台": "Backend connected — state is written through",

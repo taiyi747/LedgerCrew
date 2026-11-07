@@ -8,7 +8,8 @@ const ICONS = {
   clock: '<svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
   wifi: '<svg class="ic" viewBox="0 0 24 24"><path d="M2 8.5a15 15 0 0 1 20 0"/><path d="M5 12a11 11 0 0 1 14 0"/><path d="M8.5 15.5a6 6 0 0 1 7 0"/><circle cx="12" cy="19" r="1.2"/></svg>',
   lock: '<svg class="ic" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>',
-  gear: '<svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M19.1 4.9 17 7M7 17l-2.1 2.1"/></svg>',
+  /* 设置 = 三根调节滑杆。原来 gear 跟 sun 画成了同一张图（圆 + 8 根射线，看着像太阳） */
+  gear: '<svg class="ic" viewBox="0 0 24 24"><path d="M4 7h6M14 7h6M4 12h9M17 12h3M4 17h2M10 17h10"/><circle cx="12" cy="7" r="2.4"/><circle cx="15" cy="12" r="2.4"/><circle cx="8" cy="17" r="2.4"/></svg>',
   grid: '<svg class="ic" viewBox="0 0 24 24"><rect x="4" y="4" width="6" height="6" rx="1"/><rect x="14" y="4" width="6" height="6" rx="1"/><rect x="4" y="14" width="6" height="6" rx="1"/><rect x="14" y="14" width="6" height="6" rx="1"/></svg>',
   chart: '<svg class="ic" viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-8M22 20H2"/></svg>',
   refresh: '<svg class="ic" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-2.6-6.4"/><path d="M21 4v5h-5"/></svg>',
@@ -149,7 +150,7 @@ function renderTopbar() {
       <div class="stat-inline"><span class="v">${ov.latencyMs}ms</span><span class="l">${t("响应")}</span></div>
       <button class="icon-btn" id="t-net" title="${t("连接状态")}" aria-label="${t("连接状态")}" aria-expanded="false">${ICONS.wifi}</button>
       <button class="icon-btn" id="t-lock" title="${state.uiLocked ? t("解除锁定") : t("锁定界面")}" aria-label="${state.uiLocked ? t("解除锁定") : t("锁定界面")}" aria-pressed="${state.uiLocked}">${state.uiLocked ? ICONS.lockOn : ICONS.lock}</button>
-      <button class="icon-btn" id="t-theme" title="${state.theme === "dark" ? t("切换到浅色") : t("切换到深色")}" aria-label="${state.theme === "dark" ? t("切换到浅色") : t("切换到深色")}">${state.theme === "dark" ? ICONS.moon : ICONS.sun}</button>
+      <button class="icon-btn" id="t-settings" title="${t("设置")}" aria-label="${t("设置")}">${ICONS.gear}</button>
     </div>
     ${netPopover()}`;
 }
@@ -497,6 +498,17 @@ function renderSettings() {
   const demoTitle = t("票面异常 · 金额不符 2 笔");
   const demoDetail = t("INV-233 与流水差 ¥40，INV-241 缺凭证");
 
+  // 昼夜切换从顶栏挪进设置页（顶栏第三键改成跳设置）
+  const themeCard = `
+    <div class="card" id="appearance">
+      <div class="card-title"><span class="t-title">${t("外观")}</span></div>
+      <div class="info-row">
+        <span class="t-body grow">${t("昼夜切换")}</span>
+        <span class="t-meta">${state.theme === "dark" ? t("深色") : t("浅色")}</span>
+        <button class="icon-btn" id="t-theme" title="${state.theme === "dark" ? t("切换到浅色") : t("切换到深色")}" aria-label="${state.theme === "dark" ? t("切换到浅色") : t("切换到深色")}">${state.theme === "dark" ? ICONS.moon : ICONS.sun}</button>
+      </div>
+    </div>`;
+
   const webhookForm = `
   <div class="card" id="webhook">
     <div class="card-title"><span class="t-title">${t("回调调试")}</span></div>
@@ -564,6 +576,7 @@ function renderSettings() {
 
   document.getElementById("view").innerHTML = `
   <div class="settings-stack">
+    ${themeCard}
     <div class="card">
       <div class="card-title"><span class="t-title">${t("后端接入")}</span></div>
       <div class="info-row"><span class="t-body grow">${t("数据来源")}</span><span class="t-meta">${srcText}</span>${srcChip}</div>
@@ -773,7 +786,7 @@ function renderAll() {
 /* ---------- 事件绑定 ---------- */
 function bindGlobal() {
   // 工位卡：点击 / Enter 开抽屉
-  // 顶栏：连接状态浮层 / 界面锁定 / 昼夜切换
+  // 顶栏：连接状态浮层 / 界面锁定 / 跳设置
   document.addEventListener("click", (e) => {
     const net = e.target.closest("#t-net");
     if (net) {
@@ -784,6 +797,7 @@ function bindGlobal() {
       return;
     }
     if (e.target.closest("#t-lock")) { toggleLock(); return; }
+    if (e.target.closest("#t-settings")) { location.href = "settings.html"; return; }
     if (e.target.closest("#t-theme")) {
       setTheme(state.theme === "dark" ? "light" : "dark");
       return;

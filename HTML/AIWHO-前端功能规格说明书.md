@@ -144,15 +144,17 @@
 
 ### 1. TopBar（顶栏，demo.html `.topbar` / `components/TopBar.tsx`）
 
-> **2026-11-07 右上三个按钮的用途调整**：
+> **2026-11-07 右上三个按钮的用途调整**（同日再调：第三个改回跳设置，图标重画）：
 >
 > | 按钮 | 用途 | 实现 |
 > |---|---|---|
 > | WiFi | **连接状态** | 点开 `.net-pop` 浮层：连接方式 / API Base / 延迟 / 在线工位 / 紧急 / 消息；点别处收起 |
 > | 锁 | **界面锁定（防误触）** | `state.uiLocked` 切换；锁定后工位卡与抽屉指令按钮不响应，再点解锁 |
-> | 太阳/月亮 | **昼夜切换** | `setTheme()` 写 `localStorage["aiwho.theme"]`，给 `<html>` 挂 `data-theme` |
+> | 滑杆 | **跳设置** | `#t-settings` → `location.href = "settings.html"` |
 >
-> 原先锁是「传输已加密」的装饰图标、第三个是跳设置（底部导航已有设置，故改用）。
+> **昼夜切换从顶栏撤下，挪进设置页「外观」卡**（`#t-theme`，`setTheme()` 写 `localStorage["aiwho.theme"]`，给 `<html>` 挂 `data-theme`）—— 能力没丢，只是换了个地方。
+>
+> **图标重画**：`gear` 原本跟 `sun` 是**同一张图**（圆 + 8 根射线，所以看着像太阳），已改成**三根调节滑杆**；顶栏第三键与底部导航「设置」共用它。`sun` / `moon` 只留给设置页的昼夜开关。
 
 **深色模式**：`[data-theme="dark"]` 整套覆盖 CSS 变量 —— 常规令牌（bg/surface/raised/hairline/text/track/shadow）、
 反白元素（`--on-invert`，亮青上压墨字）、滚动条，以及**工位插画配色 `--art-*`**（桌椅转中性灰、剪影压到最深，深底上才读得出）。
