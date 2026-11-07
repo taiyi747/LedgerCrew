@@ -1,76 +1,205 @@
-/* Original sunset control-room composition, now rendered by Next.js. */
-body:has(.warroom-root){background:#e8ebed;--primary:#30343b;--primary-foreground:#fff;--accent:#eef1f3;--accent-foreground:#15191d;--muted:#eef1f3;--muted-foreground:#79818a;--border:rgba(20,25,30,.12);--input:rgba(20,25,30,.17);--ring:#adb5bd;--card:#fcfdfd;--background:#fcfdfd;--foreground:#15191d;--secondary:#eef1f3;--secondary-foreground:#4d545b}
-.warroom-root{height:100dvh;min-height:0;overflow:hidden;background:#e8ebed;color:#15191d;font-family:"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;font-size:14px;line-height:20px}
+/* Original sunset control-room composition, now rendered by Next.js.
+   Palette follows the brand swatch: accent #4ED7F1 → hover #6FE6FC → soft #A8F1FF → lemon #FFFA8D,
+   with the exemplar CTA fill #7AD5EE and its ink #243E4C. */
+body:has(.warroom-root){
+  background:#eaf4f7;
+  --brand-fill:#7ad5ee;
+  --brand-fill-hover:#6fe6fc;
+  --brand-accent:#4ed7f1;
+  --brand-soft:#a8f1ff;
+  --brand-lemon:#fffa8d;
+  --brand-ink:#243e4c;
+  --brand-body:#47616a;
+  --brand-muted:#6d7e82;
+  --brand-line:rgba(36,62,76,.11);
+  --brand-page:#eaf4f7;
+  --brand-surface:#fffffd;
+  --primary:#7ad5ee;--primary-foreground:#243e4c;
+  --accent:#a8f1ff;--accent-foreground:#243e4c;
+  --muted:#f1f6f8;--muted-foreground:#6d7e82;
+  --secondary:#eef7fa;--secondary-foreground:#2c5563;
+  --border:rgba(36,62,76,.12);--input:rgba(36,62,76,.17);--ring:#4ed7f1;
+  --card:#fffffd;--background:#eaf4f7;--foreground:#243e4c
+}
+.warroom-root{height:100dvh;min-height:0;overflow:hidden;background:#eaf4f7;color:#243e4c;font-family:"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;font-size:14px;line-height:20px}
 .warroom-shell{height:100%;display:flex;flex-direction:column;padding:0 10%}
-.warroom-topbar{height:60px;flex-shrink:0;display:flex;align-items:center;justify-content:space-between;gap:14px;padding:0 16px;background:#fcfdfd;border-bottom:1px solid rgba(20,25,30,.09)}
+.warroom-topbar{height:60px;flex-shrink:0;display:flex;align-items:center;justify-content:space-between;gap:14px;padding:0 16px;background:#fffffd;border-bottom:1px solid rgba(36,62,76,.09)}
 .warroom-topbar h1{display:flex;align-items:center;justify-content:center;gap:10px;font-size:16px;font-weight:650;white-space:nowrap;margin:0}
 .warroom-topbar-right{display:flex;align-items:center;gap:8px;white-space:nowrap;font-size:14px}
-.warroom-connection{display:inline-flex;align-items:center;gap:8px;white-space:nowrap;font-size:12px;color:#4d545b;background:#fcfdfd;border:1px solid rgba(20,25,30,.12);border-radius:999px;padding:6px 10px}
-.warroom-lamp{display:inline-block;width:8px;height:8px;flex-shrink:0;border-radius:99px;background:#79818a}.warroom-lamp-working{background:#c2410c}.warroom-warning{color:#b91c1c}
-.warroom-ticker{height:48px;flex-shrink:0;margin:16px 24px 0;display:flex;align-items:center;gap:24px;padding:0 16px;background:#fcfdfd;border:1px solid rgba(20,25,30,.09);border-radius:10px;overflow:hidden;color:#79818a;font-size:13px}
+.warroom-connection{display:inline-flex;align-items:center;gap:8px;white-space:nowrap;font-size:12px;color:#47616a;background:#fffffd;border:1px solid rgba(36,62,76,.12);border-radius:999px;padding:6px 10px}
+.warroom-lamp{display:inline-block;width:8px;height:8px;flex-shrink:0;border-radius:99px;background:#b8c9ce}.warroom-lamp-working{background:#4ed7f1;box-shadow:0 0 0 3px rgba(78,215,241,.22)}.warroom-warning{color:#a63a32}
+.warroom-ticker{height:48px;flex-shrink:0;margin:16px 24px 0;display:flex;align-items:center;gap:24px;padding:0 16px;background:transparent;border:1px solid rgba(36,62,76,.09);border-radius:10px;overflow:hidden;color:#6d7e82;font-size:13px}
 .warroom-ticker>span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.warroom-ticker small{font-size:12px;white-space:nowrap}
-.warroom-main{flex:1;min-height:0;overflow-y:auto;padding:16px 24px 96px;scrollbar-color:#cdd2d5 transparent;scrollbar-width:thin}.warroom-inner{max-width:1600px;margin:0 auto}.warroom-inner>[role=alert]{margin-bottom:16px}
-.warroom-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px}.warroom-order-select{display:flex;align-items:center;gap:12px;min-width:0}.warroom-order-select label{font-size:14px;font-weight:400;white-space:nowrap}.warroom-actions{display:flex;gap:12px;flex-wrap:wrap}.warroom-root [data-slot=button]{height:36px;font-size:13px;padding-inline:14px;border-radius:8px}.warroom-root [data-slot=button][data-variant=outline]{background:#fcfdfd;border-color:rgba(20,25,30,.17);box-shadow:0 1px 2px rgba(18,24,30,.04);font-weight:400}.warroom-run-note{margin:8px 0 20px;color:#79818a;font-size:13px;overflow-wrap:anywhere}
-.warroom-master,.warroom-room{background:#fcfdfd;border:1px solid rgba(20,25,30,.09);border-radius:14px;box-shadow:0 2px 8px rgba(18,24,30,.08),0 1px 2px rgba(18,24,30,.05);overflow:hidden}
-.warroom-master{display:flex;align-items:center;justify-content:space-between;gap:24px;padding:20px 30px;margin-bottom:18px;min-height:220px}.warroom-master-copy>span{font-family:ui-monospace,Consolas,monospace;font-size:12px;line-height:16px;color:#79818a}.warroom-master h2{margin:10px 0;font-size:23px;font-weight:650;line-height:1.4}.warroom-master p{color:#4d545b;font-size:14px;line-height:24px}
-.warroom-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.warroom-room{display:flex;flex-direction:column}.warroom-room-head{height:48px;flex-shrink:0;display:flex;align-items:center;gap:10px;padding:0 20px;border-bottom:1px solid rgba(20,25,30,.09)}.warroom-room-head h2{font-size:15px;line-height:24px;font-weight:600;margin:0}.warroom-room-head small{margin-left:auto;font-size:12px;color:#79818a}
-.warroom-floor{display:flex;align-items:center;justify-content:center;padding:16px;min-height:194px;background:linear-gradient(rgba(20,25,30,.09) 1px,transparent 1px),linear-gradient(90deg,rgba(20,25,30,.09) 1px,transparent 1px),linear-gradient(180deg,#e3e7e9 0%,#eef1f3 38%,#e6eaed 100%);background-size:26px 26px,26px 26px,100% 100%;box-shadow:inset 0 6px 12px -8px rgba(20,25,30,.2)}
-.warroom-desk{position:relative;display:flex;align-items:center;flex-direction:column;justify-content:center;gap:6px;width:200px;flex-shrink:0;border:0;background:transparent;padding:4px 12px 8px;font:inherit;color:inherit;cursor:pointer;border-radius:8px}.warroom-desk:disabled{cursor:default;opacity:.7}.warroom-desk:focus-visible{outline:2px solid #c2410c;outline-offset:4px}.warroom-nameplate{position:relative;z-index:1;display:inline-block;max-width:200px;border:1px solid rgba(20,25,30,.15);border-radius:6px;background:#fcfdfd;padding:3px 7px;box-shadow:0 1px 2px rgba(18,24,30,.06);font-size:11px;color:#79818a;white-space:nowrap}.warroom-art-wrap{position:relative;display:block;width:176px;height:126px}.warroom-desk-svg{display:block;width:176px;height:126px}.warroom-root .desk-art{display:block;width:176px;height:126px;transition:transform .2s cubic-bezier(.22,1,.36,1)}.warroom-desk:hover:enabled .desk-art{transform:translateY(-2px)}.warroom-desk>small{font-size:10px;line-height:16px;color:#79818a;white-space:nowrap}
-.warroom-desk-pill{position:absolute;top:3px;right:-2px;height:24px;border-radius:99px;padding:2px 8px;border:0;color:#fff;font-size:11px;font-weight:400;box-shadow:0 1px 3px rgba(20,25,30,.15)}.warroom-desk-pill-idle{background:#737373}.warroom-desk-pill-working{background:#c2410c}.warroom-desk-pill-urgent{background:#b91c1c}.warroom-desk-pill-dormant{background:#79818a}
-.warroom-dock{position:fixed;z-index:30;bottom:24px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:4px;padding:6px;background:rgba(252,253,253,.96);border:1px solid rgba(20,25,30,.12);border-radius:14px;box-shadow:0 14px 36px rgba(18,24,30,.14),0 3px 10px rgba(18,24,30,.07);backdrop-filter:blur(12px)}.warroom-dock>a,.warroom-dock>[data-slot=button]{display:flex;align-items:center;gap:8px;padding:9px 14px;border-radius:9px;font-size:13px;color:#4d545b;height:36px;white-space:nowrap}.warroom-dock>a:hover{background:#eef1f3}.warroom-dock>a[aria-current=page]{color:#15191d;background:#eef1f3}.warroom-dock svg{width:15px;height:15px}
-.warroom-content-panel{padding:24px;background:#fcfdfd;border:1px solid rgba(20,25,30,.09);border-radius:14px}.warroom-view-heading{font-size:20px;font-weight:600;line-height:28px;margin-bottom:24px}
+.warroom-main{flex:1;min-height:0;overflow-y:auto;padding:16px 24px 96px;scrollbar-color:#c4d7dd transparent;scrollbar-width:thin}.warroom-inner{max-width:1600px;margin:0 auto}.warroom-inner>[role=alert]{margin-bottom:16px}
+.warroom-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px}.warroom-order-select{display:flex;align-items:center;gap:12px;min-width:0}.warroom-order-select label{font-size:14px;font-weight:400;white-space:nowrap}.warroom-actions{display:flex;gap:12px;flex-wrap:wrap}
+
+/* Exemplar CTA treatment: soft sky fill, deep ink label, generous radius. */
+.warroom-root [data-slot=button]{height:40px;font-size:13px;padding-inline:18px;border-radius:10px;background:#7ad5ee;color:#243e4c;border:1px solid transparent;font-weight:500;box-shadow:0 1px 2px rgba(36,62,76,.10);transition:background-color .18s,border-color .18s}
+.warroom-root [data-slot=button]:hover:enabled{background:#6fe6fc}
+.warroom-root [data-slot=button][data-variant=outline]{background:#7ad5ee;border-color:transparent;color:#243e4c;font-weight:500;box-shadow:0 1px 2px rgba(36,62,76,.10)}
+.warroom-root [data-slot=button][data-variant=outline]:hover:enabled{background:#6fe6fc}
+.warroom-root [data-slot=button][data-variant=ghost]{background:transparent;border-color:transparent;box-shadow:none;font-weight:400}
+.warroom-root [data-slot=button][data-variant=ghost]:hover:enabled{background:#dff4fa;color:#243e4c}
+.warroom-root [data-slot=button]:disabled{opacity:.5;box-shadow:none}
+.warroom-root [data-slot=button]:focus-visible{outline:2px solid #4ed7f1;outline-offset:2px}
+.warroom-run-note{margin:8px 0 20px;color:#6d7e82;font-size:13px;overflow-wrap:anywhere}
+
+.warroom-master,.warroom-room{background:#fffffd;border:1px solid rgba(36,62,76,.09);border-radius:14px;box-shadow:0 2px 8px rgba(36,62,76,.07),0 1px 2px rgba(36,62,76,.04);overflow:hidden}
+.warroom-master{display:flex;align-items:center;justify-content:space-between;gap:24px;padding:20px 30px;margin-bottom:18px;min-height:220px;border-color:rgba(36,62,76,.10);background:transparent}
+.warroom-master-copy>span{font-family:ui-monospace,Consolas,monospace;font-size:12px;line-height:16px;color:#6d7e82}
+.warroom-master h2{margin:10px 0;font-size:23px;font-weight:650;line-height:1.4}
+.warroom-master p{color:#47616a;font-size:14px;line-height:24px}
+.warroom-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.warroom-room{display:flex;flex-direction:column;background:transparent;box-shadow:none}.warroom-room-head{height:48px;flex-shrink:0;display:flex;align-items:center;gap:10px;padding:0 20px;border-bottom:1px solid rgba(36,62,76,.09);background:rgba(252,254,255,.72)}.warroom-room-head h2{font-size:15px;line-height:24px;font-weight:600;margin:0}.warroom-room-head small{margin-left:auto;font-size:12px;color:#6d7e82}
+.warroom-floor{display:flex;align-items:center;justify-content:center;padding:16px;min-height:194px;background:linear-gradient(rgba(36,62,76,.055) 1px,transparent 1px),linear-gradient(90deg,rgba(36,62,76,.055) 1px,transparent 1px);background-size:26px 26px,26px 26px;box-shadow:inset 0 6px 12px -10px rgba(36,62,76,.16)}
+/* Transparent surfaces inside the console so the backdrop reads through them.
+   Scoped to .warroom-root on purpose: the slide-over panels are portaled outside
+   it and carry their own panel effect, so they keep their own surfaces. */
+.warroom-root [data-slot=card],
+.warroom-root .bg-card{background:transparent;box-shadow:none;border-color:rgba(36,62,76,.10)}
+.warroom-desk{position:relative;display:flex;align-items:center;flex-direction:column;justify-content:center;gap:6px;width:200px;flex-shrink:0;border:0;background:transparent;padding:4px 12px 8px;font:inherit;color:inherit;cursor:pointer;border-radius:8px}
+.warroom-desk:disabled{cursor:default;opacity:.7}
+.warroom-desk:focus-visible{outline:2px solid #4ed7f1;outline-offset:4px}
+.warroom-nameplate{position:relative;z-index:1;display:inline-block;max-width:200px;border:1px solid rgba(36,62,76,.15);border-radius:6px;background:#fffffd;padding:3px 7px;box-shadow:0 1px 2px rgba(36,62,76,.06);font-size:11px;color:#6d7e82;white-space:nowrap}
+.warroom-art-wrap{position:relative;display:block;width:176px;height:126px}
+.warroom-desk-svg{display:block;width:176px;height:126px}
+.warroom-root .desk-art{display:block;width:176px;height:126px;transition:transform .2s cubic-bezier(.22,1,.36,1)}
+.warroom-desk:hover:enabled .desk-art{transform:translateY(-2px)}
+.warroom-desk>small{font-size:10px;line-height:16px;color:#6d7e82;white-space:nowrap}
+.warroom-desk-pill{position:absolute;top:3px;right:-2px;height:24px;border-radius:99px;padding:2px 8px;border:0;font-size:11px;font-weight:500;box-shadow:0 1px 3px rgba(36,62,76,.15)}
+.warroom-desk-pill-idle{background:#e7eef0;color:#47616a}
+.warroom-desk-pill-working{background:#7ad5ee;color:#243e4c}
+.warroom-desk-pill-urgent{background:#f7dedb;color:#a63a32}
+.warroom-desk-pill-dormant{background:#fffa8d;color:#243e4c}
+
+.warroom-dock{position:fixed;z-index:30;bottom:24px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:4px;padding:6px;background:transparent;border:1px solid rgba(36,62,76,.12);border-radius:14px;box-shadow:0 14px 36px rgba(36,62,76,.14),0 3px 10px rgba(36,62,76,.07)}
+.warroom-dock>a,.warroom-dock>[data-slot=button]{display:flex;align-items:center;gap:8px;padding:9px 14px;border-radius:9px;font-size:13px;color:#47616a;height:36px;white-space:nowrap}
+.warroom-dock>a:hover{background:#e2f4f8}
+.warroom-dock>a[aria-current=page]{color:#243e4c;background:#a8f1ff}
+.warroom-dock svg{width:15px;height:15px}
+.warroom-content-panel{padding:24px;background:#fffffd;border:1px solid rgba(36,62,76,.09);border-radius:14px}
+.warroom-view-heading{font-size:20px;font-weight:600;line-height:28px;margin-bottom:24px}
+
+/* ---- Ambient backdrop: drifting mesh, brand glows and a slow dot grid ---- */
+.warroom-root{position:relative}
+.warroom-shell{position:relative;z-index:1}
+.warroom-backdrop{position:absolute;inset:0;z-index:0;overflow:hidden;pointer-events:none}
+.warroom-backdrop-canvas{position:absolute;inset:0;display:block;width:100%;height:100%;opacity:.9}
+.warroom-glow{position:absolute;border-radius:50%;filter:blur(52px);opacity:.72}
+.warroom-glow-a{width:min(58vw,760px);aspect-ratio:1;left:-12vw;top:-14vw;background:radial-gradient(circle,#7ad5ee 0%,rgba(122,213,238,0) 68%);animation:warroomDrift 28s ease-in-out infinite}
+.warroom-glow-b{width:min(52vw,680px);aspect-ratio:1;right:-10vw;bottom:-12vw;background:radial-gradient(circle,#a8f1ff 0%,rgba(168,241,255,0) 70%);animation:warroomDrift 34s ease-in-out infinite reverse}
+.warroom-backdrop:before{content:'';position:absolute;top:-25%;bottom:-25%;left:-45%;width:34%;background:linear-gradient(100deg,rgba(122,213,238,0) 0%,rgba(122,213,238,.22) 50%,rgba(122,213,238,0) 100%);transform:skewX(-14deg);animation:warroomSweep 17s linear infinite}
+.warroom-backdrop:after{content:'';position:absolute;inset:-12%;background-image:radial-gradient(rgba(36,62,76,.18) .9px,transparent .9px);background-size:26px 26px;opacity:.7;animation:warroomGrid 90s linear infinite}
+@keyframes warroomDrift{
+  0%,100%{transform:translate3d(0,0,0) scale(1)}
+  50%{transform:translate3d(3vw,2vw,0) scale(1.14)}
+}
+@keyframes warroomSweep{
+  0%{transform:translateX(0) skewX(-14deg)}
+  100%{transform:translateX(430%) skewX(-14deg)}
+}
+@keyframes warroomGrid{
+  from{background-position:0 0}
+  to{background-position:260px 156px}
+}
+
+/* ---- Panel backdrop: vertical light ribbons and rising sparks ----
+   Slide-over panels portaled outside .warroom-root get their own effect rather
+   than the console's horizontal mesh — a tall narrow drawer reads better with a
+   current running up it. The negative z-index paints this above the panel's own
+   background but below its in-flow header and body. */
+.panel-backdrop{position:absolute;inset:0;z-index:-1;overflow:hidden;pointer-events:none}
+.panel-backdrop-canvas{position:absolute;inset:0;display:block;width:100%;height:100%}
+.panel-backdrop:before{content:'';position:absolute;inset:0;background:radial-gradient(130% 52% at 50% 0%,rgba(122,213,238,.20),transparent 62%),radial-gradient(120% 48% at 50% 100%,rgba(168,241,255,.18),transparent 60%)}
+.panel-backdrop-ribbons:after{content:'';position:absolute;inset:0;background-image:linear-gradient(90deg,rgba(36,62,76,.055) 1px,transparent 1px);background-size:46px 100%;opacity:.8;animation:panelRails 52s linear infinite}
+.panel-backdrop-streaks:after{content:'';position:absolute;inset:0;background-image:repeating-linear-gradient(122deg,rgba(36,62,76,.05) 0 1px,transparent 1px 34px);opacity:.85;animation:panelHaze 64s linear infinite}
+@keyframes panelRails{
+  from{background-position:0 0}
+  to{background-position:46px 0}
+}
+@keyframes panelHaze{
+  from{background-position:0 0}
+  to{background-position:68px -34px}
+}
+
+/* Waiting-for-a-human states wear the lemon band from the swatch. */
+.warroom-root [data-slot=alert]{border-radius:12px}
+
+/* ---- Sheet panels (portaled to body, so scoped via body:has(.warroom-root)) ---- */
+body:has(.warroom-root) .owner-sheet,
+body:has(.warroom-root) .owner-sheet-wide{background:#fffffd;border-left:1px solid rgba(36,62,76,.12)}
+body:has(.warroom-root) [data-slot=sheet-overlay]{background:rgba(36,62,76,.18);backdrop-filter:blur(3px)}
+body:has(.warroom-root) [data-slot=sheet-header]{background:linear-gradient(180deg,#f2fcfe 0%,#fbfeff 100%);border-bottom:1px solid rgba(36,62,76,.10)}
+body:has(.warroom-root) [data-slot=sheet-title]{font-size:17px;font-weight:650;letter-spacing:-.2px;color:#243e4c}
+body:has(.warroom-root) [data-slot=sheet-description]{font-size:12px;line-height:1.85;color:#6d7e82;margin-top:4px}
+body:has(.warroom-root) [data-slot=sheet-close]{top:15px;right:15px;border-radius:9px;color:#6d7e82}
+body:has(.warroom-root) [data-slot=sheet-close]:hover{background:#dff4fa;color:#243e4c}
+
+/* Tabs inside the panels */
+body:has(.warroom-root) [data-slot=tabs-list]{height:40px;padding:4px;background:#eef7fa;border:1px solid rgba(36,62,76,.08);border-radius:11px;gap:4px}
+body:has(.warroom-root) [data-slot=tabs-trigger]{border-radius:8px;padding-inline:14px;font-size:13px;font-weight:500;color:#6d7e82;transition:background-color .16s,color .16s}
+body:has(.warroom-root) [data-slot=tabs-trigger]:hover{color:#243e4c}
+body:has(.warroom-root) [data-slot=tabs-trigger][data-active],
+body:has(.warroom-root) [data-slot=tabs-trigger][data-state=active]{background:#fffffd;color:#243e4c;border-color:rgba(36,62,76,.06);box-shadow:0 1px 3px rgba(36,62,76,.12)}
+body:has(.warroom-root) [data-slot=tabs-trigger]:focus-visible{outline:2px solid #4ed7f1;outline-offset:1px}
+
+/* Buttons inside the panels keep the exemplar CTA treatment */
+body:has(.warroom-root) .owner-sheet [data-slot=button],
+body:has(.warroom-root) .owner-sheet-wide [data-slot=button]{height:40px;border-radius:10px;padding-inline:18px;font-size:13px;font-weight:500}
+body:has(.warroom-root) .owner-sheet [data-slot=button][data-variant=default],
+body:has(.warroom-root) .owner-sheet-wide [data-slot=button][data-variant=default]{background:#7ad5ee;color:#243e4c;box-shadow:0 1px 2px rgba(36,62,76,.10)}
+body:has(.warroom-root) .owner-sheet [data-slot=button][data-variant=default]:hover:enabled,
+body:has(.warroom-root) .owner-sheet-wide [data-slot=button][data-variant=default]:hover:enabled{background:#6fe6fc}
+body:has(.warroom-root) .owner-sheet [data-slot=button][data-variant=outline],
+body:has(.warroom-root) .owner-sheet-wide [data-slot=button][data-variant=outline]{background:#fffffd;border-color:rgba(36,62,76,.17);color:#243e4c;box-shadow:0 1px 2px rgba(36,62,76,.05)}
+body:has(.warroom-root) .owner-sheet [data-slot=button][data-variant=outline]:hover:enabled,
+body:has(.warroom-root) .owner-sheet-wide [data-slot=button][data-variant=outline]:hover:enabled{background:#eaf8fb;border-color:#9ddde8}
+body:has(.warroom-root) .owner-sheet [data-slot=button][data-variant=ghost],
+body:has(.warroom-root) .owner-sheet-wide [data-slot=button][data-variant=ghost]{background:transparent;box-shadow:none;font-weight:400}
+body:has(.warroom-root) .owner-sheet [data-slot=button][data-variant=ghost]:hover:enabled,
+body:has(.warroom-root) .owner-sheet-wide [data-slot=button][data-variant=ghost]:hover:enabled{background:#dff4fa;color:#243e4c}
+body:has(.warroom-root) .owner-sheet [data-slot=button]:disabled,
+body:has(.warroom-root) .owner-sheet-wide [data-slot=button]:disabled{opacity:.5;box-shadow:none}
+
+/* Inner surfaces: soft cyan-tinted cards, lemon for anything awaiting a person */
+body:has(.warroom-root) .owner-sheet .owner-exception,
+body:has(.warroom-root) .owner-sheet-wide .owner-exception{border-color:rgba(36,62,76,.11);background:#fbfeff}
+body:has(.warroom-root) .owner-sheet [data-slot=card],
+body:has(.warroom-root) .owner-sheet-wide [data-slot=card]{border-color:rgba(36,62,76,.10);border-radius:14px}
+body:has(.warroom-root) .owner-sheet [data-slot=badge][data-variant=default],
+body:has(.warroom-root) .owner-sheet-wide [data-slot=badge][data-variant=default]{background:#7ad5ee;color:#243e4c;border-radius:8px}
+body:has(.warroom-root) .owner-sheet [data-slot=badge][data-variant=secondary],
+body:has(.warroom-root) .owner-sheet-wide [data-slot=badge][data-variant=secondary]{background:#dff4fa;color:#2c5563;border-radius:8px}
+body:has(.warroom-root) .owner-sheet [data-slot=badge][data-variant=outline],
+body:has(.warroom-root) .owner-sheet-wide [data-slot=badge][data-variant=outline]{border-color:rgba(36,62,76,.14);color:#47616a;border-radius:8px}
+body:has(.warroom-root) .owner-sheet [data-slot=input],
+body:has(.warroom-root) .owner-sheet [data-slot=textarea],
+body:has(.warroom-root) .owner-sheet [data-slot=select-trigger],
+body:has(.warroom-root) .owner-sheet-wide [data-slot=input],
+body:has(.warroom-root) .owner-sheet-wide [data-slot=textarea],
+body:has(.warroom-root) .owner-sheet-wide [data-slot=select-trigger]{border-radius:10px;border-color:rgba(36,62,76,.17);background:#fffffd}
+body:has(.warroom-root) .owner-sheet [data-slot=input]:focus-visible,
+body:has(.warroom-root) .owner-sheet [data-slot=textarea]:focus-visible,
+body:has(.warroom-root) .owner-sheet [data-slot=select-trigger]:focus-visible,
+body:has(.warroom-root) .owner-sheet-wide [data-slot=input]:focus-visible,
+body:has(.warroom-root) .owner-sheet-wide [data-slot=textarea]:focus-visible,
+body:has(.warroom-root) .owner-sheet-wide [data-slot=select-trigger]:focus-visible{border-color:#4ed7f1;outline:2px solid rgba(78,215,241,.35);outline-offset:0}
+body:has(.warroom-root) .owner-sheet details,
+body:has(.warroom-root) .owner-sheet-wide details{border-radius:11px;border-color:rgba(36,62,76,.11);background:#f7fcfd}
+body:has(.warroom-root) .owner-sheet details summary:hover,
+body:has(.warroom-root) .owner-sheet-wide details summary:hover{color:#243e4c}
+body:has(.warroom-root) .owner-sheet [data-slot=table] :is(th,td),
+body:has(.warroom-root) .owner-sheet-wide [data-slot=table] :is(th,td){border-color:rgba(36,62,76,.09)}
 @media(max-width:1200px){.warroom-shell{padding-inline:5%}.warroom-actions{gap:8px}.warroom-topbar-right{font-size:12px}.warroom-master h2{font-size:21px}}
 @media(max-width:900px){.warroom-shell{padding-inline:0}.warroom-connection{display:none}.warroom-main{padding-inline:18px}.warroom-ticker{margin-inline:18px}.warroom-ticker small{display:none}.warroom-grid{grid-template-columns:1fr}.warroom-topbar h1{font-size:14px}.warroom-topbar-right>span{display:none}.warroom-master{padding:20px;gap:10px}.warroom-master h2{font-size:18px}.warroom-master .warroom-desk{width:176px;padding-inline:0}.warroom-order-select{width:100%;flex-wrap:wrap}.warroom-order-select [data-slot=select-trigger]{flex:1;min-width:0}}
 @media(max-width:540px){.warroom-topbar{padding-inline:12px;gap:6px}.warroom-topbar-right [data-slot=button]:last-child{display:none}.warroom-main{padding:16px 12px 92px}.warroom-ticker{margin:12px 12px 0;padding-inline:12px;font-size:11px}.warroom-master{flex-direction:column;align-items:flex-start;padding:20px}.warroom-master .warroom-desk{align-self:center}.warroom-master-copy>span{font-size:10px}.warroom-master h2{font-size:18px}.warroom-master p{font-size:12px;line-height:22px}.warroom-toolbar{gap:14px}.warroom-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));width:100%}.warroom-root .warroom-actions [data-slot=button]{padding-inline:8px;width:100%;font-size:12px}.warroom-room-head{padding-inline:16px}.warroom-room-head small{font-size:10px}.warroom-content-panel{padding:16px}}
 @media(prefers-reduced-motion:reduce){.warroom-root *, .warroom-root *::before,.warroom-root *::after{animation:none!important;transition:none!important}}
 
-.warroom-root .desk-art .bar-fill {
-  transform-box: fill-box;
-  transform-origin: left center;
-  transform: scaleX(1);
-  animation: barFill 4.05s linear infinite backwards;
-}
-.warroom-root .desk-art .bar-fill.s2 { animation-delay: 1.35s; }
-.warroom-root .desk-art .bar-fill.s3 { animation-delay: 2.7s; }
-@keyframes barFill {
-  0%    { transform: scaleX(0); }
-  33.3% { transform: scaleX(1); }
-  92%   { transform: scaleX(1); }
-  100%  { transform: scaleX(0); }
-}
-
-.warroom-root .desk-art .workpiece {
-  transform-box: fill-box;
-  transform-origin: center;
-  animation: flowPiece 4.05s cubic-bezier(.4, 0, .2, 1) infinite backwards;
-}
-@keyframes flowPiece {
-  0%    { transform: translateY(0)    scale(1);    opacity: 0; }
-  3%    { transform: translateY(0)    scale(1.18); opacity: 1; }
-  7%    { transform: translateY(0)    scale(1);    opacity: 1; }
-  31%   { transform: translateY(0)    scale(1);    opacity: 1; }
-  33.3% { transform: translateY(12px) scale(1.18); opacity: 1; }
-  37%   { transform: translateY(12px) scale(1);    opacity: 1; }
-  64%   { transform: translateY(12px) scale(1);    opacity: 1; }
-  66.6% { transform: translateY(24px) scale(1.18); opacity: 1; }
-  70%   { transform: translateY(24px) scale(1);    opacity: 1; }
-  96%   { transform: translateY(24px) scale(1);    opacity: 1; }
-  100%  { transform: translateY(24px) scale(.9);   opacity: 0; }
-}
-
-.warroom-root .desk-art .station {
-  transform-box: fill-box;
-  transform-origin: center;
-  opacity: .55;
-  animation: stationPulse 4.05s ease-out infinite backwards;
-}
-.warroom-root .desk-art .station.s2 { animation-delay: 1.35s; }
-.warroom-root .desk-art .station.s3 { animation-delay: 2.7s; }
-@keyframes stationPulse {
-  0%, 4%   { opacity: 1;   transform: scale(1.3); }
-  22%, 100% { opacity: .55; transform: scale(1); }
-}
+/* Motion lives in the generated SVG <style> so each desk can run its own pace and
+   bar lengths. Only the reduced-motion fallback belongs here: stylesheet
+   !important still wins over those inline-free rules. */
 @media (prefers-reduced-motion: reduce) {
-  .warroom-root .desk-art .bar-fill, .warroom-root .desk-art .workpiece, .warroom-root .desk-art .station { animation: none; }
+  .warroom-root .desk-art .bar-fill { transform: scaleX(1); }
   .warroom-root .desk-art .station { opacity: 1; }
+  .warroom-root .desk-art .workpiece { opacity: 1; }
 }
+
