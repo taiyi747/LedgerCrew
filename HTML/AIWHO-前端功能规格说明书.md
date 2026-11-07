@@ -15,7 +15,7 @@
 3. 数据层双轨：页面加载后 `hydrate()` 先用**内置演示数据**渲染，再尝试 `GET /api/v1/workspaces`，
    成功则 `adopt()` 整屏换为后端数据（`apiReady = true`）。打不通就一直用内置数据。
 4. 后端 API 全部在 `/api/v1` 下（见第三节），演示数据在 `server/store.ts`（内存态，可写、有 SSE 推送）。
-5. 设计语言：**夜班值班室 / 机场调度席** —— 冷灰底 + 青（`#0b7c98`）为主，淡黄 `#fffa8d` 点睛，
+5. 设计语言：**夜班值班室 / 机场调度席** —— 冷灰底 + 亮青 `#7ad5ee`（压墨字 `#243e4c`）为主，淡黄 `#fffa8d` 点睛，
    签名元素是 8px「状态灯」小圆点。禁止彩色胶囊、渐变球、跑马灯、呼吸灯。
    配色取自色卡四色（`#4ed7f1` / `#6fe6fc` / `#a8f1ff` / `#fffa8d`）；四色明度偏高，
    所以亮色带只做「面」，压深一档（`--accent`）才做「字与按钮」。页面底色 `--bg` 保持冷灰不动。
@@ -155,7 +155,7 @@
 > 原先锁是「传输已加密」的装饰图标、第三个是跳设置（底部导航已有设置，故改用）。
 
 **深色模式**：`[data-theme="dark"]` 整套覆盖 CSS 变量 —— 常规令牌（bg/surface/raised/hairline/text/track/shadow）、
-反白元素（`--on-invert` / `--invert-hover`）、地面渐变（`--floor-a/b`）、滚动条，以及**工位插画配色 `--art-*`**（桌椅转中性灰、剪影压到最深，深底上才读得出）。
+反白元素（`--on-invert`，亮青上压墨字）、滚动条，以及**工位插画配色 `--art-*`**（桌椅转中性灰、剪影压到最深，深底上才读得出）。
 插画里的色值都走 `var(--art-*)`（只有接地投影的黑是写死的，跟主题无关），`DEFS_SVG` 的渐变 stop 也用变量 —— 换肤不用改插画。
 - 展示：时钟 `HH:mm:ss`（`clockTime()`，每秒 `setInterval`）、演示模式灯、品牌、4 组计数、3 个图标按钮。
 - 字段映射（React 版取 `SystemOverview`）：`totalMessages`→消息、`urgent`→紧急、`online`/`agents`→在线工位（显示 `17/18`）、
@@ -219,8 +219,9 @@
 - 交互：整卡 `role="button" tabindex="0"`，click / Enter 打开抽屉 `openDrawer(agent.id)`；`aria-label="{name} · {状态名}"`。
 
 ### 7. WorkspacePanel（工作区面板，`components/war-room/WorkspacePanel.tsx` / `.panel`）
-- `aria-label={workspace.name}`；头部 44px（名称 / `onlineCount/agentCount 在线` / `urgentCount>0` 时「N 项待处理」红）。
-- 底板 `.deck`（网格纹）内工位卡按 `agents` 顺序流式排布（`flex-wrap`、**`justify-content:center` 工作台居中**、`gap:16px`、`padding:16px`）。
+- **模块内底 = 全局底色**（`--bg`，不做浮起的白卡，去 `box-shadow`），靠 `1px --hairline-strong` 边框 + **彩色标题**分模块。
+- `aria-label={workspace.name}`；头部 48px（名称用 `--accent-text` **上色** / `onlineCount/agentCount 在线` / `urgentCount>0` 时「N 项待处理」红）。
+- 底板 `.deck-floor`（只留细网格做结构纹理，底 `var(--bg)`）内工位卡按 `agents` 顺序流式排布（`flex-wrap`、**`justify-content:center` 工作台居中**、`gap:16px`、`padding:16px`）。
 - 进场动画：`.enter`（opacity 0→1 + `translateY(8px→0)`，380ms `cubic-bezier(.22,1,.36,1)`，`both`），每面板延迟 `min(i,5)*50ms`。
 
 ### 8. AgentDrawer（工位抽屉，`components/war-room/AgentDrawer.tsx` / `#drawer`）
@@ -587,25 +588,26 @@ level：`escalate→critical`，`cancel/replay→warn`，其余 `info`）。
 | `--text-primary` | `#0c2a35` | 主文字 |
 | `--text-secondary` | `#3a5c69` | 次级文字 |
 | `--text-muted` | `#748f9c` | meta/图标默认色 |
-| `--accent` | `#0b7c98` | 主青：主按钮、选中态、折线主线、第一名条、focus |
-| `--accent-strong` | `#08677e` | 主按钮 hover |
-| `--accent-soft` | `rgba(11,124,152,.12)` | focus 光环、工具按钮激活底 |
-| `--accent-tint` | `#a8f1ff` | 淡青（色卡第 3 条）：软底、高亮条 |
-| `--highlight` | `#fffa8d` | 淡黄（色卡第 4 条）：标记、待办点睛 |
-| `--highlight-soft` | `rgba(255,250,141,.5)` | 淡黄软底 |
+| `--accent` | `#7ad5ee` | 主青**填充**（按钮、选中态、折线主线、第一名条），上压 `--on-invert` 墨字 |
+| `--accent-strong` | `#5cc6e6` | 主按钮 hover |
+| `--accent-text` | `#0b6c89` | 青当**文字/描边**时的压深版（模块标题、focus 环、按下态图标）——浅底上亮青看不清 |
+| `--accent-soft` | `rgba(122,213,238,.32)` | focus 光环、工具按钮激活底 |
+| `--accent-tint` | `#a8f1ff` | 淡青（色卡第 3 条）：追问 chip hover |
+| `--highlight` | `#fffa8d` | 淡黄（色卡第 4 条）：待办数色块 |
+| `--highlight-soft` | `rgba(255,250,141,.5)` | 淡黄软底：演示模式徽标 |
 | `--positive` | `#0e8f6e` | 语义正向 |
 | `--negative` | `#c2413c` | 紧急/告警文字 |
-| `--st-working` / `-ink` | `#0b7c98` / `#fff` | 状态实底 + 字色（**成对**） |
+| `--st-working` / `-ink` | `#7ad5ee` / `#243e4c` | 状态实底 + 字色（**成对**） |
 | `--st-idle` / `-ink` | `#5c7c8a` / `#fff` | |
 | `--st-urgent` / `-ink` | `#c2413c` / `#fff` | |
 | `--st-dormant` / `-ink` | `#d3e0e6` / `#2a4450` | |
-| `--lamp-*` | 与 `--st-*` 同族、略柔 | 8px 状态灯 |
+| `--lamp-*` | 工作用 `#2fb0d4`（8px 点要压一点密度才在白底上看得见），其余与 `--st-*` 同族 | 8px 状态灯 |
 | 图表中性 | `#d3e2e9`（轨道）、`#9db6c1`（填充）、`#87a2ae`（虚线参考）、`--grid-line #175d74` @5%/12%/14%（网格/轴/悬停线） | |
 | 按钮 hover | `--accent-strong`（primary）、`--raised`（quiet） | |
 
 **分色规则**：色卡四色明度都偏高，直接当文字会糊在浅底上 ——
-**亮色带只做「面」**（`--accent-tint` / `--highlight` / 图表次色），
-**压深一档做「字与按钮」**（`--accent`）。
+**亮青做「面」**（`--accent` 填充，压 `--on-invert #243e4c` 墨字），
+**压深做「字」**（`--accent-text`）。
 状态实底必须**底与字成对**（`--st-*` + `--st-*-ink`），因为亮青/淡黄这类底子白字看不清；
 两套变量在 `:root` 与 `[data-theme="dark"]` 各给一套值，`STATUS_META` 只存 `var(--st-*)` 字符串。
 

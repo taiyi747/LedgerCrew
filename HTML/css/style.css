@@ -19,23 +19,25 @@
   --text-primary: #0c2a35;
   --text-secondary: #3a5c69;
   --text-muted: #748f9c;
-  --accent: #0b7c98;
-  --accent-strong: #08677e;
-  --accent-soft: rgba(11, 124, 152, .12);
+  --accent: #7ad5ee;
+  --accent-strong: #5cc6e6;
+  --accent-text: #0b6c89;
+  --accent-soft: rgba(122, 213, 238, .32);
   --accent-tint: #a8f1ff;
   --highlight: #fffa8d;
   --highlight-soft: rgba(255, 250, 141, .5);
   --positive: #0e8f6e;
   --negative: #c2413c;
 
-  --lamp-working: #0b7c98;
+  /* 8px 状态灯要压一点密度才在白底上看得见，色相仍与 --accent 同族 */
+  --lamp-working: #2fb0d4;
   --lamp-idle: #7c8f9c;
   --lamp-urgent: #c2413c;
   --lamp-dormant: #b2c3cd;
 
   /* 状态实底（工位卡胶囊、图表分段、桌角状态点）——底 + 字两色成对，
      因为亮青/淡黄这类底子白字看不清，必须自带墨色 */
-  --st-working: #0b7c98;   --st-working-ink: #fff;
+  --st-working: #7ad5ee;   --st-working-ink: #243e4c;
   --st-idle:    #5c7c8a;   --st-idle-ink:    #fff;
   --st-urgent:  #c2413c;   --st-urgent-ink:  #fff;
   --st-dormant: #d3e0e6;   --st-dormant-ink: #2a4450;
@@ -77,13 +79,11 @@
   --art-hi: #fff;
   --art-figure: #22323c;
 
-  /* 反白元素（实心按钮、选中态）上的文字/悬停色 */
-  --on-invert: #fff;
-  --invert-hover: #000;
+  /* 反白元素（实心按钮、选中态）上的文字/悬停色 —— 亮青上要压墨色才清楚 */
+  --on-invert: #243e4c;
+
   --scroll-thumb: #bcd0d9;
   --grid-line: #175d74;
-  --floor-a: #dfeaf0;
-  --floor-b: #e5eef3;
 }
 
 /* ---------- 深色模式（顶栏右上昼夜切换，存 localStorage["aiwho.theme"]） ---------- */
@@ -96,21 +96,22 @@
   --text-primary: #e8f4f9;
   --text-secondary: #a6c1cd;
   --text-muted: #7b95a2;
-  --accent: #4ed7f1;
-  --accent-strong: #6fe6fc;
-  --accent-soft: rgba(78, 215, 241, .16);
+  --accent: #7ad5ee;
+  --accent-strong: #5cc6e6;
+  --accent-text: #7ad5ee;
+  --accent-soft: rgba(122, 213, 238, .2);
   --accent-tint: #a8f1ff;
   --highlight: #fffa8d;
   --highlight-soft: rgba(255, 250, 141, .2);
   --positive: #35d6a4;
   --negative: #ff8b84;
 
-  --lamp-working: #4ed7f1;
+  --lamp-working: #7ad5ee;
   --lamp-idle: #8b949d;
   --lamp-urgent: #ff8b84;
   --lamp-dormant: #4b555e;
 
-  --st-working: #4ed7f1;   --st-working-ink: #06222c;
+  --st-working: #7ad5ee;   --st-working-ink: #243e4c;
   --st-idle:    #8fb0be;   --st-idle-ink:    #0c222c;
   --st-urgent:  #ff8b84;   --st-urgent-ink:  #3a1210;
   --st-dormant: #3c4c56;   --st-dormant-ink: #b6c8d1;
@@ -140,13 +141,11 @@
   --art-hi: #fff;
   --art-figure: #080e13;
 
-  /* 深色下实心按钮用的是亮青，所以反白文字要转深 */
-  --on-invert: #0a222b;
-  --invert-hover: #fff;
+  /* 深色下实心块同样是亮青，反白文字仍用墨色 */
+  --on-invert: #243e4c;
+
   --scroll-thumb: #2c3c47;
   --grid-line: #7fdcf0;
-  --floor-a: #1b2a34;
-  --floor-b: #16222b;
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -166,7 +165,7 @@ body {
 ::selection { background: var(--accent-soft); }
 
 :focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--accent-text);
   outline-offset: 2px;
 }
 
@@ -251,6 +250,7 @@ body {
   font-size: 12px;
   color: var(--text-secondary);
   padding: 4px 10px;
+  background: var(--highlight-soft);
   border: 1px solid var(--hairline-strong);
   border-radius: 999px;
 }
@@ -367,10 +367,10 @@ body {
 .grid3.grid2 { grid-template-columns: repeat(2, 1fr); }
 
 .panel {
-  background: var(--surface);
-  border: 1px solid var(--hairline);
+  /* 模块内底 = 全局底色，靠边框与彩色标题来分模块，不再做浮起的白卡 */
+  background: var(--bg);
+  border: 1px solid var(--hairline-strong);
   border-radius: var(--r-panel);
-  box-shadow: var(--shadow-md);
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -398,7 +398,7 @@ body {
   line-height: 24px;
   font-weight: 600;
   letter-spacing: -.005em;
-  color: var(--text-primary);
+  color: var(--accent-text);
 }
 
 .deck {
@@ -410,17 +410,15 @@ body {
   gap: 16px;
   padding: 16px;
 }
-/* 地面：细网格 + 由远及近的环境光，让工位是「站在地上」而不是浮在白底上。
-   这道渐变是墙/地关系（结构），不是装饰性色块。 */
+/* 地面：只留细网格做结构纹理，底色直接用全局 --bg（模块内底与全局一致）。 */
 .deck-floor {
   background:
     linear-gradient(var(--hairline) 1px, transparent 1px),
     linear-gradient(90deg, var(--hairline) 1px, transparent 1px),
-    linear-gradient(180deg, var(--floor-a) 0%, var(--raised) 38%, var(--floor-b) 100%);
+    var(--bg);
   background-size: 26px 26px, 26px 26px, auto;
   min-height: 168px;
   border-radius: 0 0 13px 13px;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .55), inset 0 10px 18px -14px rgba(18, 24, 30, .22);
 }
 
 /* ---------- 工位卡（无边框，名牌浮动、状态胶囊压插画） ---------- */
@@ -448,7 +446,11 @@ body {
   font-family: var(--font-mono);
   font-size: 13px;
   font-weight: 500;
-  color: var(--text-secondary);
+  padding: 1px 7px;
+  border-radius: var(--r-tag);
+  /* 待办数用色卡的淡黄点睛，跟「工作中」的青分开 */
+  background: var(--highlight);
+  color: var(--on-invert);
   font-variant-numeric: tabular-nums;
 }
 .nameplate {
@@ -500,7 +502,7 @@ body {
 }
 
 .desk:hover .desk-art { transform: translateY(-2px); }
-.desk:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
+.desk:focus-visible { outline: 2px solid var(--accent-text); outline-offset: 4px; }
 
 .loadbar {
   position: absolute;
@@ -633,7 +635,7 @@ body {
 textarea.input { height: auto; padding: 8px 12px; resize: vertical; }
 .input:focus {
   outline: none;
-  border-color: var(--accent);
+  border-color: var(--accent-text);
   box-shadow: 0 0 0 3px var(--accent-soft);
 }
 .input::placeholder { color: var(--text-muted); }
@@ -814,7 +816,7 @@ pre.code {
 }
 .tools .icon-btn[aria-pressed="true"] {
   background: var(--accent-soft);
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 /* ---------- 设置页 ---------- */
@@ -846,6 +848,9 @@ pre.code {
   font-size: 12px;
   color: var(--text-secondary);
 }
+/* 追问 chip 可点，hover 用色卡的淡青 */
+.chat-chip { cursor: pointer; transition: background 140ms, border-color 140ms, color 140ms; }
+.chat-chip:hover { background: var(--accent-tint); border-color: var(--accent-text); color: var(--text-primary); }
 .info-row {
   display: flex;
   align-items: center;
@@ -1040,7 +1045,7 @@ pre.code {
   flex-direction: column;
   gap: 5px;
 }
-.trace-tool.st-warn  { border-left-color: var(--accent); }
+.trace-tool.st-warn  { border-left-color: var(--accent-text); }
 .trace-tool.st-error { border-left-color: var(--negative); }
 .tool-row {
   display: flex; align-items: baseline; flex-wrap: wrap; gap: 8px;
