@@ -146,6 +146,6 @@
 }
 @layer base { body { margin: 0; } button, a { -webkit-tap-highlight-color: transparent; } }
 .owner-surface { min-height: 100dvh; }
-.owner-sheet[data-side="right"] { width: min(100vw, 540px); max-width: 540px; }
-.owner-sheet-wide[data-side="right"] { width: min(100vw, 880px); max-width: 880px; }
+.owner-sheet[data-side="right"] { width: min(100vw, 640px); max-width: 640px; }
+.owner-sheet-wide[data-side="right"] { width: min(100vw, 1180px); max-width: 1180px; }
 @media (prefers-reduced-motion: reduce) { .owner-surface *, [data-slot="sheet-content"], [data-slot="sheet-overlay"] { animation: none !important; transition: none !important; } }

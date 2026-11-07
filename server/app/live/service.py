@@ -12,6 +12,7 @@ from app.db.types import utc_now
 from app.live.contracts import TASK_ROLE, Assignment
 from app.live.models import Delegation, OrderMessage, WorkflowArtifact, WorkflowRun
 from app.models import (
+    BankTransaction,
     ExceptionDecision,
     ExceptionSupplement,
     InvoiceRecord,
@@ -142,10 +143,21 @@ async def snapshot(session, run_id):
     invoices = list(
         (
             await session.scalars(
-                select(InvoiceRecord).where(
+                select(InvoiceRecord)
+                .where(
                     InvoiceRecord.order_id == order.id,
                     InvoiceRecord.source_file_id.in_([f.id for f in images]),
                 )
+                .order_by(InvoiceRecord.created_at, InvoiceRecord.id)
+            )
+        ).all()
+    )
+    transactions = list(
+        (
+            await session.scalars(
+                select(BankTransaction)
+                .where(BankTransaction.order_id == order.id)
+                .order_by(BankTransaction.row_number, BankTransaction.id)
             )
         ).all()
     )
@@ -178,6 +190,44 @@ async def snapshot(session, run_id):
         and batch_artifact.payload.get("batch_id") == batch.id
     )
     tickets = await reconciliation_repo.list_tickets(session, batch.id) if batch else []
+    # 证据本身只是校验结果，老板需要知道它对应"哪张表第几行"，因此随异常单一起
+    # 下发来源定位：表名、序号/行号、记录标识与原始文件。
+    invoice_by_id = {item.id: item for item in invoices}
+    invoice_ordinal = {item.id: index for index, item in enumerate(invoices, start=1)}
+    transaction_by_id = {item.id: item for item in transactions}
+    file_names = {f.id: f.original_filename for f in files}
+
+    def ticket_location(ticket):
+        invoice = invoice_by_id.get(ticket.invoice_id) if ticket.invoice_id else None
+        if invoice:
+            return {
+                "table": "invoice_records",
+                "table_label": "票据记录",
+                "row_number": invoice_ordinal[invoice.id],
+                "row_unit": "张",
+                "record_id": invoice.id,
+                "record_label": invoice.invoice_number
+                or file_names.get(invoice.source_file_id)
+                or invoice.id[:8],
+                "source_file": file_names.get(invoice.source_file_id),
+                "occurred_on": str(invoice.issue_date) if invoice.issue_date else None,
+            }
+        transaction = transaction_by_id.get(ticket.transaction_id) if ticket.transaction_id else None
+        if transaction:
+            return {
+                "table": "bank_transactions",
+                "table_label": "银行流水",
+                "row_number": transaction.row_number,
+                "row_unit": "行",
+                "record_id": transaction.id,
+                "record_label": transaction.external_id
+                or transaction.normalized_counterparty
+                or transaction.id[:8],
+                "source_file": None,
+                "occurred_on": str(transaction.transaction_date),
+            }
+        return None
+
     supplements = list(
         (
             await session.scalars(
@@ -296,6 +346,7 @@ async def snapshot(session, run_id):
                 "difference_cents": t.difference_cents,
                 "related_amount_cents": t.related_amount_cents,
                 "evidence": t.evidence_json,
+                "location": ticket_location(t),
             }
             for t in tickets
         ],
