@@ -290,7 +290,7 @@ class LiveRuntime:
             "intake/questions/answer_question→customer_reception；risk_summary/report_draft→risk_delivery。"
             "如果 kind=chat，唯一任务是 answer_question；chat_done=true 时 complete_workflow。"
             "本提示已经包含本轮完整快照；必须直接调用委派、登记等待或完成动作工具取得回执，不能仅口头描述下一步。"
-            "允许的独立任务可同批派发。先完成 eligible_tasks 中必要成果；有未结异常且问题草稿/风险成果齐备时请老板复核；"
+            "允许的独立任务可同批派发，同批任务会并行执行。先完成 eligible_tasks 中必要成果；有未结异常且问题草稿/风险成果齐备时请老板复核；"
             "全部异常已 resolved/accepted_unresolved 时派 report_draft；报告待审时等待老板；已 published 才 complete。"
             "input_refs 可以传空数组，只能引用 files.id、exceptions.id 或 batch_id，不要使用文件名或成果类型名称。"
             "成功动作工具的回执已经是最终 action/summary JSON，请直接原样回传，不添加字段。"
@@ -925,12 +925,22 @@ class Dispatch(Executor):
             )
             ids = [d.id for d in rows]
         # Each delegation is a business task actually created by the supervisor.
-        for delegation_id in ids:
-            try:
-                await self.runtime.execute(delegation_id)
-            except Exception as error:
-                # Includes failures before a role can obtain its final business receipt.
-                await self.runtime.record_failure(delegation_id, error)
+        # One round's tasks are independent by contract (delegate_tasks batches
+        # only 独立任务), so they run concurrently — capped at four to match the
+        # per-round batch size. The shared RequestBudget lock keeps the model
+        # request accounting exact, and a failing delegation records its own
+        # failure without cancelling its siblings.
+        slots = asyncio.Semaphore(4)
+
+        async def one(delegation_id: str):
+            async with slots:
+                try:
+                    await self.runtime.execute(delegation_id)
+                except Exception as error:
+                    # Includes failures before a role can obtain its final business receipt.
+                    await self.runtime.record_failure(delegation_id, error)
+
+        await asyncio.gather(*(one(delegation_id) for delegation_id in ids))
         await ctx.send_message(run_id)
 
 
