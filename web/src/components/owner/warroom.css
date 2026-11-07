@@ -202,4 +202,3 @@ body:has(.warroom-root) .owner-sheet-wide [data-slot=table] :is(th,td){border-co
   .warroom-root .desk-art .station { opacity: 1; }
   .warroom-root .desk-art .workpiece { opacity: 1; }
 }
-

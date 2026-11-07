@@ -1,22 +1,21 @@
-export function customerId() {
-  return typeof window === 'undefined' ? 'local-customer' : localStorage.getItem('ledgercrew.customer-id') || 'local-customer';
-}
+// Customer identity comes from the backend HttpOnly session cookie.
+export function customerId(): string | undefined { return undefined; }
 
 export async function api<T>(path: string, options: RequestInit = {}, user = customerId()): Promise<T> {
   const headers = new Headers(options.headers);
-  headers.set('X-User-Id', user);
+  if (user) headers.set('X-User-Id', user);
   if (options.body && !(options.body instanceof FormData)) headers.set('Content-Type', 'application/json');
   const response = await fetch('/api/v1' + path, { ...options, headers, cache: 'no-store' });
   if (!response.ok) {
     const error = await response.json().catch(() => ({}));
-    const message = error.error?.message || (typeof error.detail === 'string' ? error.detail : '请求未完成，请检查输入或稍后重试');
+    const message = error.error?.message || (typeof error.detail === 'string' ? error.detail : Array.isArray(error.detail) ? '请检查用户名和密码，用户名不能包含空格，密码不能为空。' : '请求未完成，请检查输入或稍后重试');
     throw new ApiError(`${message}（${response.status}）`, response.status);
   }
   return response.json();
 }
 
 export async function download(path: string, name: string, user = customerId()) {
-  const response = await fetch('/api/v1' + path, { headers: { 'X-User-Id': user } });
+  const response = await fetch('/api/v1' + path, { headers: user ? { 'X-User-Id': user } : {} });
   if (!response.ok) throw new Error(`下载失败（${response.status}）`);
   const url = URL.createObjectURL(await response.blob());
   const anchor = document.createElement('a'); anchor.href = url; anchor.download = name; anchor.click();
@@ -30,7 +29,7 @@ export function subscribe(path: string, onEvent: () => void, onState: (connected
     while (!controller.signal.aborted) {
       try {
         const response = await fetch('/api/v1' + path + (path.includes('?') ? '&' : '?') + `after_id=${cursor}`, {
-          headers: { 'X-User-Id': user, ...(cursor ? { 'Last-Event-ID': String(cursor) } : {}) },
+          headers: { ...(user ? { 'X-User-Id': user } : {}), ...(cursor ? { 'Last-Event-ID': String(cursor) } : {}) },
           signal: controller.signal,
         });
         if (!response.ok || !response.body) throw new Error('订阅未连接');

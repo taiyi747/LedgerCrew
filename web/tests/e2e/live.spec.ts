@@ -1,13 +1,23 @@
 import { test, expect } from '@playwright/test';
 import path from 'node:path';
 
+async function registerCustomer(page: import('@playwright/test').Page) {
+  await page.goto('/start/');
+  await page.getByLabel('用户名',{exact:true}).fill('flow-'+Date.now());
+  await page.getByLabel('设置密码',{exact:true}).fill('Flow-test-password');
+  await page.getByLabel('确认密码',{exact:true}).fill('Flow-test-password');
+  await page.getByRole('button',{name:'注册并开始免费体验',exact:true}).click();
+  await expect(page).toHaveURL(/\/upload\/$/);
+}
+
 test('customer materials → genuine delegations → owner decisions → published delivery',async({browser})=>{
   const customer=await browser.newContext();const owner=await browser.newContext();
   const page=await customer.newPage();const boss=await owner.newPage();
   const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));boss.on('pageerror',e=>errors.push(e.message));
   await page.goto('/');
   await page.getByRole('link',{name:'开始清账',exact:true}).first().click();
-  await expect(page).toHaveURL(/\/upload\/$/);
+  await expect(page).toHaveURL(/\/start\/$/);
+  await registerCustomer(page);
   await page.getByRole('button',{name:'开始咨询'}).click();
   expect(await (await page.request.get('/api/v1/orders',{headers:{'X-User-Id':'local-customer'}})).json()).toEqual([]);
   await page.getByLabel('工作室名称',{exact:true}).fill('松石设计工作室');
@@ -74,8 +84,8 @@ test('customer materials → genuine delegations → owner decisions → publish
 
 test('brand and preview use native customer and owner routes without legacy assets', async ({ page, request }) => {
   await page.goto('/');
-  await expect(page.getByRole('heading', {name:'账清', exact:true})).toBeVisible();
-  await expect(page.locator('a[href="/upload/"]')).toHaveCount(3);
+  await expect(page.getByRole('heading', {name:'小账房', exact:true})).toBeVisible();
+  await expect(page.locator('a[href="/start/"]')).toHaveCount(3);
   await expect(page.locator('a[href="/workspace/"]')).toHaveCount(0);
   await page.getByRole('link', {name:'演示体验', exact:true}).click();
   await expect(page).toHaveURL(/\/demo\/$/);
@@ -96,7 +106,7 @@ test('brand and preview use native customer and owner routes without legacy asse
 });
 
 test('material-card uploads show failure and retry without using chat send',async({page})=>{
-  await page.goto('/upload/');
+  await registerCustomer(page);
   await page.getByRole('button',{name:'新建咨询',exact:true}).click();
   const materials=page.getByRole('region',{name:'材料清单'});
   const start=materials.getByRole('button',{name:'开始对话',exact:true});
@@ -130,7 +140,7 @@ test('material-card uploads show failure and retry without using chat send',asyn
 });
 
 test('original column names are normalized automatically with visible Agent todos',async({page})=>{
-  await page.goto('/upload/');
+  await registerCustomer(page);
   await page.getByRole('button',{name:'新建咨询',exact:true}).click();
   await page.getByLabel('工作室名称',{exact:true}).fill('原始流水验证工作室');
   await page.getByLabel('账期',{exact:true}).fill('2026-10');
