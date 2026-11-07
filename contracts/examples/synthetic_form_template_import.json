@@ -1,0 +1,25 @@
+{
+  "template_id": "SYNTHETIC_TEMPLATE",
+  "template_version": "synthetic-v1",
+  "filing_type": "SYNTHETIC_FILING",
+  "region_code": "SYNTHETIC_REGION",
+  "applicable_entity_types": [
+    "SYNTHETIC_ENTITY"
+  ],
+  "applicable_taxpayer_identities": [],
+  "effective_from": "2026-01-01",
+  "effective_to": null,
+  "fields": {
+    "SYNTHETIC_FIELD": {
+      "value_type": "text",
+      "required": true
+    }
+  },
+  "validation_rules": [],
+  "source_reference": {
+    "source_id": "00000000-0000-4000-8000-000000000901",
+    "content_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  },
+  "review_status": "candidate",
+  "content_hash": "d91217ac122500ba06f08a0722b0683aebab21fa1a0fcf9ec63b99df6f97bac8"
+}

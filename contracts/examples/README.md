@@ -6,4 +6,6 @@
 
 `auth.json` 是 v0.2 认证接口（login/logout/me）的请求与响应示例（手工维护，不由 `build_examples` 生成），含认证失败、无效/过期状态和生产 503 场景。`credential` 为提供者定义的不透明认证状态，开发环境取值不代表任何生产机制；`POST /api/v1/auth/refresh` 仍是 `proposed`，未实现未挂载。详见 [API.md §5.1](../API.md)。
 
+`synthetic_policy_rule_import.json` 和 `synthetic_form_template_import.json` 是 BE2-10-05 通用 JSON 预检的 **synthetic fixture**，不属于上述前端 HTTP Mock，也不由 `build_examples` 生成。其虚构来源、地区、主体、事项、字段与参数均不能作为官方政策或可申报模板；正式导入仍未实现。详见 [导入测试报告](../../docs/BE2_10_05_IMPORT_TEST.md)。
+
 使用 Python 3.11 环境从仓库根目录执行 `python -m contracts.build_examples` 可重新生成，成功响应会先经过 Pydantic 2 校验。OpenAPI 用 `python contracts/build_openapi.py` 重新导出；两者均为设计产物，不是运行服务。

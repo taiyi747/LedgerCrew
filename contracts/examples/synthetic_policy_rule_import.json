@@ -1,0 +1,21 @@
+{
+  "source_reference": {
+    "source_id": "00000000-0000-4000-8000-000000000901",
+    "content_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  },
+  "rule_code": "SYNTHETIC_RULE",
+  "rule_version": "synthetic-v1",
+  "region_code": "SYNTHETIC_REGION",
+  "entity_type": "SYNTHETIC_ENTITY",
+  "taxpayer_identity": null,
+  "filing_type": "SYNTHETIC_FILING",
+  "period_start": "2026-01-01",
+  "period_end": "2026-12-31",
+  "effective_from": "2026-01-01",
+  "effective_to": null,
+  "review_status": "candidate",
+  "parameters": {
+    "synthetic_key": "example_only"
+  },
+  "content_hash": "90d44687ceec652448e250a1b5d0bbe3c1e98a46dd73144a24fba3e18081d83a"
+}

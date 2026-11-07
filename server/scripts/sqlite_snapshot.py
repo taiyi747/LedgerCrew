@@ -28,18 +28,21 @@ def _readonly(path: Path) -> sqlite3.Connection:
 
 
 def inspect_database(path: Path) -> dict[str, str]:
-    with closing(_readonly(path)) as connection:
-        if connection.execute("PRAGMA integrity_check").fetchone() != ("ok",):
-            raise ValueError(f"SQLite integrity_check failed: {path}")
-        if connection.execute("PRAGMA foreign_key_check").fetchall():
-            raise ValueError(f"SQLite foreign_key_check failed: {path}")
-        tables = {row[0] for row in connection.execute("SELECT name FROM sqlite_master WHERE type='table'")}
-        if "alembic_version" not in tables:
-            raise ValueError(f"Alembic version table is missing: {path}")
-        rows = connection.execute("SELECT version_num FROM alembic_version").fetchall()
-        if len(rows) != 1:
-            raise ValueError(f"Expected exactly one Alembic revision: {path}")
-        return {"revision": rows[0][0], "integrity_check": "ok", "foreign_key_check": "ok"}
+    try:
+        with closing(_readonly(path)) as connection:
+            if connection.execute("PRAGMA integrity_check").fetchone() != ("ok",):
+                raise ValueError(f"SQLite integrity_check failed: {path}")
+            if connection.execute("PRAGMA foreign_key_check").fetchall():
+                raise ValueError(f"SQLite foreign_key_check failed: {path}")
+            tables = {row[0] for row in connection.execute("SELECT name FROM sqlite_master WHERE type='table'")}
+            if "alembic_version" not in tables:
+                raise ValueError(f"Alembic version table is missing: {path}")
+            rows = connection.execute("SELECT version_num FROM alembic_version").fetchall()
+            if len(rows) != 1:
+                raise ValueError(f"Expected exactly one Alembic revision: {path}")
+            return {"revision": rows[0][0], "integrity_check": "ok", "foreign_key_check": "ok"}
+    except sqlite3.DatabaseError as exc:
+        raise ValueError(f"SQLite database cannot be validated: {path}") from exc
 
 
 def _new_target(source: Path, target: Path) -> None:
@@ -79,7 +82,12 @@ def backup_database(source: Path, target: Path) -> dict[str, str]:
 def restore_database(backup: Path, target: Path) -> dict[str, str]:
     info = inspect_database(backup)
     manifest_path = backup.with_name(f"{backup.name}.manifest.json")
-    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    if not manifest_path.is_file():
+        raise ValueError(f"Backup manifest is missing: {manifest_path}")
+    try:
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        raise ValueError(f"Backup manifest is invalid: {manifest_path}") from exc
     if manifest.get("revision") != info["revision"] or manifest.get("sha256") != _digest(backup):
         raise ValueError("Backup manifest does not match backup file")
     _new_target(backup, target)

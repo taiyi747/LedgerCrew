@@ -14,9 +14,9 @@
 | BE2-02 平台数据与来源 | `not_implemented` | 无 FilingFile/PlatformImport/PlatformRecord、解析服务或 API。MVP CSV 导入是订单流水，不能充当平台导入。 | 无 P2 隔离、去重、来源追溯测试。 | 平台原始数据无法导入或追溯。 |
 | BE2-03 结算与到账 | `not_implemented` | 无 SettlementBatch/Allocation/Receipt、确定性结算服务或 API。MVP ReconciliationBatch 语义不同。 | 无 P2 结算权限、幂等、审计和跨期测试。 | 855 元示例及部分/跨期到账无法验收。 |
 | BE2-04 账务分类与修订 | `not_implemented` | 无 AccountingSuggestion/Entry、分类确认服务或 API。 | 无 P2 人工确认、修订版本、权限和测试。 | 分类不能作为正式计算输入。 |
-| BE2-05 政策与规则版本 | `not_implemented` | 无 PolicySource/Rule、官方来源快照、导入服务或 API。 | 无批准/冲突/幂等/审计/适用测试。 | 不存在可审核、可适用的正式规则。 |
+| BE2-05 政策与规则版本 | `partially_completed` | 有不写库的候选 JSON 预检；无 PolicySource/Rule、官方来源快照、正式导入或 API。 | 仅有 synthetic 结构/身份冲突测试；无批准、持久化幂等、审计或适用测试。 | 不存在可审核、可适用的正式规则。 |
 | BE2-06 确定性税务计算 | `not_implemented` | 无 TaxCalculation 模型、迁移、Service、运行 API 或 Schema。MVP 确定性对账不是税务计算。 | 无规则版本锁定、重算和舍入测试。 | 税额不可根据来源复算，不能声称申报能力。 |
-| BE2-07 字段与草稿 | `not_implemented` | 无表单模板、字段映射、TaxReturnDraft 或路由。 | 无表间关系、模板适用、草稿测试。 | 无官方表单字段或可审草稿。 |
+| BE2-07 字段与草稿 | `partially_completed` | 有不写库的 synthetic 模板 JSON 预检；无表单模板持久化、字段映射、TaxReturnDraft 或路由。 | 无官方表间关系、模板适用或草稿测试。 | 无官方表单字段或可审草稿。 |
 | BE2-08 工作流与版本审批 | `not_implemented` | 无 FilingTask 运行/事件/检查点及草稿审批。MVP AgentTask/Run、WorkflowEvent、ReportReviewAction 均以 Order/Report 为中心。 | 无 P2 权限、审批失效、恢复或审计测试。当前认证开发路由不等于 P2 审批。 | 不能验证 V1/V2 审批隔离和恢复。 |
 | BE2-09 资料包与交付 | `not_implemented` | 无 FilingPackage、生成/发布/下载服务或路由。MVP 报告不能替代资料包。 | 无 P2 发布权限、幂等、审计、历史访问测试。 | 无可交付资料包。 |
 
@@ -35,7 +35,7 @@
 
 | 验收组 | 当前结论 | 原因 |
 | --- | --- | --- |
-| 政策/模板导入与重复执行 | `blocked` | BE2-05/07 模型及导入服务不存在，DEC-011 未确认。没有规则/模板数据，不生成虚构 fixture。 |
+| 政策/模板导入与重复执行 | `partially_completed` | synthetic 候选 JSON 的结构、哈希和 dry_run 身份冲突预检通过；BE2-05/07 持久化模型、正式导入/审核和真实来源仍不存在，DEC-011 未确认。 |
 | 平台去重、结算、跨期、内部转账 | `blocked` | BE2-02/03 未实现，DEC-005/009 未确认。MVP CSV/对账测试不能外推成 P2 口径。 |
 | 税务适用、阈值、舍入、表间关系 | `blocked` | BE2-06/07 未实现；没有经确认的政策、舍入和官方表单。 |
 | P2 审批失效与工作流恢复 | `blocked` | BE2-08/09 未实现，DEC-010/012/014 未确认；MVP 报告审批和 Agent 检查点不能证明 P2 行为。 |

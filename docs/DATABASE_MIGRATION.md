@@ -47,8 +47,12 @@ python scripts/sqlite_snapshot.py inspect "C:\path\to\recovery\ledgercrew-restor
 
 `restore` 先验证 manifest 与备份 SHA256，再向**全新路径**恢复并检查 SQLite 完整性、外键和 revision；不会覆盖现用库。将 `DATABASE_URL` 指向这个恢复路径，配套恢复同一时间点的 `STORAGE_ROOT`，回退到与该 revision 兼容的应用版本，先在隔离环境核对旧订单、文件下载、对账、报告和审计记录，再按维护流程切流。升级后新产生的数据不会自动存在于旧快照，必须单独评估补录或人工恢复，不能声称无损。
 
+恢复工具还会拒绝损坏的 SQLite 文件、缺失或无效的 manifest、哈希/revision 不匹配、已有目标文件和不存在的目标目录。失败后保留原库与备份，不覆盖目标路径；若生成了不完整的新目标，先核对明确路径并由操作人逐个处理，不对目录执行批量删除。WAL 模式下已提交但尚未 checkpoint 的记录由 SQLite backup API 一并纳入快照；恢复后仍须按实际业务记录核对。
+
 若迁移失败或备份验证失败，保留原库与失败现场，停止写入和发布；记录错误、revision、快照 manifest 及受影响数据，由负责人选择修复迁移或恢复路径。不要用 `create_all`、直接删库或覆盖原始库来处理故障。
 
 ## 自动化证据与边界
 
 `server/tests/test_migration_safety.py` 在 Python 3.11 的独立合成库验证空库升级、ORM 结构一致性、`0007→0008→0007→0008` 的 MVP 数据保留，以及 WAL 备份/恢复、拒绝覆盖和 manifest 校验。它不证明不存在的 v0.2 migration 可回退；未来每个新增 revision 都需补同等级测试，且对真实数据的可逆性另行评估。
+
+补充的 [BE2-10-04 备份与恢复测试](BE2_10_04_BACKUP_RESTORE.md)在 `server/tests/test_backup_restore.py` 中实测未 checkpoint 的 WAL 数据、损坏/错误路径拒绝，以及**有值的** `0008` 发票来源字段在 downgrade 后丢失、通过升级前快照恢复。该结果证明此迁移在有来源数据时不能无损 downgrade，不能替代真实环境的备份、审批和副本演练。

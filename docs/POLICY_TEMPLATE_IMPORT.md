@@ -1,6 +1,6 @@
 # 政策规则与申报模板导入契约状态
 
-状态：**阻塞，尚无可执行导入流程。** `server/app/` 中没有 PolicySource、PolicyRule、FormTemplate 模型、迁移或导入服务；DEC-002～004、011 均为 pending。不能编造真实政策、税率、舍入规则或申报字段，也不能把 `contracts/` 的候选 Schema/Mock 当成已审核数据。本文件列出实施及验收门槛，不能作为运行说明。
+状态：**通用候选 JSON 校验与 dry_run 预检已实现；正式导入仍阻塞。** `server/app/` 中没有 PolicySource、PolicyRule、FormTemplate 模型、迁移、审核服务或导入 API；DEC-002～004、011 均为 pending。[预检模块](../server/app/services/policy_template_preview.py)只验证结构、来源/内容哈希和给定索引中的重复/版本冲突，不写库、不批准、不用于计算。不能编造真实政策、税率、舍入规则或申报字段，也不能把 `contracts/` 的候选 Schema/Mock 当成已审核数据。
 
 ## 未来结构化输入的最低要求
 
@@ -16,8 +16,8 @@
 
 ## 预期事务与幂等语义
 
-实施时提供 `validate`（结构与适用性）、`dry_run`（不写入）、`import`（原子写入）、`preview`（解析结果）、`conflict`（冲突列表）的明确接口或 CLI；每一步先核验输入 Schema、内容哈希和证据。事务内同时写入来源引用、规则/模板版本、导入批次与审计记录；失败时整体回滚。相同标识与内容哈希重复执行只返回既有实体或新增批次历史，不复制规则；相同 `source_id + rule_code + rule_version` 或模板标识/版本对应不同内容时产生显式冲突，禁止覆盖。版本身份与冲突粒度需要经业务确认后最终确定。
+当前 `preview_policy_rule` 与 `preview_form_template` 已提供无写入的结构校验、哈希校验和 `new/duplicate/version_conflict` 预检；来源及已有版本索引由调用方传入，不能充当可信数据库查询。正式实施仍须提供 `import`（原子写入）、历史读取和冲突列表的明确接口或 CLI，并核验官方来源及证据。事务内同时写入来源引用、规则/模板版本、导入批次与审计记录；失败时整体回滚。相同标识与内容哈希重复执行只返回既有实体或新增批次历史，不复制规则；相同版本对应不同内容时产生显式冲突，禁止覆盖。预检比较键不是数据库业务唯一约束，最终版本身份与语义冲突粒度需要经业务确认后确定。
 
 ## 计划测试及当前结果
 
-需覆盖正常/重复导入、相同版本不同内容、缺字段、非法类型和版本、地区/身份/所属期冲突、未审核阻塞、停用规则、历史模板读取、dry-run 零写入及事务失败回滚。**本轮这些测试全部标记 BLOCKED（未运行）**，因为目标模型、服务和已确认规则不存在。任何 synthetic fixture 只能验证通用框架，不能证明官方税表适用。
+通用预检已有 **9 项 synthetic pytest 通过**，覆盖结构、重复/版本身份冲突、来源缺失、字段类型/版本/日期/哈希错误及候选入口不能自报批准；示例见 [规则 JSON](../contracts/examples/synthetic_policy_rule_import.json)和 [模板 JSON](../contracts/examples/synthetic_form_template_import.json)。正式导入、事务失败回滚、历史查询、语义冲突、未审核计算门禁及真实表间关系仍为 **BLOCKED**，详见 [BE2-10-05 报告](BE2_10_05_IMPORT_TEST.md)。Synthetic fixture 不能证明官方税表适用。

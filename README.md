@@ -43,7 +43,7 @@ Junction China 2026 人工智能赛道参赛项目：为小型工作室提供票
 
 ## 当前状态
 
-**v0.2 后端验收状态（2026-11-07）：未通过，不能上线申报功能。** BE2-01～09 的运行模型、迁移和业务 API 尚未实现，第二阶段 13 项业务决策仍为 pending。BE2-10 已完成现有 MVP 迁移与备份基线检查，Python 3.11 全量后端测试为 121 passed；这不代表 v0.2 功能通过。详情见 [审查报告](docs/BE2_10_AUDIT_REPORT.md)、[测试报告](docs/BE2_10_TEST_REPORT.md)、[验收清单](docs/V2_ACCEPTANCE_CHECKLIST.md)及 [数据库迁移手册](docs/DATABASE_MIGRATION.md)。
+**v0.2 后端验收状态（2026-11-07）：未通过，不能上线申报功能。** BE2-05/07 仅有 synthetic 候选 JSON 预检，其余 BE2-01～09 核心模型、迁移和业务 API 尚未实现；第二阶段 13 项业务决策仍为 pending。BE2-10 已完成现有 MVP 迁移与备份基线检查，Python 3.11 全量后端测试为 139 passed；这不代表 v0.2 功能通过。详情见 [审查报告](docs/BE2_10_AUDIT_REPORT.md)、[测试报告](docs/BE2_10_TEST_REPORT.md)、[验收清单](docs/V2_ACCEPTANCE_CHECKLIST.md)及 [数据库迁移手册](docs/DATABASE_MIGRATION.md)。
 
 前端已新增 Next.js 客户端聊天界面和对账预览，运行说明见 [web/README.md](web/README.md)。
 
