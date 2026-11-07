@@ -104,6 +104,7 @@ async def create_task(session: AsyncSession, data: AgentTaskCreate) -> AgentTask
         session.add(run)
         await session.flush()
         task = AgentTask(order_id=data.order_id, run_id=run.id, task_key=data.idempotency_key,
+                         source_revision=(await session.get(Order, data.order_id)).input_revision,
                          idempotency_key=data.idempotency_key, correlation_id=data.correlation_id,
                          input_schema_version=data.input_schema_version, agent_name=data.agent_role,
                          task_type=data.task_type, status="queued", input_data=data.input_payload)

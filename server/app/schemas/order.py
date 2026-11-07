@@ -19,6 +19,7 @@ class OrderRead(BaseModel):
     period_start: date
     period_end: date
     status: str
+    input_revision: int
     service_scope: str | None
     is_simulated: bool
     created_at: datetime

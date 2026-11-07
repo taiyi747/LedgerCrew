@@ -15,6 +15,8 @@ class FileRead(BaseModel):
     sha256: str
     upload_source: str
     validation_status: str
+    is_active: bool
+    replaced_by_file_id: str | None
     archive_file_id: str | None
     archive_entry_path: str | None
     created_at: datetime

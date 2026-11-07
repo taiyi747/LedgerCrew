@@ -91,14 +91,21 @@ async def _save_record(
 
 async def upload_files(
     session: AsyncSession, storage: Storage, order_id: str, category: str,
-    uploads: list[UploadFile], principal: Principal, settings: Settings,
+    uploads: list[UploadFile], principal: Principal, settings: Settings, replaces_file_id: str | None = None, expected_revision: int | None = None,
 ) -> list[UploadedFile]:
     await order_for_user(session, order_id, principal)
+    from app.live.service import guard_inputs, touch_inputs
+    await guard_inputs(session, order_id, expected_revision)
     check_category(category)
     if not uploads:
         raise AppError("missing_files", "At least one file is required", 422)
     if len(uploads) > settings.max_upload_files:
         raise AppError("upload_file_limit", "Too many files in one upload", 413)
+    active = [f for f in await records.list_files(session, order_id) if f.is_active]
+    if category == "bank_statement_csv" and (len(uploads) != 1 or any(f.file_category == category for f in active)):
+        raise AppError("one_statement", "每单只接收一份 CSV，修正流水请新建订单。", 409)
+    if category == "invoice_image" and sum(f.file_category == category for f in active) + len(uploads) - bool(replaces_file_id) > 20:
+        raise AppError("invoice_limit", "每单最多二十张有效票据。", 413)
     prepared = []
     for upload in uploads:
         filename = PureWindowsPath(upload.filename or "unnamed").name
@@ -108,6 +115,12 @@ async def upload_files(
     result = []
     for filename, content, mime, status in prepared:
         result.append(await _save_record(session, storage, order_id, filename, category, content, mime, status, "direct", principal))
+    if replaces_file_id:
+        old = await session.get(UploadedFile, replaces_file_id)
+        if not old or not old.is_active or old.order_id != order_id or old.file_category != "invoice_image" or category != "invoice_image" or len(result) != 1 or result[0].validation_status != "valid":
+            raise AppError("invalid_replacement", "只能用一张有效票据替换本订单票据。", 422)
+        old.is_active, old.replaced_by_file_id = False, result[0].id
+    await touch_inputs(session, order_id)
     await session.commit()
     return result
 
@@ -185,6 +198,8 @@ async def upload_archive(
     upload: UploadFile, principal: Principal, settings: Settings,
 ) -> tuple[UploadedFile, list[UploadedFile]]:
     await order_for_user(session, order_id, principal)
+    from app.live.service import guard_inputs, touch_inputs
+    await guard_inputs(session, order_id)
     check_category(category)
     content = await read_upload(upload, settings.max_archive_bytes)
     name = PureWindowsPath(upload.filename or "archive.zip").name
@@ -202,6 +217,7 @@ async def upload_archive(
             mime, status = classify(filename, category, data)
             entries.append(await _save_record(session, storage, order_id, filename, category, data, mime, status, "archive", principal, archive_record.id, info.filename))
         archive_record.validation_status = "valid"
+        await touch_inputs(session, order_id)
         session.add(AuditLog(order_id=order_id, actor_type="system", action="archive.validated", entity_type="uploaded_file", entity_id=archive_record.id, details={"entry_count": len(entries)}))
         await session.commit()
         return archive_record, entries

@@ -16,6 +16,8 @@ def make_engine(database_url: str | None = None) -> AsyncEngine:
     @event.listens_for(engine.sync_engine, "connect")
     def enable_foreign_keys(dbapi_connection, _connection_record) -> None:
         dbapi_connection.execute("PRAGMA foreign_keys=ON")
+        dbapi_connection.execute("PRAGMA busy_timeout=5000")
+        dbapi_connection.execute("PRAGMA journal_mode=WAL")
 
     return engine
 

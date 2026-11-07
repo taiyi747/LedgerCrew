@@ -22,10 +22,12 @@ async def get_exception(exception_id: str, session: AsyncSession = Depends(get_s
 @router.post("/{exception_id}/supplements", response_model=ExceptionSupplementRead, status_code=201)
 async def add_supplement(
     exception_id: str, explanation: str | None = Form(default=None), file: UploadFile | None = File(default=None),
+    existing_file_id: str | None = Form(default=None),
+    expected_revision: int | None = Form(default=None),
     session: AsyncSession = Depends(get_session), principal: Principal = Depends(get_current_principal),
     storage: Storage = Depends(get_storage), settings: Settings = Depends(get_settings),
 ):
-    return await exception_service.add_supplement(session, storage, exception_id, principal, settings, explanation, file)
+    return await exception_service.add_supplement(session, storage, exception_id, principal, settings, explanation, file, existing_file_id, expected_revision)
 
 
 @router.get("/{exception_id}/supplements", response_model=list[ExceptionSupplementRead])

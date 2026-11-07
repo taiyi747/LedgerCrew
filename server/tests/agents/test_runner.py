@@ -111,7 +111,8 @@ def test_report_prose_cannot_invent_numeric_facts():
         ReportNarrative(summary="本次已核实 999 元", next_steps=[], evidence_notes=[])
 
 
-async def test_required_tool_executes_and_then_allows_final_output(backend):
+@pytest.mark.parametrize("preface", [None, "我先读取后台核对依据。"])
+async def test_required_tool_executes_and_then_allows_final_output(backend, preface):
     requests = []
     called = []
 
@@ -137,7 +138,7 @@ async def test_required_tool_executes_and_then_allows_final_output(backend):
                             "index": 0,
                             "message": {
                                 "role": "assistant",
-                                "content": None,
+                                "content": preface,
                                 "tool_calls": [
                                     {
                                         "id": "call-1",
@@ -182,3 +183,20 @@ async def test_timeouts_retry_twice_then_fail(backend, monkeypatch):
             "supervisor", "检查", SupervisorDecision, RequestBudget(backend, IDENTITY)
         )
     assert (await backend.load_artifact(IDENTITY, "usage"))["requests"] == 3
+
+
+async def test_http_deadline_bounds_streaming_body():
+    import asyncio
+
+    from app.agents.runner import LimitedTransport
+
+    class StalledBody(httpx.AsyncByteStream):
+        async def __aiter__(self):
+            yield b"partial response"
+            await asyncio.Event().wait()
+
+    inner = httpx.MockTransport(lambda request: httpx.Response(200, stream=StalledBody()))
+    transport = LimitedTransport(inner, timeout_seconds=0.01)
+    async with httpx.AsyncClient(transport=transport) as client:
+        with pytest.raises(httpx.ReadTimeout, match="wall-clock"):
+            await client.get("https://example.invalid/completion")

@@ -32,6 +32,8 @@ async def import_csv(
     principal: Principal, settings: Settings,
 ) -> StatementImportRead:
     await order_for_user(session, order_id, principal)
+    from app.live.service import guard_inputs, touch_inputs
+    await guard_inputs(session, order_id, data.expected_revision)
     file = await file_for_user(session, data.file_id, principal)
     if file.order_id != order_id or file.file_category != "bank_statement_csv" or file.validation_status == "unsupported":
         raise AppError("invalid_statement_file", "A CSV file from this order is required", 422)
@@ -66,6 +68,7 @@ async def import_csv(
         details={"total_rows": parsed.total_rows, "success_rows": len(parsed.transactions), "failed_rows": len(parsed.errors)},
     ))
     try:
+        await touch_inputs(session, order_id)
         await session.commit()
     except IntegrityError:
         await session.rollback()

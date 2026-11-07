@@ -41,15 +41,13 @@ Junction China 2026 人工智能赛道参赛项目：为小型工作室提供票
 
 ## 当前状态
 
-前端已新增 Next.js 客户端聊天界面和对账预览，运行说明见 [web/README.md](web/README.md)。
+已接通真实客户页、老板作战室、FastAPI、独立 Worker 与 MiMo 总管委派工作流。客户上传真实材料后，总管实际派单，专业 Agent 调用受控工具执行，异常与报告交给老板审批；客户只可领取已发布结果。
 
-前端已提供 HTML/CSS/JavaScript 原型，包含任务流转大屏、接口文档和 Mock 后端，见 [HTML 前端](HTML/index.html) 与 [前端接口文档](HTML/api/接口文档.md)。
+**[本机完整启动与联调说明](docs/LIVE_INTEGRATION.md)** · [真实 MiMo 联调记录](docs/verification/live-integration.json)
 
-后端 v0.1 的第六个开发阶段已提供工作室、模拟订单、文件上传、ZIP 安全解压、资金流水 CSV 导入、确定性票据对账、Agent 集成契约、异常处理和版本化报告交付，安装、启动和测试说明见 [server/README.md](server/README.md)。
+客户入口为 `http://127.0.0.1:3210/`，老板入口为 `/owner/`，后端为 `127.0.0.1:8000`。运行说明分别见 [web/README.md](web/README.md) 与 [server/README.md](server/README.md)。`HTML/owner/` 采用选取的 sunset 作战室资产；其余 `HTML/` 文件保留为历史原型，不作为当前入口。
 
-第一阶段 AI 模块已实现五个 Agent、真实 MiMo 调用、人工待办、报告草稿和检查点恢复。后端按依赖协议接入正式对账、数据库和 Worker，前端通过后端接口展示结果。
-
-**[AI 模块安装、演示与后端接入](docs/AI_INTEGRATION.md)** · [真实调用验证记录](docs/verification/ai-live.json)
+AI 独立 CLI 与样例继续保留，见 [AI 模块接入说明](docs/AI_INTEGRATION.md)。本轮不扩展第二阶段税务申报。
 
 两个阶段的任务计划继续作为协作依据。请先完成并验收第一阶段 MVP，再领取第二阶段任务；第二阶段按里程碑推进，不计入原 MVP 的 40 小时承诺。请从各自的功能分支提交 PR。
 

@@ -10,7 +10,7 @@ from app.core.exceptions import AppError
 from app.core.security import Principal, assert_owner
 from app.db.types import utc_now
 from app.integrations.agents.contracts import ReportDraftInput, ReportDraftOutput
-from app.models import (AgentTask, AuditLog, BankTransaction, ExceptionSupplement, InvoiceRecord,
+from app.models import (AgentTask, AuditLog, BankTransaction, ExceptionSupplement, InvoiceRecord, Order,
                         ReportReviewAction, ReportVersion, ReconciliationMatch, UploadedFile, WorkflowEvent)
 from app.repositories import delivery as delivery_repo
 from app.repositories import reconciliation as reconciliation_repo
@@ -77,6 +77,8 @@ async def create_from_agent_task(session: AsyncSession, task_id: str) -> ReportV
     if task is None or task.agent_name != "risk_delivery" or task.task_type != "report_draft" or task.status != "succeeded":
         raise AppError("invalid_report_source", "A succeeded report_draft task is required", 422)
     source = ReportDraftInput.model_validate(task.input_data)
+    if task.source_revision is not None and task.source_revision != (await session.get(Order, task.order_id)).input_revision:
+        raise AppError("stale_report_source", "报告模型任务使用的输入版本已经变化。", 409)
     output = ReportDraftOutput.model_validate(task.output_data)
     if source.order_id != task.order_id or output.order_id != task.order_id or output.report_version != source.report_version:
         raise AppError("invalid_report_source", "Report task identity or version differs", 422)
@@ -119,6 +121,7 @@ async def create_from_agent_task(session: AsyncSession, task_id: str) -> ReportV
         source.reconciliation_summary.exception_ids))
     report = ReportVersion(
         order_id=task.order_id, version=next_version, status="draft", source_task_id=task.id,
+        source_revision=(await session.get(Order, task.order_id)).input_revision,
         reconciliation_batch_id=batch.id, report_content=output.report_content,
         financial_summary=financial,
         reconciliation_summary={
@@ -170,6 +173,14 @@ async def list_reports(session: AsyncSession, order_id: str, principal: Principa
 
 
 async def _fresh(session: AsyncSession, report: ReportVersion) -> None:
+    order = await session.get(Order, report.order_id)
+    from app.live.service import current_run
+    live = await current_run(session, report.order_id)
+    if live and await session.scalar(select(ReportReviewAction.id).where(
+        ReportReviewAction.report_id == report.id, ReportReviewAction.action == "rejected")):
+        raise AppError("rejected_report", "该报告已退回，需总管安排生成新版本。", 409)
+    if report.source_revision is None or report.source_revision != order.input_revision:
+        raise AppError("stale_report", "材料或人工决定已变化，需要生成新报告。", 409)
     if _content_hash(report) != report.content_hash:
         raise AppError("report_content_changed", "Report content changed; create a new version", 409)
     latest = await reconciliation_repo.latest_batch(session, report.order_id)
@@ -217,6 +228,7 @@ async def approve(session: AsyncSession, report_id: str, principal: Principal, r
         raise AppError("invalid_report_transition", "Only an in-review report can be approved", 409)
     await _fresh(session, report)
     report.status = "approved"
+    (await session.get(Order, report.order_id)).status = "approved"
     report.approved_at = utc_now()
     report.approved_by = principal.user_id
     session.add(ReportReviewAction(report_id=report.id, report_version=report.version,
@@ -238,6 +250,8 @@ async def reject(session: AsyncSession, report_id: str, principal: Principal, re
                                    action="rejected", actor_id=principal.user_id,
                                    reason=reason.strip(), content_hash=report.content_hash))
     _audit(session, report, principal, "report.rejected", {"reason": reason.strip()})
+    from app.live.service import wake_supervisor
+    await wake_supervisor(session, report.order_id)
     await session.commit()
     return report
 
@@ -254,8 +268,11 @@ async def publish(session: AsyncSession, report_id: str, principal: Principal) -
         if previous.id != report.id and previous.status == "published":
             previous.status = "superseded"
     report.status = "published"
+    (await session.get(Order, report.order_id)).status = "delivered"
     report.published_at = utc_now()
     _audit(session, report, principal, "report.published")
+    from app.live.service import wake_supervisor
+    await wake_supervisor(session, report.order_id)
     await session.commit()
     return report
 

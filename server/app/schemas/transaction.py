@@ -6,6 +6,7 @@ from pydantic import BaseModel, ConfigDict
 
 class CSVImportCreate(BaseModel):
     file_id: str
+    expected_revision: int | None = None
     column_map: dict[str, str] | None = None
 
 

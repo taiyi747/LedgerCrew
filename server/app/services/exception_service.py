@@ -23,20 +23,27 @@ async def get_exception(session: AsyncSession, exception_id: str, principal: Pri
 
 async def add_supplement(
     session: AsyncSession, storage: Storage, exception_id: str, principal: Principal,
-    settings: Settings, explanation: str | None, upload: UploadFile | None,
+    settings: Settings, explanation: str | None, upload: UploadFile | None, existing_file_id: str | None = None, expected_revision: int | None = None,
 ) -> ExceptionSupplement:
     if principal.role != "customer":
         raise AppError("forbidden", "Customer role is required", 403)
     ticket = await get_exception(session, exception_id, principal)
+    from app.live.service import guard_inputs, touch_inputs
+    await guard_inputs(session, ticket.order_id, expected_revision)
     if ticket.status in {"resolved", "accepted_unresolved"}:
         raise AppError("exception_closed", "Closed exception cannot receive supplements", 409)
     text = (explanation or "").strip() or None
     if text and len(text) > 5000:
         raise AppError("supplement_too_long", "Explanation exceeds 5000 characters", 422)
-    if text is None and upload is None:
+    if text is None and upload is None and existing_file_id is None:
         raise AppError("empty_supplement", "Explanation or evidence image is required", 422)
     file = (await file_service.save_supporting_evidence(
         session, storage, ticket.order_id, upload, principal, settings)) if upload is not None else None
+    if existing_file_id:
+        from app.models import UploadedFile
+        file = await session.get(UploadedFile, existing_file_id)
+        if upload is not None or not file or file.order_id != ticket.order_id or file.validation_status != "valid" or not file.is_active:
+            raise AppError("invalid_supplement_file", "补充附件必须是本订单有效文件。", 422)
     if file is not None:
         await session.flush()
     supplement = ExceptionSupplement(exception_id=ticket.id, order_id=ticket.order_id,
@@ -50,6 +57,13 @@ async def add_supplement(
                          details={"exception_id": ticket.id, "file_id": supplement.file_id}))
     session.add(WorkflowEvent(order_id=ticket.order_id, event_type="exception.supplemented",
                               payload={"exception_id": ticket.id, "supplement_id": supplement.id}))
+    await touch_inputs(session, ticket.order_id, wake=True)
+    from app.live.models import OrderMessage
+    from app.models import Order
+    order = await session.get(Order, ticket.order_id)
+    session.add(OrderMessage(order_id=ticket.order_id, role="user", content=text or "已提交补充凭证。",
+                            file_ids=[file.id] if file else [], evidence_refs=[ticket.id],
+                            input_revision=order.input_revision))
     await session.commit()
     return supplement
 
@@ -63,6 +77,18 @@ async def decide(session: AsyncSession, exception_id: str, data: ExceptionDecisi
                  principal: Principal) -> ExceptionDecision:
     assert_owner(principal)
     ticket = await get_exception(session, exception_id, principal)
+    from app.live.service import guard_inputs, touch_inputs, current_run
+    from app.repositories import reconciliation as reconciliation_repo
+    await guard_inputs(session, ticket.order_id)
+    live = await current_run(session, ticket.order_id)
+    if live:
+        from app.models import Order
+        order = await session.get(Order, ticket.order_id)
+        if data.expected_revision is not None and data.expected_revision != order.input_revision:
+            raise AppError("stale_revision", "订单材料或决定已变化，请刷新。", 409)
+        latest = await reconciliation_repo.latest_batch(session, ticket.order_id)
+        if not latest or latest.id != ticket.batch_id or data.target_version != await repo.next_report_version(session, ticket.order_id):
+            raise AppError("stale_decision", "异常批次或目标报告版本已变化，请刷新。", 409)
     if ticket.status in {"resolved", "accepted_unresolved"}:
         raise AppError("exception_closed", "Closed exception cannot receive a new decision", 409)
     before = ticket.business_classification
@@ -96,7 +122,15 @@ async def decide(session: AsyncSession, exception_id: str, data: ExceptionDecisi
                               event_type="exception.reanalysis_requested" if data.decision == "reanalyze" else "exception.decided",
                               payload={"exception_id": ticket.id, "decision_id": decision.id,
                                        "status": ticket.status}))
-    if data.decision == "reanalyze":
+    await touch_inputs(session, ticket.order_id, wake=True,
+                       force_wake=data.decision in {"reanalyze", "correct_classification"})
+    if data.decision == "request_supplement":
+        from app.live.models import OrderMessage
+        from app.models import Order
+        order = await session.get(Order, ticket.order_id)
+        session.add(OrderMessage(order_id=ticket.order_id, role="assistant", content=data.reason,
+                                 evidence_refs=[ticket.id], input_revision=order.input_revision))
+    if data.decision == "reanalyze" and not live:
         await agent_service.create_task(session, AgentTaskCreate(
             order_id=ticket.order_id, agent_role="risk_delivery", task_type="risk_analysis",
             idempotency_key=f"reanalyze:{decision.id}", correlation_id=decision.id,

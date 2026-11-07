@@ -15,3 +15,12 @@ server/htmlcov/
 *.log
 node_modules/
 .next/
+
+# Live service and browser verification artifacts
+*.db
+*.db-shm
+*.db-wal
+server/storage_data/
+web/.next-e2e/
+web/test-results/
+web/playwright-report/

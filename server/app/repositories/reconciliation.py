@@ -5,7 +5,7 @@ from app.models import BankTransaction, ExceptionTicket, InvoiceRecord, Reconcil
 
 
 async def list_invoices(session: AsyncSession, order_id: str) -> list[InvoiceRecord]:
-    return list((await session.scalars(select(InvoiceRecord).where(InvoiceRecord.order_id == order_id)
+    return list((await session.scalars(select(InvoiceRecord).join(UploadedFile, UploadedFile.id == InvoiceRecord.source_file_id).where(InvoiceRecord.order_id == order_id, UploadedFile.is_active.is_(True))
                                        .order_by(InvoiceRecord.created_at, InvoiceRecord.id))).all())
 
 

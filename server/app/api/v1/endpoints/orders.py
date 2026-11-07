@@ -32,10 +32,12 @@ async def get_order(order_id: str, session: AsyncSession = Depends(get_session),
 @router.post("/{order_id}/files", response_model=FileBatchRead, status_code=201)
 async def upload_files(
     order_id: str, file_category: str = Form(...), files: list[UploadFile] = File(...),
+    replaces_file_id: str | None = Form(default=None),
+    expected_revision: int | None = Form(default=None),
     session: AsyncSession = Depends(get_session), principal: Principal = Depends(get_current_principal),
     storage: Storage = Depends(get_storage), settings: Settings = Depends(get_settings),
 ):
-    result = await file_service.upload_files(session, storage, order_id, file_category, files, principal, settings)
+    result = await file_service.upload_files(session, storage, order_id, file_category, files, principal, settings, replaces_file_id, expected_revision)
     return {"files": result}
 
 
