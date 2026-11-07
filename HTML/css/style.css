@@ -24,9 +24,8 @@
   --accent-text: #0b6c89;
   --accent-soft: rgba(122, 213, 238, .32);
   --accent-tint: #a8f1ff;
-  /* 标题栏整条铺 --accent-text，条内文字 / 告警字要配对给 */
-  --accent-text-ink: #fff;
-  --accent-text-warn: #fffa8d;
+  /* 铺在亮青色带（--accent）上的告警字：红压上去 3.5:1，压深到 5.9:1 */
+  --accent-warn: #8f2b26;
   --highlight: #fffa8d;
   --highlight-soft: rgba(255, 250, 141, .5);
   --positive: #0e8f6e;
@@ -104,9 +103,8 @@
   --accent-text: #7ad5ee;
   --accent-soft: rgba(122, 213, 238, .2);
   --accent-tint: #a8f1ff;
-  /* 深色下 --accent-text 转亮青，标题栏随之变亮，条内改压墨字 */
-  --accent-text-ink: #243e4c;
-  --accent-text-warn: #8f2b26;
+  /* 深色下色带同样是亮青，告警字同色 */
+  --accent-warn: #8f2b26;
   --highlight: #fffa8d;
   --highlight-soft: rgba(255, 250, 141, .2);
   --positive: #35d6a4;
@@ -395,9 +393,9 @@ body {
   align-items: center;
   gap: 10px;
   padding: 0 20px;
-  /* 标题栏整条铺标题色 */
-  background: var(--accent-text);
-  color: var(--accent-text-ink);
+  /* 标题栏整条铺 --accent —— 与底部导航选中项（作战室）同一个令牌，必然同色 */
+  background: var(--accent);
+  color: var(--on-invert);
 }
 .panel-head .grow { flex: 1; }
 .panel-head .t-title {
@@ -406,10 +404,10 @@ body {
   line-height: 24px;
   font-weight: 600;
   letter-spacing: -.005em;
-  color: var(--accent-text-ink);
+  color: var(--on-invert);
 }
-.panel-head .t-meta { color: var(--accent-text-ink); opacity: .82; }
-.panel-head .neg { color: var(--accent-text-warn); opacity: 1; font-weight: 500; }
+.panel-head .t-meta { color: var(--on-invert); opacity: .82; }
+.panel-head .neg { color: var(--accent-warn); opacity: 1; font-weight: 500; }
 
 .deck {
   flex: 1;

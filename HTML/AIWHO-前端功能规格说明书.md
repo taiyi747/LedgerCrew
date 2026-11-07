@@ -220,7 +220,7 @@
 
 ### 7. WorkspacePanel（工作区面板，`components/war-room/WorkspacePanel.tsx` / `.panel`）
 - **模块内底 = 全局底色**（`--bg`，不做浮起的白卡，去 `box-shadow`）。
-- **标题栏整条铺 `var(--accent-text)`**（浅色 `#0b6c89` / 深色 `#7ad5ee`），标题文字与 meta 用 `--accent-text-ink` 反白；「N 项待处理」用 `--accent-text-warn`（浅色淡黄 / 深色深红），在色带上才读得清。
+- **标题栏整条铺 `var(--accent)`**（亮青 `#7ad5ee`，与底部导航选中项同令牌、必然同色），标题文字与 meta 压 `--on-invert` 墨字；「N 项待处理」用 `--accent-warn`（`#8f2b26`，压在亮青上 5.9:1；原来的红只有 3.5:1）。
 - `aria-label={workspace.name}`；头部 48px（状态灯 / 名称 / `onlineCount/agentCount 在线` / `urgentCount>0` 时「N 项待处理」）。
 - 底板 `.deck-floor`（只留细网格做结构纹理，底 `var(--bg)`）内工位卡按 `agents` 顺序流式排布（`flex-wrap`、**`justify-content:center` 工作台居中**、`gap:16px`、`padding:16px`）。
 - 进场动画：`.enter`（opacity 0→1 + `translateY(8px→0)`，380ms `cubic-bezier(.22,1,.36,1)`，`both`），每面板延迟 `min(i,5)*50ms`。
@@ -594,8 +594,7 @@ level：`escalate→critical`，`cancel/replay→warn`，其余 `info`）。
 | `--accent-text` | `#0b6c89` | 青当**文字/描边**时的压深版（模块标题、focus 环、按下态图标）——浅底上亮青看不清 |
 | `--accent-soft` | `rgba(122,213,238,.32)` | focus 光环、工具按钮激活底 |
 | `--accent-tint` | `#a8f1ff` | 淡青（色卡第 3 条）：追问 chip hover |
-| `--accent-text-ink` | `#fff` | 铺在 `--accent-text` 色带上的文字（深色主题 `#243e4c`） |
-| `--accent-text-warn` | `#fffa8d` | 色带上的告警字（深色主题 `#8f2b26`） |
+| `--accent-warn` | `#8f2b26` | 铺在亮青色带（`--accent`）上的告警字，明暗同值 |
 | `--highlight` | `#fffa8d` | 淡黄（色卡第 4 条）：待办数色块 |
 | `--highlight-soft` | `rgba(255,250,141,.5)` | 淡黄软底：演示模式徽标 |
 | `--positive` | `#0e8f6e` | 语义正向 |
