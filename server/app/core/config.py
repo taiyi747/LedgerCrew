@@ -1,7 +1,7 @@
 from functools import lru_cache
 from typing import Literal
 
-from pydantic import Field
+from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -12,6 +12,9 @@ class Settings(BaseSettings):
     frontend_origin: str = "http://127.0.0.1:3210"
     environment: Literal["development", "test", "production"] = "development"
     dev_owner_user_ids: list[str] = Field(default_factory=lambda: ["owner"])
+    worker_enabled: bool = True
+    admin_username: str = "owner"
+    admin_password: SecretStr = SecretStr("junctionchina2026nb")
     database_url: str = "sqlite+aiosqlite:///./ledgercrew.db"
     sql_echo: bool = False
     storage_root: str = "./storage_data"

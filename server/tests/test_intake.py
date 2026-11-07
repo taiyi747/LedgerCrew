@@ -145,7 +145,7 @@ def test_intake_zip_to_actual_order_delivery(tmp_path, monkeypatch):
         assert again.json() == r.json()
         oid = r.json()["order_id"]
         orders = (await client.get("/api/v1/orders", headers=CUSTOMER)).json()
-        assert len(orders) == 1 and orders[0]["price_cents"] == 1990 and orders[0]["intake_id"] == iid
+        assert len(orders) == 1 and orders[0]["price_cents"] == 0 and orders[0]["intake_id"] == iid
         assert await count([BankTransaction]) == [6]
         await run_worker(tmp_path, LiveScriptedRunner())
         batch = (await client.get(f"/api/v1/orders/{oid}/reconciliation", headers=CUSTOMER)).json()

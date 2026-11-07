@@ -7,5 +7,6 @@ export const metadata: Metadata = {
   description: '由一位经营者统筹多 Agent 团队，完成材料接洽、票据核对与报告交付。',
 };
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  return <html lang="zh-CN" className={GeistSans.variable}><body className="font-sans antialiased">{children}</body></html>;
+  // 浏览器扩展（如沉浸式翻译）会在 hydration 前给 <html> 注入属性，忽略该元素自身的属性比对。
+  return <html lang="zh-CN" className={GeistSans.variable} suppressHydrationWarning><body className="font-sans antialiased" suppressHydrationWarning>{children}</body></html>;
 }

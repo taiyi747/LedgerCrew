@@ -79,7 +79,7 @@ SERVICE = {
     "code": "monthly_records",
     "version": 1,
     "name": "票据整理＋流水核对＋异常报告",
-    "price_cents": 1990,
+    "price_cents": 0,
     "currency": "CNY",
     "is_simulated": True,
     "deliverables": ["票据整理结果", "流水核对明细", "异常清单与核对报告"],

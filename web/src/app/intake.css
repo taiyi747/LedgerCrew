@@ -48,6 +48,8 @@
   .intake-todos { margin: 18px 0; padding: 16px; border: 1px solid var(--line); border-radius: 12px; background: var(--raised); }
   .intake-todos-heading { display: flex; justify-content: space-between; gap: 12px; font-size: 12px; }
   .intake-todos-heading > span { color: var(--muted); font-size: 11px; }
+  .intake-todo-progress { margin: 8px 0 4px; height: 4px; border-radius: 999px; background: var(--raised); overflow: hidden; }
+  .intake-todo-progress > i { display: block; height: 100%; background: var(--primary); transition: width .3s ease; }
   .intake-todos ol { list-style: none; margin: 14px 0 0; padding: 0; }
   .intake-todo { display: grid; grid-template-columns: 52px minmax(0,1fr); gap: 10px; padding: 10px 0; border-top: 1px solid var(--line); }
   .intake-todo strong { font-size: 12px; overflow-wrap: anywhere; }
