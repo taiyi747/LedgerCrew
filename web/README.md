@@ -33,11 +33,11 @@ npx next start --hostname 127.0.0.1 --port 3210
 
 ## 客户接单与老板控制台
 
-客户可以先咨询、上传 JPG / PNG / CSV / ZIP、确认工作室和账期，再由客服 Agent 做轻量材料预检。只有确认服务卡后才创建订单，随后由总管委派专业 Agent，并保留异常处理、报告审核发布和下载闭环，详见 [接单说明](../docs/INTAKE_RECEPTION.md)。
+客户可以先咨询或上传原始材料，上传后 ReAct 材料 Agent 自动列待办、读取文件并整理。支持的读取工具包含 ZIP、图片、PDF、Excel `.xlsx`、CSV/TSV、Word 和文本；未知类型明确留为待确认。客户无需套用 CSV 模板。只有确认服务卡后才创建订单，随后由总管委派专业 Agent，并保留异常处理、报告审核发布和下载闭环，详见 [接单说明](../docs/INTAKE_RECEPTION.md)。
 
 老板控制台保留原作战室、总管区、四个网格工位区及 SVG 插画；按钮、表单和审批抽屉使用 shadcn/ui。旧 `/owner/dashboard.html` 跳转到 `/owner/dashboard/`，FastAPI `/console/` 也只跳转到前端。
 
-真实 CSV 使用服务端模板：`transaction_date,counterparty,direction,amount,description,external_id`，方向 IN/OUT。PDF、Excel 不在当前上传支持范围。
+Agent 整理的内部流水使用 `transaction_date,counterparty,direction,amount,description,external_id`，方向 IN/OUT；原始文件与派生成果保留关联，金额转换和最终导入由服务端验证。
 
 ## 品牌首页与独立演示
 

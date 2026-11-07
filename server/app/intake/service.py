@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import mimetypes
 from copy import deepcopy
 from datetime import timedelta
 from pathlib import PurePosixPath, PureWindowsPath
@@ -100,7 +101,7 @@ async def create(session, principal):
         IntakeMessage(
             intake_id=item.id,
             role="assistant",
-            content="欢迎咨询账清社。可以先发送问题或上传票据、CSV、ZIP，再确认工作室和账期。本次服务为模拟交易，确认前不会创建订单。",
+            content="欢迎咨询账清社。可以先发送问题或上传原始材料，材料 Agent 会列出待办并读取，再确认工作室和账期。本次服务为模拟交易，确认前不会创建订单。",
         )
     )
     await event(session, item.id, "intake.created")
@@ -127,6 +128,9 @@ async def profile(session, item, data, principal):
 
 def prepare_file(name, data):
     ext = PurePosixPath(name.lower()).suffix
+    if ext not in {".jpg", ".jpeg", ".png", ".csv"}:
+        mime = mimetypes.guess_type(name)[0] or "application/octet-stream"
+        return "source_document", mime, "valid"
     category = (
         "bank_statement_csv"
         if ext == ".csv"
@@ -267,7 +271,9 @@ async def inspect_materials(session, item, storage, samples=None):
     if len(invoices) > 20:
         issue(blockers, "invoice_limit", "有效票据不能超过二十张。")
     if len(csvs) != 1:
-        issue(blockers, "statement_required", "需要且只能纳入一份有效 CSV 流水。")
+        issue(
+            blockers, "statement_required", "还需要整理出一份可核验的收付款流水，或确认多份流水的处理范围。"
+        )
     if not invoices:
         issue(warnings, "no_invoices", "未提交票据，仅核对已提交材料；缺票将列为异常。")
     hashes = {}
@@ -277,6 +283,8 @@ async def inspect_materials(session, item, storage, samples=None):
             issue(blockers, "invalid_file", "文件无法读取或格式不支持，请排除或替换。", f.id)
         if f.category == "unclassified":
             issue(blockers, "category_required", "请选择材料类别或排除该文件。", f.id)
+        if f.category == "source_document":
+            issue(blockers, "document_pending", "这份原始文档还需要 Agent 读取并确认用途。", f.id)
         if f.sha256 in hashes:
             issue(warnings, "duplicate_file", "与另一份材料内容相同，正式处理将检查重复。", f.id)
         hashes[f.sha256] = f.id
@@ -313,7 +321,7 @@ async def inspect_materials(session, item, storage, samples=None):
         "invoice_count": len(invoices),
         "active_count": len(active),
         "sampled_file_ids": list(samples or {}),
-        "note": "本次仅检查材料能否开展服务，最多抽查三张不同图片；正式识别仍可能发现未知字段、缺票和差额。",
+        "note": "Agent 按待办读取材料并整理启动条件；图片先判断用途和可读性，正式识别仍可能发现未知字段、缺票和差额。",
     }
 
 
@@ -321,6 +329,15 @@ def customer_text(text, material):
     for f in material:
         text = text.replace(f.id, f.original_filename)
     for raw, label in {
+        "inspect_intake_materials": "材料检查",
+        "normalize_pdf_statement": "整理 PDF 流水",
+        "normalize_statement": "整理流水",
+        "prepare_pdf_receipts": "准备 PDF 票据页",
+        "read_document": "读取文档",
+        "read_image": "读取图片",
+        "open_archive": "查看压缩包",
+        "plan_materials": "安排材料待办",
+        "save_precheck_result": "保存材料检查结论",
         "blockers": "启动待补项",
         "included=false": "仅保留原始包",
         "invoice_image": "票据",
@@ -341,6 +358,19 @@ async def snapshot(session, item, storage, *, owner=False):
         result["narrative"]["questions"] = [
             customer_text(q, material) for q in result["narrative"]["questions"]
         ]
+    todos = deepcopy((job.artifacts or {}).get("todos", [])) if job and job.revision == item.revision else []
+    for task in todos:
+        task["title"] = customer_text(task["title"], material)
+        if task.get("detail") == "已取得真实工具结果。":
+            task["detail"] = {
+                "read_document": "已读取文件内容。",
+                "normalize_statement": "已整理流水并保留原文件来源。",
+                "inspect_archive": "已查看压缩包目录和内部文件。",
+                "prepare_receipts": "已准备票据页图并保留页码。",
+                "check_materials": "已检查资料，需要确认的事项会单独说明。",
+            }.get(task["kind"], "已完成这项处理。")
+        else:
+            task["detail"] = customer_text(task.get("detail", ""), material)
     return {
         "id": item.id,
         "status": item.status,
@@ -368,6 +398,7 @@ async def snapshot(session, item, storage, *, owner=False):
                     "archive_file_id",
                     "archive_entry_path",
                     "replaced_by_file_id",
+                    "derived_from_file_id",
                 )
             }
             for f in material
@@ -380,6 +411,7 @@ async def snapshot(session, item, storage, *, owner=False):
                 "requests_used": job.requests_used,
                 "request_limit": job.request_limit,
                 "result": result,
+                "todos": todos,
                 "error": (
                     (job.error if owner else "预检未完成，请重试或联系老板。")
                     if job.status == "failed"

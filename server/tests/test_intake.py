@@ -126,8 +126,8 @@ def test_intake_zip_to_actual_order_delivery(tmp_path, monkeypatch):
         item = await snapshot(client, item)
         iid = item["id"]
         assert item["status"] == "ready_with_warnings"
-        assert len(item["precheck"]["result"]["sampled_file_ids"]) == 3
-        assert len([c for c in runner.calls if c[1] == "ImageSample"]) == 3
+        assert len(item["precheck"]["result"]["sampled_file_ids"]) == 5
+        assert len([c for c in runner.calls if c[1] == "ImageSample"]) == 6
         assert not any(c[1] == "InvoiceExtractionOutput" for c in runner.calls)
         assert await count([Order, InvoiceRecord, ReconciliationBatch, BankTransaction]) == [0, 0, 0, 0]
         assert (await check(client, item))["id"] == job["id"]
@@ -275,23 +275,26 @@ def test_precheck_restart_preserves_samples_and_budget(tmp_path, monkeypatch):
         class Interrupted(LiveScriptedRunner):
             async def generate(self, role, prompt, schema, budget, **kw):
                 if schema is PrecheckNarrative:
-                    await budget.reserve()
-                    tools = {t.__name__: t for t in kw["tools"]}
-                    await tools["inspect_intake_materials"]()
 
-                    raise RuntimeError("模拟抽查完成后执行中断")
+                    async def interrupted_save(**values):
+                        raise RuntimeError("模拟读取完成、保存前执行中断")
+
+                    interrupted_save.__name__ = "save_precheck_result"
+                    kw["tools"] = [
+                        interrupted_save if t.__name__ == "save_precheck_result" else t for t in kw["tools"]
+                    ]
                 return await super().generate(role, prompt, schema, budget, **kw)
 
         await execute(job["id"], Interrupted(), raise_errors=False)
         failed = await snapshot(client, item)
-        assert failed["precheck"]["requests_used"] == 4 and failed["status"] == "precheck_failed"
+        assert failed["precheck"]["requests_used"] == 7 and failed["status"] == "precheck_failed"
         again = await check(client, failed)
-        assert again["id"] == job["id"] and again["requests_used"] == 4
+        assert again["id"] == job["id"] and again["requests_used"] == 7
         runner = LiveScriptedRunner()
         await execute(job["id"], runner)
         assert not any(name == "ImageSample" for _, name in runner.calls)
         done = await snapshot(client, item)
-        assert done["precheck"]["requests_used"] == 5 and done["confirmation"]
+        assert done["precheck"]["requests_used"] == 8 and done["confirmation"]
 
     exercise(tmp_path, monkeypatch, scenario)
 
@@ -502,7 +505,7 @@ def test_saved_tool_result_survives_final_model_ack_failure(tmp_path, monkeypatc
         job = await check(client, item)
         await execute(job["id"], SavedThenFailed())
         done = await snapshot(client, item)
-        assert done["confirmation"] and done["precheck"]["requests_used"] == 5
+        assert done["confirmation"] and done["precheck"]["requests_used"] == 7
         assert await count([Order, InvoiceRecord, ReconciliationBatch]) == [0, 0, 0]
 
     exercise(tmp_path, monkeypatch, scenario)
@@ -550,6 +553,10 @@ def test_repeated_checks_without_progress_stop_explicitly(tmp_path, monkeypatch)
             async def generate(self, role, prompt, schema, budget, **kw):
                 if schema is PrecheckNarrative:
                     await budget.reserve()
+                    named = {tool.__name__: tool for tool in kw["tools"]}
+                    await named["plan_materials"](
+                        [{"file_id": "", "kind": "check_materials", "title": "检查启动条件"}]
+                    )
                     tool = next(t for t in kw["tools"] if t.__name__ == "inspect_intake_materials")
                     for _ in range(4):
                         await tool()
@@ -561,5 +568,39 @@ def test_repeated_checks_without_progress_stop_explicitly(tmp_path, monkeypatch)
         failed = await snapshot(client, item)
         assert failed["status"] == "precheck_failed" and failed["confirmation"] is None
         assert await count([Order]) == [0]
+
+    exercise(tmp_path, monkeypatch, scenario)
+
+
+def test_precheck_questions_are_persisted_in_customer_conversation(tmp_path, monkeypatch):
+    async def scenario(client, _):
+        summary = "已查看你提交的流水。"
+        question = "这笔支出是否还有对应票据可以补充？"
+
+        class QuestionRunner(LiveScriptedRunner):
+            async def generate(self, role, prompt, schema, budget, **kw):
+                named = {tool.__name__: tool for tool in kw.get("tools", [])}
+                if schema is PrecheckNarrative and "save_precheck_result" in named:
+                    saver = named["save_precheck_result"]
+
+                    async def save_with_question(**values):
+                        return await saver(summary=summary, questions=[question], evidence_refs=[])
+
+                    save_with_question.__name__ = "save_precheck_result"
+                    kw["tools"] = [
+                        save_with_question if t.__name__ == "save_precheck_result" else t for t in kw["tools"]
+                    ]
+                return await super().generate(role, prompt, schema, budget, **kw)
+
+        item = await prepare(client, csv_only=True)
+        job = await check(client, item)
+        await execute(job["id"], QuestionRunner())
+        url = f"/api/v1/intakes/{item['id']}/messages"
+        for _ in range(2):
+            messages = (await client.get(url, headers=CUSTOMER)).json()
+            replies = [m for m in messages if m["role"] == "assistant" and m["job_id"] == job["id"]]
+            assert len(replies) == 1
+            assert replies[0]["content"] == summary + "\n\n" + question
+        assert await count([Order, InvoiceRecord, ReconciliationBatch]) == [0, 0, 0]
 
     exercise(tmp_path, monkeypatch, scenario)

@@ -243,7 +243,20 @@ class MiMoRunner:
                 )
                 if text.startswith("```"):
                     text = text.removeprefix("```json").removeprefix("```").removesuffix("```").strip()
-                output = schema.model_validate_json(text)
+                try:
+                    output = schema.model_validate_json(text)
+                except ValidationError:
+                    if not (
+                        force_tools
+                        and getattr(schema, "accepts_tool_progress", False)
+                        and any(message.role == "tool" for message in response.messages)
+                    ):
+                        raise
+                    # This is an internal turn receipt, never a completed business result.
+                    # The ReAct controller requires a verified, persisted final candidate.
+                    output = schema.model_validate(
+                        {"summary": "工具回合已结束，继续未完成待办。", "questions": [], "evidence_refs": []}
+                    )
                 usage = response.usage_details
                 await budget.deps.save_artifact(
                     budget.identity,

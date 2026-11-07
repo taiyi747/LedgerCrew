@@ -1,0 +1,24 @@
+{
+  "verified_at": "2026-11-07T11:39:41.673508+00:00",
+  "mode": "real MiMo",
+  "materials": "one synthetic CSV with original Chinese headers",
+  "status": "succeeded",
+  "requests_used": 9,
+  "todos": [
+    {
+      "title": "读取原始银行导出.csv 实际表头与数据行",
+      "status": "completed"
+    },
+    {
+      "title": "按实际表头映射并整理银行流水",
+      "status": "completed"
+    },
+    {
+      "title": "调用 inspect_intake_materials 检查启动条件",
+      "status": "completed"
+    }
+  ],
+  "derived_files": 1,
+  "verified_amount_cents": 285000,
+  "order_created": false
+}

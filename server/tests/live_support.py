@@ -32,6 +32,62 @@ class LiveScriptedRunner:
                 explanation="抽查图片类型为票据且可读。",
             )
         if schema is PrecheckNarrative:
+            if "plan_materials" in named:
+                manifest = json.loads(await named["list_materials"]())
+                tasks = []
+                for source in manifest:
+                    if source["category"] == "archive":
+                        tasks.append(
+                            {"file_id": source["id"], "kind": "inspect_archive", "title": "查看压缩包内容"}
+                        )
+                    elif source["included"]:
+                        tasks.append(
+                            {
+                                "file_id": source["id"],
+                                "kind": "read_document",
+                                "title": "读取 " + source["name"],
+                            }
+                        )
+                tasks.append({"file_id": "", "kind": "check_materials", "title": "整理待确认事项"})
+                await named["plan_materials"](tasks)
+                for source in manifest:
+                    if source["category"] == "archive":
+                        await named["open_archive"](source["id"])
+                    elif source["included"]:
+                        reader = (
+                            named["read_image"]
+                            if source["type"].startswith("image/")
+                            else named["read_document"]
+                        )
+                        observed = json.loads(await reader(source["id"]))
+                        if observed.get("type") == "table" and observed.get("sheets"):
+                            headers = observed["sheets"][0]["rows"][0]
+                            if {"交易日期", "对方户名", "收支", "发生额"} <= set(headers):
+                                tasks.append(
+                                    {
+                                        "file_id": source["id"],
+                                        "kind": "normalize_statement",
+                                        "title": "按实际列名整理原始流水",
+                                    }
+                                )
+                                await named["plan_materials"](tasks)
+                                await named["normalize_statement"](
+                                    source["id"],
+                                    {
+                                        "transaction_date": "交易日期",
+                                        "counterparty": "对方户名",
+                                        "direction": "收支",
+                                        "amount": "发生额",
+                                    },
+                                )
+                await named["inspect_intake_materials"]()
+                return PrecheckNarrative.model_validate_json(
+                    await named["save_precheck_result"](
+                        summary="已按待办读取材料，仅确认服务启动条件，正式处理仍可能发现异常。",
+                        questions=[],
+                        evidence_refs=[],
+                    )
+                )
             if "inspect_intake_materials" in named:
                 await named["inspect_intake_materials"]()
                 return PrecheckNarrative(
