@@ -8,15 +8,24 @@ test('customer materials → genuine delegations → owner decisions → publish
   await page.goto('/');
   await page.getByRole('link',{name:'开始清账',exact:true}).first().click();
   await expect(page).toHaveURL(/\/upload\/$/);
-  await page.getByRole('button',{name:'建立本期订单'}).click();
-  const dialog=page.getByRole('dialog',{name:'建立本期订单'});
-  await dialog.getByLabel('工作室名称（与票据抬头一致）').fill('松石设计工作室');
-  await dialog.getByLabel('账期').fill('2026-10');
-  await dialog.getByRole('button',{name:'确认建档'}).click();
-  await expect(dialog).toBeHidden();
-  await page.locator('input[type=file]').first().setInputFiles([
-    ...Array.from({length:6},(_,i)=>path.resolve(`../fixtures/mvp/receipt-0${i+1}.png`)),path.resolve('../fixtures/mvp/statement-live.csv')]);
-  await page.getByRole('button',{name:'发送消息',exact:true}).click();
+  await page.getByRole('button',{name:'开始咨询'}).click();
+  expect(await (await page.request.get('/api/v1/orders',{headers:{'X-User-Id':'local-customer'}})).json()).toEqual([]);
+  await page.getByLabel('工作室名称',{exact:true}).fill('松石设计工作室');
+  await page.getByLabel('账期',{exact:true}).fill('2026-10');
+  await page.getByRole('button',{name:'确认服务资料'}).click();
+  await expect(page.getByText('已确认',{exact:true})).toBeVisible();
+  await page.locator('input[type=file]').first().setInputFiles(path.resolve('../fixtures/mvp/materials.zip'));
+  await page.getByRole('button',{name:'发送接洽消息',exact:true}).click();
+  await expect(page.getByRole('region',{name:'材料清单'}).getByText('statement.csv',{exact:true})).toBeVisible();
+  await page.getByRole('button',{name:'检查材料',exact:true}).click();
+  const offer=page.getByRole('region',{name:'服务确认卡'});
+  await expect(offer).toBeVisible({timeout:60_000});
+  expect(await (await page.request.get('/api/v1/orders',{headers:{'X-User-Id':'local-customer'}})).json()).toEqual([]);
+  await page.reload();
+  await expect(page.getByRole('region',{name:'服务确认卡'})).toBeVisible();
+  const checkboxes=page.getByRole('region',{name:'服务确认卡'}).getByRole('checkbox');
+  for(let i=0;i<await checkboxes.count();i++)await checkboxes.nth(i).check();
+  await page.getByRole('button',{name:'确认创建订单',exact:true}).click();
   await expect(page.getByRole('heading',{name:'4 笔匹配，3 项待核实事项'})).toBeVisible({timeout:60_000});
   await expect(page.getByText('差 ¥270.00',{exact:true})).toBeVisible();
   await page.reload();
@@ -27,16 +36,17 @@ test('customer materials → genuine delegations → owner decisions → publish
   const reports=await page.request.get(`/api/v1/orders/${orderId}/reports`,{headers:{'X-User-Id':'local-customer'}});
   expect(await reports.json()).toEqual([]);
   await boss.goto('/owner/');
-  await expect(boss.getByText('每一项任务，都有真实派单与回执。')).toBeVisible();
+  await expect(boss.getByRole('heading',{name:'LedgerCrew · 老板作战室',exact:true})).toBeVisible();
   await boss.getByRole('button',{name:'数据核对 Agent · 已完成'}).click();
-  await expect(boss.locator('#drawer').getByText(/reconcile_transactions/)).toBeVisible();
+  await boss.getByText('工具回执与输入来源',{exact:true}).click();
+  await expect(boss.getByRole('dialog').getByText(/reconcile_transactions/)).toBeVisible();
   await boss.getByRole('button',{name:'关闭',exact:true}).click();
   await boss.getByRole('button',{name:'异常与报告审批',exact:true}).click();
   for(let i=0;i<3;i++){
-    const card=boss.locator('.live-exception').filter({has:boss.getByRole('button',{name:'保存这个决定'})}).first();
+    const card=boss.getByTestId('owner-exception').filter({has:boss.getByRole('button',{name:'保存这个决定'})}).first();
     await card.locator('textarea').fill('测试操作者：保留未解决事项，不核销差额。');
     await card.getByRole('button',{name:'保存这个决定'}).click();
-    await expect(boss.locator('.live-exception').filter({has:boss.getByRole('button',{name:'保存这个决定'})})).toHaveCount(2-i);
+    await expect(boss.getByTestId('owner-exception').filter({has:boss.getByRole('button',{name:'保存这个决定'})})).toHaveCount(2-i);
   }
   await expect.poll(async()=>{
     const r=await boss.request.get(`/api/v1/owner/dashboard?order_id=${orderId}`,{headers:{'X-User-Id':'owner'}});return (await r.json()).report?.status;
@@ -44,6 +54,7 @@ test('customer materials → genuine delegations → owner decisions → publish
   await boss.getByRole('button',{name:'关闭',exact:true}).click();
   await boss.getByRole('button',{name:'异常与报告审批',exact:true}).click();
   await boss.getByRole('button',{name:'查看草稿与审核'}).click();
+  await boss.getByLabel('审核／退回理由',{exact:true}).fill('已核验本版本证据，保留未解决事项。');
   await boss.getByRole('button',{name:'审核、批准并发布'}).click();
   await expect(page.getByRole('button',{name:/账目核对报告 v1/})).toBeVisible({timeout:30_000});
   await page.getByRole('button',{name:/账目核对报告 v1/}).click();
@@ -55,24 +66,25 @@ test('customer materials → genuine delegations → owner decisions → publish
   await customer.close();await owner.close();
 });
 
-
-test('brand, customer preview and preserved HTML pages share one site', async ({ page, request }) => {
+test('brand and preview use native customer and owner routes without legacy assets', async ({ page, request }) => {
   await page.goto('/');
   await expect(page.getByRole('heading', {name:'账清', exact:true})).toBeVisible();
   await expect(page.locator('a[href="/upload/"]')).toHaveCount(3);
-  await page.goto('/demo/');
+  await expect(page.locator('a[href="/workspace/"]')).toHaveCount(0);
+  await page.getByRole('link', {name:'演示体验', exact:true}).click();
+  await expect(page).toHaveURL(/\/demo\/$/);
   await expect(page.getByRole('button', {name:'上传票据和流水', exact:true})).toBeVisible();
+  await expect(page.locator('.demo-surface')).toHaveCount(1);
+  await page.goto('/');
+  await page.getByRole('link', {name:'老板控制台', exact:true}).click();
+  await expect(page).toHaveURL(/\/owner\/$/);
+  await expect(page.getByRole('navigation', {name:'老板中控导航'})).toBeVisible();
+  await expect(page.locator('.warroom-room')).toHaveCount(4);
   await page.goto('/workspace/');
-  await expect(page).toHaveURL(/\/workspace\/index.html$/);
-  for (const [file, mode] of [['index','warroom'],['dashboard','dashboard'],['assistant','assistant'],['settings','settings']]) {
-    await page.goto(`/workspace/${file}.html`);
-    await expect(page.locator('body')).toHaveAttribute('data-page', mode);
-    await expect(page.locator('#view')).not.toBeEmpty();
-    await expect(page.locator('#dock')).not.toBeEmpty();
-    await expect(page.getByRole('navigation', {name:'账清项目入口'})).toBeVisible();
-  }
+  await expect(page).toHaveURL(/\/owner\/$/);
+  await page.goto('/workspace/index.html');
+  await expect(page).toHaveURL(/\/owner\/$/);
   for (const asset of ['css/style.css','js/api.js','js/app.js']) {
-    const response = await request.get(`/workspace/${asset}`);
-    expect(response.ok()).toBeTruthy();
+    expect((await request.get(`/workspace/${asset}`)).status()).toBe(404);
   }
 });

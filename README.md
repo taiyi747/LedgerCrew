@@ -37,15 +37,17 @@ Junction China 2026 人工智能赛道参赛项目：为小型工作室提供票
 - AI：MiMo API、Microsoft Agent Framework Python SDK、WorkflowBuilder、FileCheckpointStorage。
 - 部署：本地服务，通过公网隧道暴露 Next.js；Next.js 代理后端 API。
 
-核心流程：**模拟下单 → 上传材料 → 识别票据 → 核对流水 → 人工处理异常 → 审核报告 → 客户领取。**
+核心流程：**聊天上传 → 材料预检 → 客户确认服务 → 总管派工 → 正式核对 → 人工审核 → 报告交付。**
 
 ## 当前状态
+
+新增下单前接洽、混合 ZIP、客服轻量预检与服务确认卡，详见 **[接单迭代说明](docs/INTAKE_RECEPTION.md)**。客户点击确认前不生成订单；确认后自动接入现有总管与交付流程。
 
 已接通真实客户页、老板作战室、FastAPI、独立 Worker 与 MiMo 总管委派工作流。客户上传真实材料后，总管实际派单，专业 Agent 调用受控工具执行，异常与报告交给老板审批；客户只可领取已发布结果。
 
 **[本机完整启动与联调说明](docs/LIVE_INTEGRATION.md)** · [真实 MiMo 联调记录](docs/verification/live-integration.json)
 
-品牌首页为 `http://127.0.0.1:3210/`，客户入口为 `/upload/`，老板入口为 `/owner/`，后端为 `127.0.0.1:8000`。运行说明分别见 [web/README.md](web/README.md) 与 [server/README.md](server/README.md)。`HTML/owner/` 采用选取的 sunset 作战室资产；其余 `HTML/` 页面通过 `/workspace/` 保留为历史演示入口；当前客户演示在 `/demo/`，均可从品牌首页页脚进入。
+品牌首页为 `http://127.0.0.1:3210/`，客户咨询与材料提交入口为 `/upload/`，独立演示为 `/demo/`，老板入口为 `/owner/`，后端为 `127.0.0.1:8000`。运行说明分别见 [web/README.md](web/README.md) 与 [server/README.md](server/README.md)。老板控制台是 Next.js 原生页面，保留原作战室布局、网格工位和插画；交互组件使用 shadcn/ui。客户页、老板作战室及其组件和工位资源统一在 `web/` 中维护。
 
 AI 独立 CLI 与样例继续保留，见 [AI 模块接入说明](docs/AI_INTEGRATION.md)。本轮不扩展第二阶段税务申报。
 

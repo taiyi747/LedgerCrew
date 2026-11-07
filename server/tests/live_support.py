@@ -5,6 +5,7 @@ import json
 import re
 from pathlib import Path
 
+from app.intake.contracts import ImageSample, IntakeAnswer, PrecheckNarrative
 from app.integrations.agents.contracts import InvoiceExtractionOutput, ReportDraftOutput
 from app.live.contracts import Assignment, ChatReply, RoleResult, SupervisorDecision
 
@@ -23,6 +24,30 @@ class LiveScriptedRunner:
         await budget.reserve()
         self.calls.append((role, schema.__name__))
         named = {tool.__name__: tool for tool in tools or []}
+        if schema is ImageSample:
+            return ImageSample(
+                file_id=re.search(r"file_id 必须为 ([a-f0-9-]+)", prompt)[1],
+                category="invoice_image",
+                readable=True,
+                explanation="抽查图片类型为票据且可读。",
+            )
+        if schema is PrecheckNarrative:
+            if "inspect_intake_materials" in named:
+                await named["inspect_intake_materials"]()
+                return PrecheckNarrative(
+                    summary="已取得真实材料检查和抽查结果，等待保存预检。", questions=[], evidence_refs=[]
+                )
+            return PrecheckNarrative.model_validate_json(
+                await named["save_precheck_result"](
+                    summary="材料预检已完成，仅检查服务启动条件，正式处理仍可能发现异常。",
+                    questions=[],
+                    evidence_refs=[],
+                )
+            )
+        if schema is IntakeAnswer:
+            return IntakeAnswer(
+                answer="请上传材料并确认工作室及账期，预检后点击服务卡确认创建订单。", evidence_refs=[]
+            )
         if schema is SupervisorDecision:
             state = json.loads(prompt.split("\n")[-1])
             eligible = state["eligible_tasks"]

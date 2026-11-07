@@ -5,5 +5,5 @@ out/
 .env*
 !.env.example
 
-# Generated from the shared HTML source at startup/build
+# Retired static export; keep stale local copies out of Git
 public/workspace/

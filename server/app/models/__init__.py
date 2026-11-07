@@ -5,3 +5,5 @@ from app.models.delivery import ExceptionSupplement, ExceptionDecision, ReportVe
 from app.live.models import WorkflowRun, Delegation, WorkflowArtifact, OrderMessage
 
 __all__ = ["Studio", "Order", "UploadedFile", "AgentRun", "AgentTask", "WorkflowEvent", "AuditLog", "StatementImport", "StatementImportError", "BankTransaction", "InvoiceRecord", "ReconciliationBatch", "ReconciliationMatch", "ExceptionTicket", "ExceptionSupplement", "ExceptionDecision", "ReportVersion", "ReportReviewAction"]
+
+from app.intake.models import IntakeSession, IntakeFile, IntakeMessage, IntakeJob, IntakeEvent

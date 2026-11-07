@@ -29,7 +29,7 @@ async def _read_import(session: AsyncSession, statement_import: StatementImport)
 
 async def import_csv(
     session: AsyncSession, storage: Storage, order_id: str, data: CSVImportCreate,
-    principal: Principal, settings: Settings,
+    principal: Principal, settings: Settings, *, commit: bool = True,
 ) -> StatementImportRead:
     await order_for_user(session, order_id, principal)
     from app.live.service import guard_inputs, touch_inputs
@@ -69,8 +69,13 @@ async def import_csv(
     ))
     try:
         await touch_inputs(session, order_id)
-        await session.commit()
+        if commit:
+            await session.commit()
+        else:
+            await session.flush()
     except IntegrityError:
+        if not commit:
+            raise
         await session.rollback()
         existing = await records.get_import_for_file(session, file.id)
         if existing is None:
