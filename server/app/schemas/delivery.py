@@ -41,6 +41,40 @@ class ExceptionDecisionCreate(BaseModel):
         return self
 
 
+class ExceptionDecisionItem(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    exception_id: str
+    decision: Literal["resolve", "request_supplement", "reanalyze", "correct_classification", "accept_unresolved"]
+    reason: str = Field(min_length=1, max_length=5000)
+    classification_after: str | None = Field(default=None, max_length=100)
+
+    @field_validator("reason")
+    @classmethod
+    def nonblank_reason(cls, value: str) -> str:
+        if not value.strip():
+            raise ValueError("reason must not be blank")
+        return value.strip()
+
+    @model_validator(mode="after")
+    def check_classification(self) -> "ExceptionDecisionItem":
+        if self.decision == "correct_classification" and not (self.classification_after or "").strip():
+            raise ValueError("classification_after is required for correction")
+        if self.decision != "correct_classification" and self.classification_after is not None:
+            raise ValueError("classification_after is only valid for correction")
+        return self
+
+
+class ExceptionDecisionBatchCreate(BaseModel):
+    """一批异常处置决定：绑定同一材料版本与目标报告版本，成功后只推进一次输入版本。"""
+
+    model_config = ConfigDict(extra="forbid")
+
+    expected_revision: StrictInt | None = Field(default=None, ge=1)
+    target_version: StrictInt = Field(ge=1)
+    decisions: list[ExceptionDecisionItem] = Field(min_length=1, max_length=200)
+
+
 class ExceptionDecisionRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 

@@ -4,10 +4,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import Settings, get_settings
 from app.core.security import Principal, get_current_principal
 from app.db.session import get_session
+from app.schemas.delivery import ExceptionDecisionBatchCreate, ExceptionDecisionRead
 from app.schemas.file import ArchiveRead, FileBatchRead, FileRead
 from app.schemas.order import OrderCreate, OrderRead
 from app.schemas.transaction import BankTransactionRead, CSVImportCreate, StatementImportRead
-from app.services import file_service, import_service, order_service
+from app.services import exception_service, file_service, import_service, order_service
 from app.storage.base import Storage
 from app.storage.local import get_storage
 
@@ -79,3 +80,12 @@ async def list_transactions(
     principal: Principal = Depends(get_current_principal),
 ):
     return await import_service.list_transactions(session, order_id, principal)
+
+
+@router.post("/{order_id}/exceptions/decisions", response_model=list[ExceptionDecisionRead], status_code=201)
+async def decide_exceptions(
+    order_id: str, data: ExceptionDecisionBatchCreate, session: AsyncSession = Depends(get_session),
+    principal: Principal = Depends(get_current_principal),
+):
+    """批量处置异常：同一批决定绑定同一材料/报告版本，成功后只唤醒一次总管。"""
+    return await exception_service.decide_many(session, order_id, data, principal)
