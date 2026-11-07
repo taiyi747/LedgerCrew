@@ -49,6 +49,8 @@ class IntakeFile(Base):
     archive_entry_path: Mapped[str | None] = mapped_column(String(500))
     replaced_by_file_id: Mapped[str | None] = mapped_column(String(36))
     order_file_id: Mapped[str | None] = mapped_column(String(36))
+    derived_from_file_id: Mapped[str | None] = mapped_column(ForeignKey("intake_files.id"))
+    derivation_key: Mapped[str | None] = mapped_column(String(128), unique=True)
     created_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now, nullable=False)
 
 

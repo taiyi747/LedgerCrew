@@ -1,0 +1,24 @@
+{
+  "verified_at": "2026-11-07T11:26:34.982973+00:00",
+  "mode": "real MiMo",
+  "materials": "one synthetic CSV with original Chinese headers",
+  "status": "succeeded",
+  "requests_used": 18,
+  "todos": [
+    {
+      "title": "读取原始银行导出.csv 实际表头与数据行",
+      "status": "completed"
+    },
+    {
+      "title": "读取原始银行导出_已整理.csv 核对已整理流水",
+      "status": "completed"
+    },
+    {
+      "title": "读取整理完成后执行材料预检检查",
+      "status": "completed"
+    }
+  ],
+  "derived_files": 1,
+  "verified_amount_cents": 285000,
+  "order_created": false
+}

@@ -1,5 +1,5 @@
 from datetime import date
-from typing import Literal
+from typing import ClassVar, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -62,6 +62,9 @@ class ImageSample(Contract):
 
 
 class PrecheckNarrative(Contract):
+    # Intermediate SDK turns may end after tool calls. The intake controller verifies
+    # persisted receipts and the saved candidate before exposing any final answer.
+    accepts_tool_progress: ClassVar[bool] = True
     summary: str = Field(min_length=1)
     questions: list[str] = Field(default_factory=list)
     evidence_refs: list[str] = Field(default_factory=list)
@@ -105,6 +108,7 @@ class MaterialRead(Contract):
     archive_file_id: str | None
     archive_entry_path: str | None
     replaced_by_file_id: str | None
+    derived_from_file_id: str | None = None
 
 
 class PrecheckRead(Contract):
@@ -115,6 +119,7 @@ class PrecheckRead(Contract):
     request_limit: int | None
     result: dict | None
     error: str | None
+    todos: list[dict] = Field(default_factory=list)
 
 
 class ConfirmationCard(Contract):

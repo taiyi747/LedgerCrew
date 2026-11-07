@@ -8,17 +8,18 @@ import {formatMoney} from '@/lib/ledger';
 import './live.css';
 import './intake.css';
 
-type Item={id:string;original_filename:string;category:string;mime_type:string;included:boolean;validation_status:string;archive_file_id:string|null;archive_entry_path:string|null;replaced_by_file_id:string|null;file_size:number};
+type Item={id:string;original_filename:string;category:string;mime_type:string;included:boolean;validation_status:string;archive_file_id:string|null;archive_entry_path:string|null;replaced_by_file_id:string|null;derived_from_file_id?:string|null;file_size:number};
 type Issue={id:string;message:string;file_id:string|null};
 type Result={blockers:Issue[];warnings:Issue[];sampled_file_ids:string[];note:string;narrative:{summary:string;questions:string[]};csv_details:{file_id:string;rows:number;valid_rows:number;errors:{row_number:number;reason:string}[]}[]};
 type Service={code:string;version:number;name:string;price_cents:number;currency:string;delivery_note:string;deliverables:string[]};
-type Intake={id:string;status:string;revision:number;order_id:string|null;studio_id:string|null;studio_name:string|null;period_start:string|null;period_end:string|null;profile_confirmed:boolean;service:Service;files:Item[];precheck:{id:string;status:string;revision:number;requests_used:number;request_limit:number|null;result:Result|null;error:string|null}|null;confirmation:{precheck_id:string;revision:number;service_version:number;price_cents:number;warnings:Issue[]}|null};
+type Intake={id:string;status:string;revision:number;order_id:string|null;studio_id:string|null;studio_name:string|null;period_start:string|null;period_end:string|null;profile_confirmed:boolean;service:Service;files:Item[];precheck:{id:string;status:string;revision:number;requests_used:number;request_limit:number|null;result:Result|null;error:string|null;todos:MaterialTodo[]}|null;confirmation:{precheck_id:string;revision:number;service_version:number;price_cents:number;warnings:Issue[]}|null};
 type Conversation={id:string;role:string;content:string;status:string;file_ids:string[];job_id:string|null};
 type History={id:string;studio_name:string|null;status:string;order_id:string|null};
 type Studio={id:string;name:string};
+type MaterialTodo={id:string;file_id:string;kind:string;title:string;status:'pending'|'running'|'completed'|'blocked';detail:string};
 type UploadAttempt={files:File[];status:'uploading'|'failed';error?:string};
 const labels:Record<string,string>={collecting:'收集材料',checking:'材料预检中',needs_info:'需要补充资料',ready:'可以受理',ready_with_warnings:'有待确认项',precheck_failed:'预检未完成',ordered:'已创建订单'};
-const categoryNames:Record<string,string>={invoice_image:'票据',supporting_material:'说明凭证',bank_statement_csv:'CSV 流水',archive:'原始 ZIP',unclassified:'待选择类别'};
+const categoryNames:Record<string,string>={invoice_image:'票据',supporting_material:'说明凭证',bank_statement_csv:'CSV 流水',archive:'原始 ZIP',unclassified:'待选择类别',source_document:'原始文档'};
 
 export default function ReceptionClient(){
   const [intakes,setIntakes]=useState<History[]>([]),[orders,setOrders]=useState<Order[]>([]),[studios,setStudios]=useState<Studio[]>([]);
@@ -27,7 +28,7 @@ export default function ReceptionClient(){
   const [text,setText]=useState(''),[upload,setUpload]=useState<UploadAttempt|null>(null),[busy,setBusy]=useState(false),[error,setError]=useState(''),[connected,setConnected]=useState(false);
   const [name,setName]=useState(''),[period,setPeriod]=useState(''),[studioId,setStudioId]=useState(''),[acks,setAcks]=useState<string[]>([]);
   const lock=useRef(false),current=useRef(''),picker=useRef<HTMLInputElement>(null),replacement=useRef<HTMLInputElement>(null),replacing=useRef<Item|null>(null),key=useRef('');
-  const materialCard=useRef<HTMLElement>(null),conversation=useRef<HTMLDivElement>(null);
+  const materialCard=useRef<HTMLElement>(null),conversation=useRef<HTMLDivElement>(null),todoList=useRef<HTMLDivElement>(null);
   current.current=id;
   const history=useCallback(async()=>{
     const [a,b,c,d]=await Promise.all([api<History[]>('/intakes'),api<Order[]>('/orders'),api<Studio[]>('/studios'),api<Service[]>('/services')]);setIntakes(a);setOrders(b);setStudios(c);setCatalog(d[0]||null);return {a,b};
@@ -69,23 +70,26 @@ export default function ReceptionClient(){
     if(lock.current||checking||!chosen.length)return;
     await action(async()=>{
       setUpload({files:chosen,status:'uploading'});
+      let saved:Intake;
       try{
         const intakeId=await ensure();
         const latest=await api<Intake>(`/intakes/${intakeId}`),form=new FormData();
         form.append('expected_revision',String(latest.revision));
         chosen.forEach(file=>form.append('files',file));
-        const saved=await api<Intake>(`/intakes/${intakeId}/files`,{method:'POST',body:form});
+        saved=await api<Intake>(`/intakes/${intakeId}/files`,{method:'POST',body:form});
         setState(saved);setUpload(null);
-        requestAnimationFrame(()=>materialCard.current?.scrollIntoView({behavior:'smooth',block:'center'}));
       }catch(cause){
         const message=cause instanceof Error?cause.message:'上传未完成，请重试。';
         setUpload({files:chosen,status:'failed',error:message});
         throw cause;
       }
+      // Upload is already acknowledged. A later Agent-start failure must not turn it into an upload failure.
+      await api(`/intakes/${saved.id}/prechecks`,{method:'POST',body:JSON.stringify({expected_revision:saved.revision})});
+      requestAnimationFrame(()=>materialCard.current?.scrollIntoView({behavior:'smooth',block:'center'}));
     });
   }
   async function beginConversation(){
-    if(!state||upload||!state.files.some(file=>file.included&&file.category!=='archive'))return;
+    if(!state||upload||!state.files.length)return;
     await action(async()=>{
       await api(`/intakes/${id}/prechecks`,{method:'POST',body:JSON.stringify({expected_revision:state.revision})});
       await refresh();
@@ -97,13 +101,24 @@ export default function ReceptionClient(){
   async function replaceFile(file:File){const old=replacing.current;if(!state||!old)return;await action(async()=>{
     const form=new FormData();form.append('expected_revision',String(state.revision));form.append('files',file);const uploaded=await api<Intake>(`/intakes/${id}/files`,{method:'POST',body:form});const fresh=uploaded.files.filter(f=>!state.files.some(old=>old.id===f.id)&&f.category!=='archive')[0];if(!fresh)throw new Error('替换文件上传失败');await api(`/intakes/${id}/files/${fresh.id}`,{method:'PATCH',body:JSON.stringify({expected_revision:uploaded.revision,replaces_file_id:old.id})});
   });}
-  function add(files:FileList|null){if(!files)return;const chosen=Array.from(files);if(picker.current)picker.current.value='';if(chosen.some(f=>!(/\.(png|jpe?g|csv|zip)$/i.test(f.name)))){setError('请提交 JPG、PNG、CSV 或 ZIP。');return;}void uploadMaterials(chosen);}
+  function add(files:FileList|null){if(!files)return;const chosen=Array.from(files);if(picker.current)picker.current.value='';void uploadMaterials(chosen);}
   const checking=!!state?.precheck&&['queued','running'].includes(state.precheck.status),result=state?.precheck?.result;
-  const includedCount=state?.files.filter(file=>file.included&&file.category!=='archive').length||0;
   const chatMessages=messages.filter(message=>!(message.role==='user'&&message.content==='已提交材料。'&&message.file_ids.length));
+  function filePurpose(file:Item){
+    if(state?.files.some(child=>child.derived_from_file_id===file.id))return '原始材料（已保留）';
+    if(file.category==='bank_statement_csv')return file.derived_from_file_id?'整理后的流水':'原始流水';
+    return categoryNames[file.category]||'原始材料';
+  }
+  function fileReadStatus(file:Item){
+    if(file.validation_status!=='valid')return '需要核实';
+    if(file.derived_from_file_id)return '已整理';
+    const todo=state?.precheck?.todos.find(task=>task.file_id===file.id&&task.kind==='read_document');
+    return todo?.status==='completed'?'已读取':todo?.status==='blocked'?'待确认读取方式':'已保存，待读取';
+  }
   const lastMessage=messages.at(-1);
   useEffect(()=>{
-    if(checking||(lastMessage?.role==='assistant'&&lastMessage.job_id&&lastMessage.job_id===state?.precheck?.id)){
+    if(checking){todoList.current?.scrollIntoView({behavior:'smooth',block:'nearest'});}
+    else if(lastMessage?.role==='assistant'&&lastMessage.job_id&&lastMessage.job_id===state?.precheck?.id){
       conversation.current?.lastElementChild?.scrollIntoView({behavior:'smooth',block:'nearest'});
     }
   },[checking,lastMessage?.id,lastMessage?.job_id,lastMessage?.role,state?.precheck?.id]);
@@ -117,17 +132,18 @@ export default function ReceptionClient(){
     </div>
     {id&&state&&<>
       <section className="intake-card" aria-label="工作室与账期资料"><div className="intake-card-heading"><strong>本次服务资料</strong><span>{state.profile_confirmed?'已确认':'待确认'}</span></div><div className="intake-profile">{studios.length>0&&<label>已有工作室<select value={studioId} disabled={checking||busy} onChange={e=>{setStudioId(e.target.value);const selected=studios.find(s=>s.id===e.target.value);if(selected)setName(selected.name);}}><option value="">新建工作室</option>{studios.map(s=><option key={s.id} value={s.id}>{s.name}</option>)}</select></label>}<label>工作室名称<input aria-label="工作室名称" value={name} disabled={checking||busy} onChange={e=>{setName(e.target.value);setStudioId('');}} maxLength={200} placeholder="与票据抬头一致"/></label><label>账期<input aria-label="账期" type="month" value={period} disabled={checking||busy} onChange={e=>setPeriod(e.target.value)}/></label><button className="secondary-button" disabled={checking||busy||!name.trim()||!period} onClick={()=>void saveProfile()}>确认服务资料</button></div></section>
-      <section ref={materialCard} className="intake-card" aria-label="材料清单" aria-busy={upload?.status==='uploading'}><div className="intake-card-heading"><strong>已收到的材料 · {includedCount} 份已上传</strong><button className="text-button" disabled={checking||busy} onClick={()=>picker.current?.click()}>添加材料</button></div><p className="report-note intake-upload-hint">选择文件后立即上传到这里，ZIP 会自动展开为票据和流水，无需点击聊天发送。</p>
+      <section ref={materialCard} className="intake-card" aria-label="材料清单" aria-busy={upload?.status==='uploading'}><div className="intake-card-heading"><strong>已收到的材料 · {state.files.length} 份文件</strong><button className="text-button" disabled={checking||busy} onClick={()=>picker.current?.click()}>添加材料</button></div><p className="report-note intake-upload-hint">上传原始材料后，Agent 会列出待办，查看目录、读取文件并整理需要确认的问题。</p>
+      {state.precheck&&<div ref={todoList} className="intake-todos" role="region" aria-label="Agent 待办"><div className="intake-todos-heading"><strong>材料 Agent · 待办</strong><span>{state.precheck.todos.filter(t=>t.status==='completed').length} / {state.precheck.todos.length} 已完成</span></div>{!state.precheck.todos.length&&<p className="report-note">{checking?'正在查看材料目录并制定待办…':'本次尚未产生执行待办。'}</p>}<ol>{state.precheck.todos.map(task=><li className={`intake-todo intake-todo-${task.status}`} key={task.id}><span className="intake-todo-status">{{pending:'待处理',running:'读取中',completed:'已完成',blocked:'待确认'}[task.status]}</span><div><strong>{task.title}</strong>{task.detail&&<p>{task.detail}</p>}</div></li>)}</ol></div>}
       {upload&&<div className={`intake-upload-state ${upload.status==='failed'?'intake-upload-failed':''}`} role={upload.status==='failed'?'alert':'status'}>
         {upload.files.map((file,index)=><div className="intake-upload-item" key={index}><FileText size={16}/><span>{file.name}<small>{(file.size/1024).toFixed(1)} KB · {upload.status==='uploading'?'正在上传':'上传未完成'}</small></span></div>)}
-        {upload.status==='uploading'?<p><LoaderCircle className="live-spin" size={15}/>正在上传并展开材料，请稍候…</p>:<><p>{upload.error}</p><div className="intake-upload-actions"><button className="secondary-button" disabled={busy} onClick={()=>void uploadMaterials(upload.files)}>重试上传</button><button className="text-button" disabled={busy} onClick={()=>{setUpload(null);setError('');}}>移除未上传文件</button></div></>}
+        {upload.status==='uploading'?<p><LoaderCircle className="live-spin" size={15}/>正在将材料保存到工作区，请稍候…</p>:<><p>{upload.error}</p><div className="intake-upload-actions"><button className="secondary-button" disabled={busy} onClick={()=>void uploadMaterials(upload.files)}>重试上传</button><button className="text-button" disabled={busy} onClick={()=>{setUpload(null);setError('');}}>移除未上传文件</button></div></>}
       </div>}
-      {!state.files.length&&!upload&&<p className="report-note">还没有收到文件。可直接添加 JPG / PNG / CSV / ZIP，暂不支持 PDF 识别。</p>}{state.files.map(file=><div className={`intake-file ${!file.included?'intake-file-excluded':''}`} key={file.id}><div><button className="text-button intake-file-name" onClick={()=>void action(()=>download(`/intakes/${id}/files/${file.id}/download`,file.original_filename))}><FileText size={16}/>{file.original_filename}</button><small>{file.archive_entry_path||categoryNames[file.category]} · {(file.file_size/1024).toFixed(1)} KB · {file.validation_status==='valid'?'格式可读取':'不支持或无法读取'}{file.replaced_by_file_id?' · 已被替换':''}</small></div>{file.category!=='archive'&&<div className="intake-file-controls">{file.mime_type.startsWith('image/')?<select aria-label={`${file.original_filename}类别`} value={file.category} disabled={checking||busy} onChange={e=>void changeFile(file,{category:e.target.value})}><option value="invoice_image">票据</option><option value="supporting_material">说明凭证</option><option value="unclassified">待选择类别</option></select>:<span>{categoryNames[file.category]}</span>}<label><input type="checkbox" checked={file.included} disabled={checking||busy||!!file.replaced_by_file_id} onChange={e=>void changeFile(file,{included:e.target.checked})}/>纳入</label><button className="text-button" disabled={checking||busy||!!file.replaced_by_file_id} onClick={()=>{replacing.current=file;replacement.current?.click();}}>替换</button></div>}</div>)}<div className="intake-card-actions"><a className="text-button" href="/api/v1/templates/statement.csv">下载 CSV 模板</a><button className="primary-button" disabled={busy||checking||!!upload||!includedCount} onClick={()=>void beginConversation()}>{checking?<><LoaderCircle className="live-spin" size={16}/>客服正在查看材料…</>:result||state.precheck?.status==='failed'?'重新开始对话':'开始对话'}</button></div></section>
+      {!state.files.length&&!upload&&<p className="report-note">还没有收到文件。可以提交压缩包、PDF、Excel、图片或其他原始材料，由 Agent 确认读取方式。</p>}{state.files.map(file=><div className={`intake-file ${!file.included?'intake-file-excluded':''}`} key={file.id}><div><button className="text-button intake-file-name" onClick={()=>void action(()=>download(`/intakes/${id}/files/${file.id}/download`,file.original_filename))}><FileText size={16}/>{file.original_filename}</button><small>{file.derived_from_file_id?'由 '+(state.files.find(f=>f.id===file.derived_from_file_id)?.original_filename||'原始材料')+' 整理':file.archive_entry_path||filePurpose(file)} · {(file.file_size/1024).toFixed(1)} KB · {fileReadStatus(file)}{file.replaced_by_file_id?' · 已被替换':''}</small></div>{file.category!=='archive'&&<div className="intake-file-controls">{file.mime_type.startsWith('image/')?<select aria-label={`${file.original_filename}类别`} value={file.category} disabled={checking||busy} onChange={e=>void changeFile(file,{category:e.target.value})}><option value="invoice_image">票据</option><option value="supporting_material">说明凭证</option><option value="unclassified">待选择类别</option></select>:<span>{filePurpose(file)}</span>}<label><input type="checkbox" checked={file.included} disabled={checking||busy||!!file.replaced_by_file_id} onChange={e=>void changeFile(file,{included:e.target.checked})}/>纳入</label><button className="text-button" disabled={checking||busy||!!file.replaced_by_file_id} onClick={()=>{replacing.current=file;replacement.current?.click();}}>替换</button></div>}</div>)}<div className="intake-card-actions"><span className="report-note">按原样提交，Agent 负责整理。</span><button className="primary-button" disabled={busy||checking||!!upload||!state.files.length} onClick={()=>void beginConversation()}>{checking?<><LoaderCircle className="live-spin" size={16}/>Agent 正在读取材料…</>:result||state.precheck?.status==='failed'?'重新整理材料':'开始对话'}</button></div></section>
       {state.precheck?.status==='failed'&&<div className="upload-error" role="alert">{state.precheck.error} · 请求 {state.precheck.requests_used} 次</div>}
-      {result&&<section className="intake-card" aria-label="材料预检结果"><div className="intake-card-heading"><strong>{result.blockers.length?'待补材料':result.warnings.length?'材料检查摘要 · 有待确认项':'材料检查摘要 · 可以受理'}</strong><span>抽查 {result.sampled_file_ids.length} 张图片</span></div><p className="report-note">客服的检查结论和补充问题已显示在对话中，你可以直接在下方回复。</p>{result.blockers.map(b=><div className="intake-blocker" key={b.id}>{b.message} {state.files.find(f=>f.id===b.file_id)?.original_filename}</div>)}{result.csv_details.map(c=><div key={c.file_id} className="report-note">流水 {c.valid_rows}/{c.rows} 行有效{c.errors.map(e=><p key={e.row_number}>第 {e.row_number} 行：{e.reason}</p>)}</div>)}<p className="report-note">{result.note}</p></section>}
+      {result&&<section className="intake-card" aria-label="材料预检结果"><div className="intake-card-heading"><strong>{result.blockers.length?'待补材料':result.warnings.length?'材料检查摘要 · 有待确认项':'材料检查摘要 · 可以受理'}</strong><span>已读 {result.sampled_file_ids.length} 张图片</span></div><p className="report-note">客服的检查结论和补充问题已显示在对话中，你可以直接在下方回复。</p>{result.blockers.map(b=><div className="intake-blocker" key={b.id}>{b.message} {state.files.find(f=>f.id===b.file_id)?.original_filename}</div>)}{result.csv_details.map(c=><div key={c.file_id} className="report-note">流水 {c.valid_rows}/{c.rows} 行有效{c.errors.map(e=><p key={e.row_number}>第 {e.row_number} 行：{e.reason}</p>)}</div>)}<p className="report-note">{result.note}</p></section>}
       {state.confirmation&&<section className="intake-card intake-offer" aria-label="服务确认卡"><div className="intake-card-heading"><strong>请确认本次服务</strong><span>模拟交易</span></div><h2>{state.service.name}</h2><div className="intake-price">{formatMoney(state.service.price_cents)}<small> / 单</small></div><p>{state.studio_name} · {state.period_start} — {state.period_end}</p><p>有效材料：{state.files.filter(f=>f.included&&f.category!=='archive').map(f=>f.original_filename).join('、')}</p><ul>{state.service.deliverables.map(d=><li key={d}>{d}</li>)}</ul><p>{state.service.delivery_note}</p>{state.confirmation.warnings.map(w=><label className="intake-ack" key={w.id}><input type="checkbox" checked={acks.includes(w.id)} onChange={e=>setAcks(a=>e.target.checked?[...a,w.id]:a.filter(x=>x!==w.id))}/><span>{w.message}</span></label>)}<p className="report-note">确认仅表示材料达到启动条件；正式识别和核对仍可能发现未知字段、缺票或差额。</p><button className="primary-button" disabled={busy||checking||state.confirmation.warnings.some(w=>!acks.includes(w.id))} onClick={()=>void action(async()=>{const c=state.confirmation!;const created=await api<{order_id:string}>(`/intakes/${id}/confirm`,{method:'POST',body:JSON.stringify({expected_revision:state.revision,precheck_id:c.precheck_id,service_version:c.service_version,idempotency_key:key.current,acknowledged_warning_ids:acks})});await history();showOrder(created.order_id);})}>确认创建订单</button></section>}
     </>}<div className="intake-bottom-space"/></div></div>
-    <div className="composer-area"><form className="composer" onSubmit={e=>{e.preventDefault();void send();}} onDragOver={e=>e.preventDefault()} onDrop={e=>{e.preventDefault();if(!checking&&!busy)add(e.dataTransfer.files);}}><textarea aria-label="输入咨询内容" value={text} onChange={e=>setText(e.target.value)} rows={2} maxLength={3000} placeholder="先说说需求，或发来本期材料…"/><div className="composer-tools"><div><button className="icon-btn" type="button" aria-label="上传接洽材料" disabled={busy||checking} onClick={()=>picker.current?.click()}><Paperclip size={18}/></button><span>JPG / PNG / CSV / ZIP</span></div><button className="send-button" type="submit" aria-label="发送接洽消息" disabled={busy||checking||!text.trim()}><ArrowUp size={20}/></button></div></form><div className="composer-footnote"><span><ShieldCheck size={12}/>预检后由你确认下单</span><span>真实客服 Agent</span></div></div></section><aside className="evidence-panel"><div className="aside-heading">服务说明<FolderOpen size={17}/></div><div className="material-content intake-service"><h2>先了解，再开工。</h2><p>票据整理＋流水核对＋异常报告</p><strong className="intake-price">{catalog?formatMoney(catalog.price_cents):'—'} <small>/ 单 · 模拟交易</small></strong><p>客服预检 → 你确认订单 → 总管派工 → 老板审核 → 报告交付</p><p className="report-note">最多 20 张票据、一份标准 CSV。ZIP 可混合提交材料，原包与来源保留。</p><p className="report-note">预检不代表完整识别或财务结论。</p></div></aside></div></main>
-    <input ref={picker} className="sr-only" type="file" multiple accept=".jpg,.jpeg,.png,.csv,.zip" onChange={e=>add(e.target.files)}/><input ref={replacement} className="sr-only" type="file" accept=".jpg,.jpeg,.png,.csv" onChange={e=>{const f=e.target.files?.[0];if(f)void replaceFile(f);e.target.value='';}}/>
+    <div className="composer-area"><form className="composer" onSubmit={e=>{e.preventDefault();void send();}} onDragOver={e=>e.preventDefault()} onDrop={e=>{e.preventDefault();if(!checking&&!busy)add(e.dataTransfer.files);}}><textarea aria-label="输入咨询内容" value={text} onChange={e=>setText(e.target.value)} rows={2} maxLength={3000} placeholder="告诉 Agent 本次需求，或补充它需要确认的信息…"/><div className="composer-tools"><div><button className="icon-btn" type="button" aria-label="上传接洽材料" disabled={busy||checking} onClick={()=>picker.current?.click()}><Paperclip size={18}/></button><span>原始文件 · 自动上传</span></div><button className="send-button" type="submit" aria-label="发送接洽消息" disabled={busy||checking||!text.trim()}><ArrowUp size={20}/></button></div></form><div className="composer-footnote"><span><ShieldCheck size={12}/>预检后由你确认下单</span><span>真实客服 Agent</span></div></div></section><aside className="evidence-panel"><div className="aside-heading">服务说明<FolderOpen size={17}/></div><div className="material-content intake-service"><h2>先了解，再开工。</h2><p>票据整理＋流水核对＋异常报告</p><strong className="intake-price">{catalog?formatMoney(catalog.price_cents):'—'} <small>/ 单 · 模拟交易</small></strong><p>客服预检 → 你确认订单 → 总管派工 → 老板审核 → 报告交付</p><p className="report-note">无需照模板修改文件。Agent 读取原始资料，整理可核验的数据并保留来源。</p><p className="report-note">预检不代表完整识别或财务结论。</p></div></aside></div></main>
+    <input ref={picker} className="sr-only" type="file" multiple onChange={e=>add(e.target.files)}/><input ref={replacement} className="sr-only" type="file" accept=".jpg,.jpeg,.png,.csv" onChange={e=>{const f=e.target.files?.[0];if(f)void replaceFile(f);e.target.value='';}}/>
   </div>;
 }

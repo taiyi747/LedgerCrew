@@ -200,3 +200,38 @@ async def test_http_deadline_bounds_streaming_body():
     async with httpx.AsyncClient(transport=transport) as client:
         with pytest.raises(httpx.ReadTimeout, match="wall-clock"):
             await client.get("https://example.invalid/completion")
+
+
+async def test_intake_tool_turn_can_continue_without_claiming_final_completion(backend):
+    from app.intake.contracts import PrecheckNarrative
+
+    calls = []
+
+    async def read_material() -> str:
+        """Read one test material and return a real tool receipt."""
+        calls.append(True)
+        return '{"rows":1}'
+
+    requests = []
+
+    def handler(request):
+        requests.append(request)
+        if len(requests) == 1:
+            result = response(None).json()
+            result["choices"][0]["message"]["tool_calls"] = [
+                {"id": "read-1", "type": "function", "function": {"name": "read_material", "arguments": "{}"}}
+            ]
+            result["choices"][0]["finish_reason"] = "tool_calls"
+            return httpx.Response(200, json=result)
+        return response("已读取一份材料，接下来继续剩余待办。")
+
+    result = await make_runner(handler).generate(
+        "customer_service",
+        "读取后继续待办",
+        PrecheckNarrative,
+        RequestBudget(backend, IDENTITY),
+        tools=[read_material],
+    )
+    assert calls == [True]
+    assert result.summary == "工具回合已结束，继续未完成待办。"
+    assert len(requests) == 2
