@@ -127,20 +127,22 @@
     @apply font-sans;
     }
 }
-/* LedgerCrew owner workspace: quiet surfaces and one forest-green accent. */
+/* LedgerCrew owner workspace: brand swatch accent → hover → soft → lemon, with the
+   exemplar CTA fill #7AD5EE and its deep ink label #243E4C. Matches the customer
+   pages so the owner console and dashboard read as the same product. */
 :root {
-  --background: #f6f8f5; --foreground: #25372d;
-  --card: #ffffff; --card-foreground: #25372d;
-  --popover: #ffffff; --popover-foreground: #25372d;
-  --primary: #2d6148; --primary-foreground: #ffffff;
-  --secondary: #eef2ed; --secondary-foreground: #344d3d;
-  --muted: #f0f3ee; --muted-foreground: #718075;
-  --accent: #eaf2e9; --accent-foreground: #2d6148;
-  --border: #e2e8df; --input: #dce4d8; --ring: #789a7e;
+  --background: #fcfcfa; --foreground: #243e4c;
+  --card: #ffffff; --card-foreground: #243e4c;
+  --popover: #ffffff; --popover-foreground: #243e4c;
+  --primary: #7ad5ee; --primary-foreground: #243e4c;
+  --secondary: #eef7fa; --secondary-foreground: #2c5563;
+  --muted: #f1f6f8; --muted-foreground: #6d7e82;
+  --accent: #a8f1ff; --accent-foreground: #243e4c;
+  --border: #e4e8e4; --input: #dde7ea; --ring: #4ed7f1;
   --radius: 0.625rem;
-  --sidebar: #fcfdfb; --sidebar-foreground: #344d3d;
-  --sidebar-accent: #eaf2e9; --sidebar-accent-foreground: #2d6148;
-  --sidebar-border: #e2e8df;
+  --sidebar: #fffffd; --sidebar-foreground: #2c5563;
+  --sidebar-accent: #dff4fa; --sidebar-accent-foreground: #243e4c;
+  --sidebar-border: #e4e8e4;
 }
 @layer base { body { margin: 0; } button, a { -webkit-tap-highlight-color: transparent; } }
 .owner-surface { min-height: 100dvh; }
