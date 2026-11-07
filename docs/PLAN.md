@@ -2,6 +2,8 @@
 
 **Junction China 2026｜40 小时｜Microsoft Agent Framework Python 版**
 
+本文件记录 v0.1 规划；已实现接口以 [server/docs/api.md](../server/docs/api.md) 为准。v0.2 开发按 [第二阶段后端计划](phase-2/BACKEND.md) 和 [决策登记表](P2_DECISIONS.md) 执行，未确认业务规则不得从下文的历史示例推断。
+
 参赛题目：**账清社——一个人经营的 MiMo 多智能体对账服务公司。**
 
 目标：面向小型工作室，跑通「下单 → 上传票据与流水 → AI 协作 → 发现异常 → 老板决定 → 报告交付」的一笔完整服务订单。
@@ -25,7 +27,7 @@
 | 部分 | 约定 |
 | --- | --- |
 | 前端 | Next.js App Router、TypeScript、Tailwind CSS |
-| 后端 | Python 3.14、FastAPI、Pydantic 2 |
+| 后端 | Python 3.11、FastAPI、Pydantic 2；第二阶段业务决策见 [P2_DECISIONS.md](P2_DECISIONS.md) |
 | 业务存储 | SQLite、SQLAlchemy 2、Alembic |
 | Agent 编排 | Microsoft Agent Framework Python SDK，使用 `WorkflowBuilder` 定义显式节点和异常分支 |
 | 模型 | 真实 MiMo API，经 `OpenAIChatCompletionClient` 的自定义 `base_url`、`api_key`、`model` 接入 |

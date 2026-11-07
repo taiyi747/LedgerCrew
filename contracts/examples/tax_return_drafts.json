@@ -1,0 +1,72 @@
+{
+  "operation": "GET /api/v1/tax-return-drafts/{draft_id}",
+  "success": {
+    "status": 200,
+    "body": {
+      "id": "00000000-0000-4000-8000-000000000014",
+      "created_at": "2026-11-07T04:00:00Z",
+      "filing_task_id": "00000000-0000-4000-8000-000000000005",
+      "calculation_id": "00000000-0000-4000-8000-000000000013",
+      "form_version": "FORM_TBD",
+      "draft_version": 1,
+      "data_version": 1,
+      "rule_versions": [],
+      "status": "blocked",
+      "fields": [],
+      "missing_material_codes": [],
+      "blockers": [
+        {
+          "code": "form_unverified",
+          "message": "表单版本待核实",
+          "evidence": []
+        }
+      ],
+      "content_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "approved_by": null,
+      "approved_at": null
+    }
+  },
+  "empty": {
+    "status": 200,
+    "body": {
+      "items": [],
+      "next_cursor": null
+    }
+  },
+  "validation_error": {
+    "status": 422,
+    "body": {
+      "error": {
+        "code": "validation_error",
+        "message": "Invalid request",
+        "blockers": []
+      }
+    }
+  },
+  "forbidden": {
+    "status": 403,
+    "body": {
+      "error": {
+        "code": "forbidden",
+        "message": "Action not permitted",
+        "blockers": []
+      }
+    }
+  },
+  "business_blocked": {
+    "status": 409,
+    "body": {
+      "error": {
+        "code": "business_blocked",
+        "message": "Prerequisite is incomplete",
+        "blockers": [
+          {
+            "code": "prerequisite_missing",
+            "message": "待人工确认支持范围或来源",
+            "evidence": []
+          }
+        ]
+      }
+    }
+  }
+}

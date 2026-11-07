@@ -8,10 +8,12 @@
 
 ## 环境与安装
 
-后端与 AI 模块统一使用 Python 3.14。在 `server/` 目录执行：
+后端固定使用 Python 3.11。Agent 依赖须先在 3.11 验证；如不兼容，应隔离而非升级后端。在 `server/` 目录执行：
+
+已有其他 Python 版本的 `.venv` 时，不要覆盖它；先创建独立的 3.11 环境并验证版本。
 
 ```powershell
-python -m venv .venv
+py -3.11 -m venv .venv
 .venv\Scripts\Activate.ps1
 python -m pip install -e ".[test]"
 if (-not (Test-Path .env)) { Copy-Item .env.example .env }
@@ -107,7 +109,7 @@ CSV 默认字段、列名映射、金额规则、导入步骤和模板见 [CSV �
 pytest
 ```
 
-测试使用临时 SQLite 数据库，并实际运行 `alembic upgrade head`；也测试从第一阶段数据升级。不需要连接开发数据库。阶段 7 端到端测试以 Fake Agent 走通客户创建到报告发布及 CSV 下载，并检查材料审核门禁、权限、原始数据、事务回滚与外键。
+测试必须在 Python 3.11 执行，使用临时 SQLite 数据库，并实际运行 `alembic upgrade head`；也测试从第一阶段数据升级。不需要连接开发数据库。阶段 7 端到端测试以 Fake Agent 走通客户创建到报告发布及 CSV 下载，并检查材料审核门禁、权限、原始数据、事务回滚与外键。
 
 ## 当前模型约定
 
@@ -121,7 +123,7 @@ pytest
 ## 尚未完成与待确认
 
 - 独立 MiMo Agent 工作流已存在，但与后端 `AgentGateway` 的适配、真实模型联调和自动任务调度尚未完成；Fake 只用于本地和测试。
-- 原定后端技术栈指定 Python 3.11；当前合并的 AI 模块将项目包要求改为 Python 3.14。安装说明按当前 `pyproject.toml` 编写，统一版本要求仍需项目负责人确认。
+- 第二阶段后端 Python 已锁定为 3.11；新业务仅按仓库根目录 `AGENTS.md` 和 `docs/P2_DECISIONS.md` 中 confirmed 的决策实施。MVP 模拟身份规则继续有效，不能自动作为 P2 审批或发布规则。
 - 生产认证尚未接入，生产环境受保护 API 当前返回 503。PDF、支付、外部通知与电子签署未实现。
 - 同一账期是否允许多个订单、订单价格策略、跨批次异常处理结果沿用、客户可见的事件文案与保留周期需确认。
 - 第一阶段旧工作室没有所有者，迁移不猜测归属；需要后续管理流程明确归属后客户才能访问。

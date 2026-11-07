@@ -43,7 +43,7 @@ def main():
         if completed.returncode:
             try:
                 error = json.loads(completed.stdout).get("error", "验证失败")
-            except ValueError, AttributeError:
+            except (ValueError, AttributeError):
                 error = "子进程失败；请检查本地运行记录。"
             raise RuntimeError(f"{arguments[0]}: {error}")
         result = json.loads(completed.stdout)

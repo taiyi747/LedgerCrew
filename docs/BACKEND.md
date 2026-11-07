@@ -2,7 +2,9 @@
 
 **LedgerCrew · 账清社｜40 小时｜角色 B**
 
-技术栈：Python 3.14、FastAPI、Pydantic 2、SQLite、SQLAlchemy 2、Alembic。
+本文件是 v0.1 历史计划；已实现的 MVP 接口以 [server/docs/api.md](../server/docs/api.md) 为准，v0.2 以 [第二阶段后端计划](phase-2/BACKEND.md) 与 [决策登记表](P2_DECISIONS.md) 为准。
+
+技术栈：Python 3.11、FastAPI、Pydantic 2、SQLite、SQLAlchemy 2、Alembic。第二阶段以 [决策登记表](P2_DECISIONS.md) 的 confirmed 项为准。
 代码归属：`server/`，其中 `server/app/agents/` 由 AI 开发成员维护。
 
 先阅读 [公共协作约定](PLAN.md)，再按本文件的 BE 编号领取任务。H0 为团队开工时间；每完成一项，在 PR 中附运行方法与验收结果。
@@ -17,7 +19,7 @@
 
 负责人：**后端开发成员**。统一维护 API、共享类型、数据库迁移及后端依赖。Agent 需要新增字段或依赖时，与 C 对齐后合入。
 
-- [ ] **BE-01｜H0–H2｜骨架与契约。** 搭建 FastAPI、配置管理、数据库与迁移；提供 `.env.example`、健康检查、Pydantic 模型、OpenAPI 和代表性响应样例。将 HTTP 字段与 B/C 内部契约写入 `docs/API.md`。**验收：** A、C 可据此独立开发，字段和金额单位一致。
+- [ ] **BE-01｜H0–H2｜骨架与契约。** 搭建 FastAPI、配置管理、数据库与迁移；提供 `.env.example`、健康检查、Pydantic 模型、OpenAPI 和代表性响应样例。实际 MVP 接口文档位于 `server/docs/api.md`。**验收：** A、C 可据此独立开发，字段和金额单位一致。
 - [ ] **BE-02｜H2–H8｜订单、会话与文件。** 实现匿名客户会话、老板登录、订单、上传、CSV 校验和材料读取。客户与老板使用 HttpOnly Cookie，校验订单归属；服务端确定价格与模拟交易状态。**验收：** 文件和订单持久化；格式与数量限制生效；客户之间隔离。
 - [ ] **BE-03｜H4–H16｜确定性对账工具。** 解析 Decimal 金额并转整数分，实现日期、交易方、方向与金额匹配、候选唯一性、重复票据、缺失及差异检测。向 C 提供类型明确的对账工具。**验收：** 样例产生 4 笔正常匹配、270 元差额、1 张重复件和 1 笔缺票流水。
 - [ ] **BE-04｜H4–H16｜Worker 与事件。** 独立进程领取任务，调用 C 的工作流，将框架事件映射为业务事件并存入 SQLite，再以 SSE 推送。限制执行并发，重复启动返回已有活动运行。**验收：** API 及时返回，后台真实执行；刷新和断线后能重建时间线。
@@ -35,7 +37,7 @@
 ## 交给队友的成果
 
 - 可启动的 API 和独立 Worker、依赖锁定、迁移、配置示例及健康检查。
-- `docs/API.md`、OpenAPI、共享 Pydantic 模型和示例请求响应。
+- `server/docs/api.md`、OpenAPI、共享 Pydantic 模型和示例请求响应。
 - 金额核对、异常、审批、检查点恢复、报告发布与权限隔离的业务实现。
 - pytest 验证结果，以及 API、Worker、迁移、备份与恢复的操作说明。
 

@@ -1,0 +1,70 @@
+{
+  "operation": "GET /api/v1/supported-scopes",
+  "success": {
+    "status": 200,
+    "body": {
+      "items": [
+        {
+          "id": "00000000-0000-4000-8000-000000000003",
+          "created_at": "2026-11-07T04:00:00Z",
+          "region_code": "REGION_TBD",
+          "entity_type": "ENTITY_TBD",
+          "taxpayer_identity": null,
+          "filing_kind": "FILING_KIND_TBD",
+          "platform_code": "PLATFORM_TBD",
+          "platform_format_version": "FORMAT_TBD",
+          "status": "draft",
+          "scope_version": 1,
+          "form_version": null,
+          "verified_at": null,
+          "unsupported_reason": "首个场景尚待三人确认",
+          "required_materials": []
+        }
+      ],
+      "next_cursor": null
+    }
+  },
+  "empty": {
+    "status": 200,
+    "body": {
+      "items": [],
+      "next_cursor": null
+    }
+  },
+  "validation_error": {
+    "status": 422,
+    "body": {
+      "error": {
+        "code": "validation_error",
+        "message": "Invalid request",
+        "blockers": []
+      }
+    }
+  },
+  "forbidden": {
+    "status": 401,
+    "body": {
+      "error": {
+        "code": "unauthorized",
+        "message": "Authentication required",
+        "blockers": []
+      }
+    }
+  },
+  "business_blocked": {
+    "status": 409,
+    "body": {
+      "error": {
+        "code": "business_blocked",
+        "message": "Prerequisite is incomplete",
+        "blockers": [
+          {
+            "code": "prerequisite_missing",
+            "message": "待人工确认支持范围或来源",
+            "evidence": []
+          }
+        ]
+      }
+    }
+  }
+}

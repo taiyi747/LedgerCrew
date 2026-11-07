@@ -1,0 +1,64 @@
+{
+  "operation": "GET /api/v1/policy-sources",
+  "success": {
+    "status": 200,
+    "body": {
+      "items": [
+        {
+          "title": "官方来源占位（Mock）",
+          "issuing_authority": "待核实",
+          "official_url": "https://example.invalid/official-source-placeholder",
+          "published_on": null,
+          "effective_from": null,
+          "effective_to": null,
+          "region_code": "REGION_TBD",
+          "snapshot_file_id": null,
+          "fetched_at": "2026-11-07T04:00:00Z",
+          "content_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "id": "00000000-0000-4000-8000-000000000011",
+          "created_at": "2026-11-07T04:00:00Z",
+          "source_version": 1,
+          "status": "candidate"
+        }
+      ],
+      "next_cursor": null
+    }
+  },
+  "empty": {
+    "status": 200,
+    "body": {
+      "items": [],
+      "next_cursor": null
+    }
+  },
+  "validation_error": {
+    "status": 422,
+    "body": {
+      "error": {
+        "code": "validation_error",
+        "message": "Invalid request",
+        "blockers": []
+      }
+    }
+  },
+  "forbidden": {
+    "status": 401,
+    "body": {
+      "error": {
+        "code": "unauthorized",
+        "message": "Authentication required",
+        "blockers": []
+      }
+    }
+  },
+  "business_blocked": {
+    "status": 409,
+    "body": {
+      "error": {
+        "code": "source_unavailable",
+        "message": "Official source unavailable",
+        "blockers": []
+      }
+    }
+  }
+}

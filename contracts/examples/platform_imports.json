@@ -1,0 +1,70 @@
+{
+  "operation": "GET /api/v1/platform-imports/{import_id}",
+  "success": {
+    "status": 200,
+    "body": {
+      "id": "00000000-0000-4000-8000-000000000006",
+      "created_at": "2026-11-07T04:00:00Z",
+      "filing_task_id": "00000000-0000-4000-8000-000000000005",
+      "filing_file_id": "00000000-0000-4000-8000-000000000007",
+      "platform_code": "PLATFORM_TBD",
+      "format_version": "FORMAT_TBD",
+      "status": "needs_mapping",
+      "total_rows": 0,
+      "accepted_rows": 0,
+      "duplicate_rows": 0,
+      "rejected_rows": 0,
+      "data_version": 1,
+      "errors": [
+        {
+          "code": "mapping_required",
+          "message": "导出格式待确认",
+          "evidence": []
+        }
+      ]
+    }
+  },
+  "empty": {
+    "status": 200,
+    "body": {
+      "items": [],
+      "next_cursor": null
+    }
+  },
+  "validation_error": {
+    "status": 422,
+    "body": {
+      "error": {
+        "code": "validation_error",
+        "message": "Invalid request",
+        "blockers": []
+      }
+    }
+  },
+  "forbidden": {
+    "status": 404,
+    "body": {
+      "error": {
+        "code": "not_found",
+        "message": "Resource not found",
+        "blockers": []
+      }
+    }
+  },
+  "business_blocked": {
+    "status": 409,
+    "body": {
+      "error": {
+        "code": "business_blocked",
+        "message": "Prerequisite is incomplete",
+        "blockers": [
+          {
+            "code": "prerequisite_missing",
+            "message": "待人工确认支持范围或来源",
+            "evidence": []
+          }
+        ]
+      }
+    }
+  }
+}

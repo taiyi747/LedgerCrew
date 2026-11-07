@@ -33,9 +33,11 @@ Junction China 2026 人工智能赛道参赛项目：为小型工作室提供票
 ## 技术方案
 
 - 前端：Next.js App Router、TypeScript、Tailwind CSS。
-- 后端：Python 3.14、FastAPI、Pydantic 2、SQLite、SQLAlchemy 2、Alembic。
+- 后端：Python 3.11、FastAPI、Pydantic 2、SQLite、SQLAlchemy 2、Alembic。第二阶段决策以 [P2_DECISIONS.md](docs/P2_DECISIONS.md) 为准。
 - AI：MiMo API、Microsoft Agent Framework Python SDK、WorkflowBuilder、FileCheckpointStorage。
 - 部署：本地服务，通过公网隧道暴露 Next.js；Next.js 代理后端 API。
+
+仓库开发规范见 [AGENTS.md](AGENTS.md)；未确认的第二阶段业务规则不得进入正式实现。
 
 核心流程：**模拟下单 → 上传材料 → 识别票据 → 核对流水 → 人工处理异常 → 审核报告 → 客户领取。**
 
