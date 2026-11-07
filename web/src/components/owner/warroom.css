@@ -97,6 +97,25 @@ body:has(.warroom-root){
   to{background-position:260px 156px}
 }
 
+/* ---- Panel backdrop: vertical light ribbons and rising sparks ----
+   Slide-over panels portaled outside .warroom-root get their own effect rather
+   than the console's horizontal mesh — a tall narrow drawer reads better with a
+   current running up it. The negative z-index paints this above the panel's own
+   background but below its in-flow header and body. */
+.panel-backdrop{position:absolute;inset:0;z-index:-1;overflow:hidden;pointer-events:none}
+.panel-backdrop-canvas{position:absolute;inset:0;display:block;width:100%;height:100%}
+.panel-backdrop:before{content:'';position:absolute;inset:0;background:radial-gradient(130% 52% at 50% 0%,rgba(122,213,238,.20),transparent 62%),radial-gradient(120% 48% at 50% 100%,rgba(168,241,255,.18),transparent 60%)}
+.panel-backdrop-ribbons:after{content:'';position:absolute;inset:0;background-image:linear-gradient(90deg,rgba(36,62,76,.055) 1px,transparent 1px);background-size:46px 100%;opacity:.8;animation:panelRails 52s linear infinite}
+.panel-backdrop-streaks:after{content:'';position:absolute;inset:0;background-image:repeating-linear-gradient(122deg,rgba(36,62,76,.05) 0 1px,transparent 1px 34px);opacity:.85;animation:panelHaze 64s linear infinite}
+@keyframes panelRails{
+  from{background-position:0 0}
+  to{background-position:46px 0}
+}
+@keyframes panelHaze{
+  from{background-position:0 0}
+  to{background-position:68px -34px}
+}
+
 /* Waiting-for-a-human states wear the lemon band from the swatch. */
 .warroom-root [data-slot=alert]{border-radius:12px}
 
