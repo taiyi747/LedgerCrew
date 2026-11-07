@@ -7,7 +7,7 @@ from app.core.security import Principal, assert_owner
 from app.models import AuditLog, ExceptionDecision, ExceptionSupplement, ExceptionTicket, WorkflowEvent
 from app.repositories import delivery as repo
 from app.schemas.agent import AgentTaskCreate
-from app.schemas.delivery import ExceptionDecisionCreate
+from app.schemas.delivery import ExceptionDecisionBatchCreate, ExceptionDecisionCreate
 from app.services import agent_service, file_service
 from app.services.access import order_for_user
 from app.storage.base import Storage
@@ -74,7 +74,7 @@ async def list_supplements(session: AsyncSession, exception_id: str, principal: 
 
 
 async def decide(session: AsyncSession, exception_id: str, data: ExceptionDecisionCreate,
-                 principal: Principal) -> ExceptionDecision:
+                 principal: Principal, *, touch: bool = True) -> ExceptionDecision:
     assert_owner(principal)
     ticket = await get_exception(session, exception_id, principal)
     from app.live.service import guard_inputs, touch_inputs, current_run
@@ -122,8 +122,9 @@ async def decide(session: AsyncSession, exception_id: str, data: ExceptionDecisi
                               event_type="exception.reanalysis_requested" if data.decision == "reanalyze" else "exception.decided",
                               payload={"exception_id": ticket.id, "decision_id": decision.id,
                                        "status": ticket.status}))
-    await touch_inputs(session, ticket.order_id, wake=True,
-                       force_wake=data.decision in {"reanalyze", "correct_classification"})
+    if touch:
+        await touch_inputs(session, ticket.order_id, wake=True,
+                           force_wake=data.decision in {"reanalyze", "correct_classification"})
     if data.decision == "request_supplement":
         from app.live.models import OrderMessage
         from app.models import Order
@@ -144,3 +145,52 @@ async def decide(session: AsyncSession, exception_id: str, data: ExceptionDecisi
     else:
         await session.commit()
     return decision
+
+
+async def decide_many(session: AsyncSession, order_id: str, data: ExceptionDecisionBatchCreate,
+                      principal: Principal) -> list[ExceptionDecision]:
+    """原子批量决定：全部校验通过后逐项记录，最后只推进一次输入版本并唤醒一次总管。
+
+    逐条调用 decide 会每次推进输入版本并唤醒运行，第二条起必然撞
+    stale_revision / order_busy；批量提交把同一批决定绑定在同一版本上。
+    """
+    from app.live.service import guard_inputs, touch_inputs
+    from app.models import Order
+
+    assert_owner(principal)
+    await guard_inputs(session, order_id)
+    order = await session.get(Order, order_id)
+    if data.expected_revision is not None and data.expected_revision != order.input_revision:
+        raise AppError("stale_revision", "订单材料或决定已变化，请刷新。", 409)
+    seen: set[str] = set()
+    for item in data.decisions:
+        if item.exception_id in seen:
+            raise AppError("duplicate_exception", "同一批决定不能重复处理同一异常。", 422)
+        seen.add(item.exception_id)
+        ticket = await get_exception(session, item.exception_id, principal)
+        if ticket.order_id != order_id:
+            raise AppError("invalid_scope", "异常不属于该订单。", 422)
+    decisions = [
+        await decide(
+            session,
+            item.exception_id,
+            ExceptionDecisionCreate(
+                decision=item.decision,
+                reason=item.reason,
+                target_version=data.target_version,
+                expected_revision=data.expected_revision,
+                classification_after=item.classification_after,
+            ),
+            principal,
+            touch=False,
+        )
+        for item in data.decisions
+    ]
+    await touch_inputs(
+        session,
+        order_id,
+        wake=True,
+        force_wake=any(item.decision in {"reanalyze", "correct_classification"} for item in data.decisions),
+    )
+    await session.commit()
+    return decisions

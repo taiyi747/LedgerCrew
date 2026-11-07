@@ -109,6 +109,40 @@ def test_work_tools_refuse_before_the_agent_plans(tmp_path, monkeypatch):
     exercise(tmp_path, monkeypatch, scenario)
 
 
+def test_batch_decisions_share_one_revision_bump(tmp_path, monkeypatch):
+    async def scenario(client, storage):
+        order_id, customer, _created_run = await prepare_live_order(client)
+        await run_worker(tmp_path, LiveScriptedRunner())
+        owner = {"X-User-Id": "owner"}
+        tickets = (await client.get(f"/api/v1/orders/{order_id}/exceptions", headers=customer)).json()
+        pending = [t for t in tickets if t["status"] == "open"]
+        assert len(pending) >= 2, tickets
+        current = (await client.get(f"/api/v1/orders/{order_id}", headers=customer)).json()
+        response = await client.post(
+            f"/api/v1/orders/{order_id}/exceptions/decisions",
+            headers=owner,
+            json={
+                "expected_revision": current["input_revision"],
+                "target_version": 1,
+                "decisions": [
+                    {"exception_id": t["id"], "decision": "accept_unresolved", "reason": "演示数据，统一接受未解决"}
+                    for t in pending[:2]
+                ],
+            },
+        )
+        assert response.status_code == 201, response.text
+        # 一批决定只推进一次输入版本（逐条提交会每条推进一次并互相冲突）。
+        after = (await client.get(f"/api/v1/orders/{order_id}", headers=customer)).json()
+        assert after["input_revision"] == current["input_revision"] + 1, after
+        settled_now = {
+            t["id"]: t["status"]
+            for t in (await client.get(f"/api/v1/orders/{order_id}/exceptions", headers=customer)).json()
+        }
+        assert all(settled_now[t["id"]] == "accepted_unresolved" for t in pending[:2]), settled_now
+
+    exercise(tmp_path, monkeypatch, scenario)
+
+
 def test_run_budget_covers_large_material_batches(tmp_path, monkeypatch):
     async def scenario(client, storage):
         order_id, customer, created = await prepare_live_order(client)
