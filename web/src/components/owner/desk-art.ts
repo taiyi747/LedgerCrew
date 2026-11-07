@@ -1,4 +1,4 @@
-// Workstation artwork preserved from sunset@451c88a / HTML/owner/js/illustrations.js.
+// Workstation artwork retained from repository commit 451c88a; maintained in this module.
 export type DeskVisual = 'working' | 'idle' | 'urgent' | 'dormant';
 const STATUS_META: Record<DeskVisual, {color:string}> = {
   working:{color:'#c2410c'}, idle:{color:'#79818a'}, urgent:{color:'#b91c1c'}, dormant:{color:'#aeb5bb'},
