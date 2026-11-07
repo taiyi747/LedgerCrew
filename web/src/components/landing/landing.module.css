@@ -95,3 +95,8 @@
 
 @font-face{font-family:'Lemi Bear Diary';src:url('./fonts/lemi-bear-diary-title.woff2') format('woff2');font-weight:400;font-style:normal;font-display:swap;unicode-range:U+5C0F,U+623F,U+8D26}
 .hero .wordmark,.brandName{font-family:'Lemi Bear Diary','Microsoft YaHei','PingFang SC',sans-serif;font-weight:400;font-synthesis:none}
+
+/* A second instance stays inside the CTA card without moving its content. */
+.finalCta{position:relative;isolation:isolate}
+.iceBadge.ctaIceBadge{left:50%;right:auto;top:50%;transform:translate(-50%,-50%);width:190px;height:190px}
+@media(max-width:760px){.iceBadge.ctaIceBadge{left:auto;right:0;top:50%;transform:translateY(-50%);width:clamp(80px,calc(100% - 198px),260px);height:auto;aspect-ratio:1}}

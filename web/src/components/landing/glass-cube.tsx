@@ -74,14 +74,14 @@ const fragmentShader = /* glsl */ `
 `;
 
 /** A local refraction lens over the card border; the surrounding canvas stays clear. */
-export function GlassCube() {
+export function GlassCube({ variant = 'corner' }: { variant?: 'corner' | 'cta' }) {
   const stageRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
     const stage = stageRef.current!, canvas = canvasRef.current!;
-    const cardElement = stage.closest<HTMLElement>('[data-visual-slot="hero"]');
+    const cardElement = stage.closest<HTMLElement>('[data-visual-slot="hero"], [data-glass-backdrop]');
     if (!cardElement) return;
     const card: HTMLElement = cardElement;
     const abort = new AbortController();
@@ -214,7 +214,7 @@ export function GlassCube() {
     return()=>{disposed=true;stop();abort.abort();observer.disconnect();resizeObserver?.disconnect();[...resources].reverse().forEach(value=>value.dispose());resources.clear();sync=()=>{};};
   },[]);
 
-  return <div ref={stageRef} className={styles.iceBadge}>
+  return <div ref={stageRef} className={variant === 'cta' ? `${styles.iceBadge} ${styles.ctaIceBadge}` : styles.iceBadge}>
     <canvas ref={canvasRef} className={styles.iceCanvas} data-ready={ready} tabIndex={ready?0:-1}
       role="img" aria-label="透明玻璃冰块，折射卡片边线，可拖动或使用方向键旋转。"/>
   </div>;
