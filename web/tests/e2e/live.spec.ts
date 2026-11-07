@@ -7,6 +7,11 @@ test('customer materials → genuine delegations → owner decisions → publish
   const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));boss.on('pageerror',e=>errors.push(e.message));
   await page.goto('/');
   await page.getByRole('link',{name:'开始清账',exact:true}).first().click();
+  await expect(page).toHaveURL(/\/start\/$/);
+  await page.getByLabel('用户名',{exact:true}).fill('flow-'+Date.now());
+  await page.getByLabel('设置密码',{exact:true}).fill('Flow-test-password');
+  await page.getByLabel('确认密码',{exact:true}).fill('Flow-test-password');
+  await page.getByRole('button',{name:'注册并开始免费体验',exact:true}).click();
   await expect(page).toHaveURL(/\/upload\/$/);
   await page.getByRole('button',{name:'建立本期订单'}).click();
   const dialog=page.getByRole('dialog',{name:'建立本期订单'});
@@ -58,8 +63,8 @@ test('customer materials → genuine delegations → owner decisions → publish
 
 test('brand, customer preview and preserved HTML pages share one site', async ({ page, request }) => {
   await page.goto('/');
-  await expect(page.getByRole('heading', {name:'账清', exact:true})).toBeVisible();
-  await expect(page.locator('a[href="/upload/"]')).toHaveCount(3);
+  await expect(page.getByRole('heading', {name:'小账房', exact:true})).toBeVisible();
+  await expect(page.locator('a[href="/start/"]')).toHaveCount(3);
   await page.goto('/demo/');
   await expect(page.getByRole('button', {name:'上传票据和流水', exact:true})).toBeVisible();
   await page.goto('/workspace/');
