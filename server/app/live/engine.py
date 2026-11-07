@@ -350,6 +350,109 @@ class LiveRuntime:
             role, task_type, goal = d.agent_role, d.task_type, d.goal
             await session.commit()
         receipts = []
+
+        async def plan_todos(todos: list[str]) -> str:
+            """先写下本次任务的待办清单再干活：一到六条客户能读懂的短句。"""
+            titles = [str(title).strip()[:120] for title in todos]
+            titles = [title for title in titles if title]
+            if not 1 <= len(titles) <= 6:
+                return json.dumps({"error": "待办需要一到六条非空短句。"}, ensure_ascii=False)
+            items = [
+                {"id": f"t{i + 1}", "title": title, "status": "pending", "detail": ""}
+                for i, title in enumerate(titles)
+            ]
+            async with self.sessions() as session:
+                await self.load(session)
+                d = await session.get(Delegation, delegation_id)
+                d.todos = items
+                await service.event(
+                    session,
+                    d.order_id,
+                    "delegation.todos",
+                    {
+                        "workflow_run_id": self.run_id,
+                        "delegation_id": delegation_id,
+                        "agent_role": role,
+                        "todos": items,
+                    },
+                )
+                await session.commit()
+            receipts.append({"tool": "plan_todos", "count": len(items)})
+            return json.dumps({"todos": items}, ensure_ascii=False)
+
+        async def todo_status(status: str, todo_ids: list[str], detail: str = "") -> str:
+            """更新待办进度。status 取 running、completed 或 blocked；todo_ids 传空数组表示全部。"""
+            if status not in {"running", "completed", "blocked"}:
+                return json.dumps(
+                    {"error": "status 只能是 running、completed 或 blocked。"}, ensure_ascii=False
+                )
+            async with self.sessions() as session:
+                await self.load(session)
+                d = await session.get(Delegation, delegation_id)
+                items = [dict(item) for item in (d.todos or [])]
+                if not items:
+                    return json.dumps({"error": "请先调用 plan_todos 写下待办清单。"}, ensure_ascii=False)
+                known = {item["id"] for item in items}
+                wanted = set(todo_ids) or known
+                if not wanted <= known:
+                    return json.dumps(
+                        {"error": "待办 id 不存在，请使用 plan_todos 返回的 id。"}, ensure_ascii=False
+                    )
+                for item in items:
+                    if item["id"] in wanted:
+                        item["status"], item["detail"] = status, str(detail)[:200]
+                d.todos = items
+                await service.event(
+                    session,
+                    d.order_id,
+                    "delegation.todos",
+                    {
+                        "workflow_run_id": self.run_id,
+                        "delegation_id": delegation_id,
+                        "agent_role": role,
+                        "todos": items,
+                    },
+                )
+                await session.commit()
+            receipts.append({"tool": "todo_status", "status": status, "count": len(wanted)})
+            return json.dumps({"todos": items}, ensure_ascii=False)
+
+        async def plan_refusal():
+            async with self.sessions() as session:
+                await self.load(session)
+                d = await session.get(Delegation, delegation_id)
+                planned = bool(d.todos)
+            return (
+                None
+                if planned
+                else json.dumps(
+                    {"error": "请先调用 plan_todos 写下待办清单，再执行业务工具。"}, ensure_ascii=False
+                )
+            )
+
+        async def finish_todos():
+            """任务真实完成后收拢未勾掉的待办；blocked 保留为后续事项。"""
+            async with self.sessions() as session:
+                await self.load(session)
+                d = await session.get(Delegation, delegation_id)
+                items = [dict(item) for item in (d.todos or [])]
+                for item in items:
+                    if item["status"] in {"pending", "running"}:
+                        item["status"], item["detail"] = "completed", item["detail"] or "随任务完成"
+                d.todos = items
+                await service.event(
+                    session,
+                    d.order_id,
+                    "delegation.todos",
+                    {
+                        "workflow_run_id": self.run_id,
+                        "delegation_id": delegation_id,
+                        "agent_role": role,
+                        "todos": items,
+                    },
+                )
+                await session.commit()
+
         if task_type == "answer_question":
             state = await self.state()
             context = {
@@ -372,6 +475,7 @@ class LiveRuntime:
             answer = await self.invoke(
                 role,
                 task_type,
+                "先调用 plan_todos 写下待办清单，答复过程中用 todo_status 更新进度。"
                 "evidence_refs 只能使用 allowed_evidence_refs 中的真实 id，不能写 status/type/order_id 标签；没有引用则返回空数组。"
                 "回答客户关于本订单的问题，只使用当前数据；不要在文字中写任何阿拉伯数字或金额，"
                 "精确金额由后端明细展示；不得声称未发布报告已交付。无数据就明确说明。\n"
@@ -384,7 +488,9 @@ class LiveRuntime:
                     ensure_ascii=False,
                 ),
                 ChatReply,
+                tools=[plan_todos, todo_status],
                 delegation=delegation_id,
+                receipt_check=lambda _output: any(r["tool"] == "plan_todos" for r in receipts),
             )
             aliases = {e["exception_no"]: e["id"] for e in state["exceptions"]}
             answer = answer.model_copy(
@@ -392,6 +498,7 @@ class LiveRuntime:
             )
             if not set(answer.evidence_refs) <= allowed:
                 raise AgentError("答复引用了不存在的资料。")
+            await finish_todos()
             async with self.sessions() as session:
                 run = await self.load(session)
                 prior = await service.artifact(session, run.id, "chat_answer")
@@ -411,7 +518,7 @@ class LiveRuntime:
                     )
                 d = await session.get(Delegation, delegation_id)
                 d.status, d.result = "succeeded", answer.model_dump(mode="json")
-                d.receipts = [{"tool": "read_customer_context"}, {"tool": "save_answer"}]
+                d.receipts = [{"tool": "plan_todos"}, {"tool": "read_customer_context"}, {"tool": "save_answer"}]
                 await service.event(
                     session, run.order_id, "message.assistant.completed", {"workflow_run_id": run.id}
                 )
@@ -420,6 +527,9 @@ class LiveRuntime:
 
         async def process_invoice_batch() -> str:
             """执行已委派的票据批次：读取、识别、确定性解析、幂等保存。最多两张图片并行。"""
+            refusal = await plan_refusal()
+            if refusal:
+                return refusal
             state = await self.state()
             semaphore = asyncio.Semaphore(2)
 
@@ -507,6 +617,9 @@ class LiveRuntime:
 
         async def reconcile_transactions() -> str:
             """实际运行确定性对账引擎；相同输入返回同一已保存批次。"""
+            refusal = await plan_refusal()
+            if refusal:
+                return refusal
             async with self.sessions() as session:
                 run = await self.load(session)
                 state = await service.snapshot(session, run.id)
@@ -531,6 +644,9 @@ class LiveRuntime:
 
         async def save_customer_message(text: str) -> str:
             """保存受理说明，不声称尚未完成的对账已完成。文字不要数字，明细由后台提供。"""
+            refusal = await plan_refusal()
+            if refusal:
+                return refusal
             try:
                 text = prose(text)
             except ValueError:
@@ -560,6 +676,9 @@ class LiveRuntime:
 
         async def save_customer_questions(introduction: str) -> str:
             """保存给老板审核的补充询问草稿，禁止在引言写数字。不会直接发给客户。"""
+            refusal = await plan_refusal()
+            if refusal:
+                return refusal
             try:
                 introduction = prose(introduction)
             except ValueError:
@@ -595,6 +714,9 @@ class LiveRuntime:
 
         async def save_risk_summary(summary: str) -> str:
             """保存订单级风险与缺失说明，禁止写数字，实际金额由后台记录。"""
+            refusal = await plan_refusal()
+            if refusal:
+                return refusal
             try:
                 summary = prose(summary)
             except ValueError:
@@ -617,6 +739,9 @@ class LiveRuntime:
 
         async def create_report_draft() -> str:
             """根据最新已决定的异常和后台金额创建报告草稿。不会批准或发布。"""
+            refusal = await plan_refusal()
+            if refusal:
+                return refusal
             async with self.sessions() as session:
                 run = await self.load(session)
                 state = await service.snapshot(session, run.id)
@@ -700,17 +825,18 @@ class LiveRuntime:
                 task_type,
                 "你已收到总管真实委派，目标："
                 + goal
-                + "。必须实际调用完成该任务的工具 "
+                + "。先调用 plan_todos 写下一到六条待办，执行中用 todo_status 更新进度；必须实际调用完成该任务的工具 "
                 + required
                 + "，仅查询或口头总结不能算完成。金额由后台工具计算。保存说明/引言时不要任何阿拉伯数字。\n"
                 + json.dumps(await self.state(), ensure_ascii=False),
                 RoleResult,
-                tools=tool_map[task_type],
+                tools=[plan_todos, todo_status] + tool_map[task_type],
                 delegation=delegation_id,
                 receipt_check=lambda output: any(r["tool"] == required for r in receipts),
             )
             if not any(r["tool"] == required for r in receipts):
                 raise AgentError("专业 Agent 没有取得所需工具成果。")
+            await finish_todos()
             async with self.sessions() as session:
                 await self.load(session)
                 d = await session.get(Delegation, delegation_id)

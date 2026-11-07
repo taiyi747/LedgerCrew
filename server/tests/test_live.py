@@ -1,4 +1,5 @@
 import csv
+import json
 from pathlib import Path
 from uuid import uuid4
 
@@ -10,6 +11,7 @@ from test_stage2 import exercise
 from app.db.session import make_engine
 from app.live import service
 from app.live.models import Delegation, WorkflowRun
+from app.models import WorkflowEvent
 from app.live.worker import execute_run
 
 
@@ -49,6 +51,61 @@ async def create_live_order(client):
     )
     assert response.status_code == 201, response.text
     return response.json(), headers
+
+
+def test_delegation_todos_are_planned_tracked_and_traced(tmp_path, monkeypatch):
+    async def scenario(client, storage):
+        order_id, customer, _created_run = await prepare_live_order(client)
+        runner = LiveScriptedRunner()
+        await run_worker(tmp_path, runner)
+        owner = {"X-User-Id": "owner"}
+        trace = (
+            await client.get(
+                f"/api/v1/owner/agents/invoice_processing/trace?order_id={order_id}", headers=owner
+            )
+        ).json()
+        delegations = [d for d in trace["delegations"] if d["task_type"] == "invoice_batch"]
+        assert delegations, trace
+        todos = delegations[0]["todos"]
+        assert todos, delegations[0]
+        assert all(t["title"] and t["status"] == "completed" for t in todos), todos
+        assert [t["id"] for t in todos] == [f"t{i + 1}" for i in range(len(todos))]
+        dashboard = (await client.get("/api/v1/owner/dashboard", headers=owner)).json()
+        agent = next(a for a in dashboard["agents"] if a["id"] == "invoice_processing")
+        assert agent["todos"] == {"done": len(todos), "total": len(todos)}, agent
+        engine = make_engine()
+        sessions = async_sessionmaker(engine, expire_on_commit=False)
+        try:
+            async with sessions() as session:
+                rows = (
+                    await session.scalars(
+                        select(WorkflowEvent).where(WorkflowEvent.event_type == "delegation.todos")
+                    )
+                ).all()
+        finally:
+            await engine.dispose()
+        assert rows, "规划与进度更新应发出 delegation.todos 事件"
+
+    exercise(tmp_path, monkeypatch, scenario)
+
+
+def test_work_tools_refuse_before_the_agent_plans(tmp_path, monkeypatch):
+    async def scenario(client, storage):
+        order_id, customer, _created_run = await prepare_live_order(client)
+        refusals = []
+
+        class GuardProbe(LiveScriptedRunner):
+            async def generate(self, role, prompt, schema, budget, *, tools=None, image=None):
+                named = {tool.__name__: tool for tool in tools or []}
+                if "save_customer_message" in named:
+                    refusals.append(json.loads(await named["save_customer_message"]("先不规划直接干。")))
+                return await super().generate(role, prompt, schema, budget, tools=tools, image=image)
+
+        await run_worker(tmp_path, GuardProbe())
+        assert refusals, "业务工具应先拒绝未规划的调用"
+        assert "plan_todos" in refusals[0]["error"], refusals
+
+    exercise(tmp_path, monkeypatch, scenario)
 
 
 def test_supervised_live_flow_and_report_delivery(tmp_path, monkeypatch):

@@ -80,6 +80,7 @@ class Delegation(Base):
     attempt_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     result: Mapped[dict[str, Any] | None] = mapped_column(JSON)
     receipts: Mapped[list[dict]] = mapped_column(JSON, default=list, nullable=False)
+    todos: Mapped[list[dict]] = mapped_column(JSON, default=list, nullable=False)
     error: Mapped[str | None] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(
