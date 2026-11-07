@@ -45,6 +45,89 @@
 
   --font-ui: "IBM Plex Sans", "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", system-ui, sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+
+  /* 工位插画配色（明暗两套，插画里的 hex 都走这些变量） */
+  --art-screen: #26262c;
+  --art-line: #3f3f46;
+  --art-glass: #fff;
+  --art-desk-a: #eccca0;
+  --art-desk-b: #d9a877;
+  --art-desk-edge-a: #c08f5c;
+  --art-desk-edge-b: #a97446;
+  --art-stroke: #b98554;
+  --art-chair-a: #c9955f;
+  --art-chair-b: #a97446;
+  --art-station: #8b929b;
+  --art-hi: #fff;
+  /* 背影工位：人物与外设 */
+  --art-hair: #7a4e2b;
+  --art-shirt: #faf7f2;
+  --art-bezel: #bcc2c9;
+  --art-key: #c8ced5;
+  --art-lamp: #cf9c62;
+
+  /* 反白元素（实心按钮、选中态）上的文字/悬停色 */
+  --on-invert: #fff;
+  --invert-hover: #000;
+  --scroll-thumb: #d4d4d4;
+  --grid-line: #000;
+  --floor-a: #e3e7e9;
+  --floor-b: #e6e9eb;
+}
+
+/* ---------- 深色模式（顶栏右上昼夜切换，存 localStorage["aiwho.theme"]） ---------- */
+[data-theme="dark"] {
+  --bg: #12161b;
+  --surface: #1b2128;
+  --raised: #232a32;
+  --hairline: rgba(255, 255, 255, .09);
+  --hairline-strong: rgba(255, 255, 255, .16);
+  --text-primary: #eef2f5;
+  --text-secondary: #b4bec7;
+  --text-muted: #848e97;
+  --accent: #f97316;
+  --accent-soft: rgba(249, 115, 22, .16);
+  --positive: #4ade80;
+  --negative: #f87171;
+
+  --lamp-working: #f97316;
+  --lamp-idle: #8b949d;
+  --lamp-urgent: #f87171;
+  --lamp-dormant: #4b555e;
+
+  --track: #2d343c;
+  --fill: #7d8791;
+  --dash: #6c7680;
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, .35);
+  --shadow-md: 0 2px 8px rgba(0, 0, 0, .4), 0 1px 2px rgba(0, 0, 0, .3);
+  --shadow-float: 0 14px 36px rgba(0, 0, 0, .55), 0 3px 10px rgba(0, 0, 0, .35);
+
+  /* 插画：桌椅转冷灰，剪影压到最深，才在深底上读得出来 */
+  --art-screen: #0f141a;
+  --art-line: #39424c;
+  --art-glass: #fff;
+  --art-desk-a: #7a5637;
+  --art-desk-b: #5f4128;
+  --art-desk-edge-a: #4e3520;
+  --art-desk-edge-b: #3c2716;
+  --art-stroke: #8a6238;
+  --art-chair-a: #6b4a2c;
+  --art-chair-b: #4e3520;
+  --art-station: #7c8791;
+  --art-hi: #fff;
+  --art-hair: #3d2614;
+  --art-shirt: #9a9088;
+  --art-bezel: #3a424b;
+  --art-key: #454e58;
+  --art-lamp: #7a5637;
+
+  --on-invert: #12161b;
+  --invert-hover: #fff;
+  --scroll-thumb: #3a424b;
+  --grid-line: #fff;
+  --floor-a: #232a31;
+  --floor-b: #1c2229;
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -69,7 +152,7 @@ body {
 }
 
 ::-webkit-scrollbar { width: 8px; height: 8px; }
-::-webkit-scrollbar-thumb { background: #d4d4d4; border-radius: 999px; }
+::-webkit-scrollbar-thumb { background: var(--scroll-thumb); border-radius: 999px; }
 ::-webkit-scrollbar-track { background: transparent; }
 
 /* ---------- 字体角色 ---------- */
@@ -125,6 +208,7 @@ body {
   border-bottom: 1px solid var(--hairline);
 }
 .topbar-left, .topbar-right { display: flex; align-items: center; gap: 8px; }
+.topbar-right { position: relative; }
 .topbar-center { display: flex; align-items: center; gap: 10px; min-width: 0; }
 .topbar-center .t-title { letter-spacing: .02em; flex-shrink: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .topbar-left > *, .topbar-right > * { flex-shrink: 0; }
@@ -174,8 +258,8 @@ body {
   transition: background 140ms, color 140ms;
 }
 .lang-opt:hover { background: var(--raised); color: var(--text-primary); }
-.lang-opt.on { background: var(--text-primary); color: #fff; }
-.lang-opt.on:hover { background: var(--text-primary); color: #fff; }
+.lang-opt.on { background: var(--text-primary); color: var(--on-invert); }
+.lang-opt.on:hover { background: var(--text-primary); color: var(--on-invert); }
 
 .stat-inline {
   display: flex;
@@ -313,7 +397,7 @@ body {
   background:
     linear-gradient(var(--hairline) 1px, transparent 1px),
     linear-gradient(90deg, var(--hairline) 1px, transparent 1px),
-    linear-gradient(180deg, #e3e7e9 0%, var(--raised) 38%, #e6e9eb 100%);
+    linear-gradient(180deg, var(--floor-a) 0%, var(--raised) 38%, var(--floor-b) 100%);
   background-size: 26px 26px, 26px 26px, auto;
   min-height: 168px;
   border-radius: 0 0 13px 13px;
@@ -391,7 +475,7 @@ body {
   font-size: 12px;
   font-weight: 500;
   line-height: 18px;
-  color: #fff;
+  color: var(--on-invert);
   white-space: nowrap;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, .3), 0 1px 2px rgba(18, 24, 30, .22);
 }
@@ -503,9 +587,9 @@ body {
 .btn-primary {
   background: var(--text-primary);
   border-color: var(--text-primary);
-  color: #fff;
+  color: var(--on-invert);
 }
-.btn-primary:hover { background: #000; border-color: #000; }
+.btn-primary:hover { background: var(--invert-hover); border-color: var(--invert-hover); }
 .btn-quiet { border-color: transparent; color: var(--text-secondary); }
 .btn-quiet:hover { background: var(--raised); color: var(--text-primary); }
 
@@ -693,7 +777,7 @@ pre.code {
   transition: background 140ms, color 140ms;
 }
 .dock-item:hover { background: var(--raised); color: var(--text-primary); }
-.dock-item[aria-current="page"] { background: var(--text-primary); color: #fff; }
+.dock-item[aria-current="page"] { background: var(--text-primary); color: var(--on-invert); }
 .dock-item svg { width: 16px; height: 16px; }
 
 .tools {
@@ -811,7 +895,7 @@ pre.code {
 .msg.me .msg-bubble {
   background: var(--text-primary);
   border-color: var(--text-primary);
-  color: #fff;
+  color: var(--on-invert);
 }
 
 /* 回答的依据块 */
@@ -957,9 +1041,9 @@ pre.code {
 }
 
 /* ---------- 工位插画里的「工作流程」动画 ----------
-   工作流程：三条**长度随机**的进度条依次填满，每满一条工件下移一站、站位点亮，
-   三条都满后淡出重来。working / urgent 才有；idle / dormant 是静止的四条内容线。
-   周期 4.05s = 3 站 × 1.35s，进度条与工件、站位用同一周期靠 delay 对齐。
+   三条**长度随机**的进度条依次填满，三条都跑完再从头来。
+   working / urgent 才有；idle / dormant 是静止的四条内容线。
+   周期 4.05s = 3 站 × 1.35s，靠 animation-delay 0 / 1.35s / 2.7s 依次起跑。
    尊重 prefers-reduced-motion —— 关掉动画时三条都保持满格。 */
 .desk-art .bar-fill {
   transform-box: fill-box;
@@ -975,42 +1059,45 @@ pre.code {
   92%   { transform: scaleX(1); }
   100%  { transform: scaleX(0); }
 }
-
-.desk-art .workpiece {
-  transform-box: fill-box;
-  transform-origin: center;
-  animation: flowPiece 4.05s cubic-bezier(.4, 0, .2, 1) infinite backwards;
-}
-@keyframes flowPiece {
-  0%    { transform: translateY(0)    scale(1);    opacity: 0; }
-  3%    { transform: translateY(0)    scale(1.18); opacity: 1; }
-  7%    { transform: translateY(0)    scale(1);    opacity: 1; }
-  31%   { transform: translateY(0)    scale(1);    opacity: 1; }
-  33.3% { transform: translateY(12px) scale(1.18); opacity: 1; }
-  37%   { transform: translateY(12px) scale(1);    opacity: 1; }
-  64%   { transform: translateY(12px) scale(1);    opacity: 1; }
-  66.6% { transform: translateY(24px) scale(1.18); opacity: 1; }
-  70%   { transform: translateY(24px) scale(1);    opacity: 1; }
-  96%   { transform: translateY(24px) scale(1);    opacity: 1; }
-  100%  { transform: translateY(24px) scale(.9);   opacity: 0; }
-}
-
-.desk-art .station {
-  transform-box: fill-box;
-  transform-origin: center;
-  opacity: .55;
-  animation: stationPulse 4.05s ease-out infinite backwards;
-}
-.desk-art .station.s2 { animation-delay: 1.35s; }
-.desk-art .station.s3 { animation-delay: 2.7s; }
-@keyframes stationPulse {
-  0%, 4%   { opacity: 1;   transform: scale(1.3); }
-  22%, 100% { opacity: .55; transform: scale(1); }
-}
 @media (prefers-reduced-motion: reduce) {
-  .desk-art .bar-fill, .desk-art .workpiece, .desk-art .station { animation: none; }
-  .desk-art .station { opacity: 1; }
+  .desk-art .bar-fill { animation: none; }
 }
+
+/* ---------- 顶栏：连接状态浮层 / 界面锁定 ---------- */
+.net-pop {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 232px;
+  padding: 10px 12px;
+  background: var(--surface);
+  border: 1px solid var(--hairline-strong);
+  border-radius: var(--r-card);
+  box-shadow: var(--shadow-float);
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  z-index: 40;
+}
+.net-pop[hidden] { display: none; }
+.net-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 16px;
+}
+.net-row .k { color: var(--text-muted); }
+.net-row .v { color: var(--text-primary); display: inline-flex; align-items: center; gap: 6px; font-variant-numeric: tabular-nums; }
+
+/* 界面锁定（防误触）：工位与指令不再响应，顶栏仍可操作 */
+.ui-locked .desk { cursor: default; }
+.ui-locked .desk:hover .desk-art { transform: none; }
+.ui-locked .desk:hover .loadbar { opacity: 0; }
+.ui-locked .desk-toggle { opacity: 0 !important; pointer-events: none; }
+.ui-locked .desk:focus-visible { outline: none; }
 
 /* ---------- 通用 ---------- */
 .sr-only {
