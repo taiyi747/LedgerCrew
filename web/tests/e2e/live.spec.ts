@@ -34,16 +34,17 @@ test('customer materials → genuine delegations → owner decisions → publish
   const reports=await page.request.get(`/api/v1/orders/${orderId}/reports`,{headers:{'X-User-Id':'local-customer'}});
   expect(await reports.json()).toEqual([]);
   await boss.goto('/owner/');
-  await expect(boss.getByText('每一项任务，都有真实派单与回执。')).toBeVisible();
+  await expect(boss.getByRole('heading',{name:'LedgerCrew · 老板作战室',exact:true})).toBeVisible();
   await boss.getByRole('button',{name:'数据核对 Agent · 已完成'}).click();
-  await expect(boss.locator('#drawer').getByText(/reconcile_transactions/)).toBeVisible();
+  await boss.getByText('工具回执与输入来源',{exact:true}).click();
+  await expect(boss.getByRole('dialog').getByText(/reconcile_transactions/)).toBeVisible();
   await boss.getByRole('button',{name:'关闭',exact:true}).click();
   await boss.getByRole('button',{name:'异常与报告审批',exact:true}).click();
   for(let i=0;i<3;i++){
-    const card=boss.locator('.live-exception').filter({has:boss.getByRole('button',{name:'保存这个决定'})}).first();
+    const card=boss.getByTestId('owner-exception').filter({has:boss.getByRole('button',{name:'保存这个决定'})}).first();
     await card.locator('textarea').fill('测试操作者：保留未解决事项，不核销差额。');
     await card.getByRole('button',{name:'保存这个决定'}).click();
-    await expect(boss.locator('.live-exception').filter({has:boss.getByRole('button',{name:'保存这个决定'})})).toHaveCount(2-i);
+    await expect(boss.getByTestId('owner-exception').filter({has:boss.getByRole('button',{name:'保存这个决定'})})).toHaveCount(2-i);
   }
   await expect.poll(async()=>{
     const r=await boss.request.get(`/api/v1/owner/dashboard?order_id=${orderId}`,{headers:{'X-User-Id':'owner'}});return (await r.json()).report?.status;
@@ -51,6 +52,7 @@ test('customer materials → genuine delegations → owner decisions → publish
   await boss.getByRole('button',{name:'关闭',exact:true}).click();
   await boss.getByRole('button',{name:'异常与报告审批',exact:true}).click();
   await boss.getByRole('button',{name:'查看草稿与审核'}).click();
+  await boss.getByLabel('审核／退回理由',{exact:true}).fill('已核验本版本证据，保留未解决事项。');
   await boss.getByRole('button',{name:'审核、批准并发布'}).click();
   await expect(page.getByRole('button',{name:/账目核对报告 v1/})).toBeVisible({timeout:30_000});
   await page.getByRole('button',{name:/账目核对报告 v1/}).click();

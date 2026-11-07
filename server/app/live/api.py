@@ -8,18 +8,19 @@ import os
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, Request
-from fastapi.responses import FileResponse, Response, StreamingResponse
+from fastapi.responses import RedirectResponse, Response, StreamingResponse
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
+from app.core.config import get_settings
 from app.core.exceptions import AppError
 from app.core.security import Principal, assert_owner, get_current_principal
 from app.db.session import get_session
 from app.live import service
 from app.live.contracts import ROLES, MessageCreate, RunCreate
 from app.live.models import Delegation, OrderMessage, WorkflowArtifact, WorkflowRun
-from app.models import AgentTask, Order, UploadedFile, WorkflowEvent
+from app.models import AgentTask, Order, Studio, UploadedFile, WorkflowEvent
 from app.services.access import order_for_user
 
 router = APIRouter(prefix="/api/v1", tags=["live"])
@@ -228,6 +229,17 @@ async def dashboard(
 ):
     assert_owner(principal)
     orders = list((await session.scalars(select(Order).order_by(Order.created_at.desc()).limit(100))).all())
+    studio_names = (
+        dict(
+            (
+                await session.execute(
+                    select(Studio.id, Studio.name).where(Studio.id.in_([o.studio_id for o in orders]))
+                )
+            ).all()
+        )
+        if orders
+        else {}
+    )
     chosen = order_id or (orders[0].id if orders else None)
     run = await service.current_run(session, chosen) if chosen else None
     state = await service.snapshot(session, run.id) if run else None
@@ -299,16 +311,19 @@ async def dashboard(
     return {
         "orders": [
             {
-                k: getattr(o, k)
-                for k in (
-                    "id",
-                    "order_no",
-                    "status",
-                    "input_revision",
-                    "period_start",
-                    "period_end",
-                    "studio_id",
-                )
+                **{
+                    k: getattr(o, k)
+                    for k in (
+                        "id",
+                        "order_no",
+                        "status",
+                        "input_revision",
+                        "period_start",
+                        "period_end",
+                        "studio_id",
+                    )
+                },
+                "studio_name": studio_names.get(o.studio_id),
             }
             for o in orders
         ],
@@ -445,17 +460,8 @@ async def owner_stream(
 
 @assets.get("/console/")
 @assets.get("/console/{asset_path:path}")
-async def console(asset_path: str = "index.html"):
-    asset_path = asset_path or "index.html"
-    allowed = {
-        "index.html",
-        "dashboard.html",
-        "css/style.css",
-        "js/i18n.js",
-        "js/illustrations.js",
-        "js/live.js",
-    }
-    if asset_path not in allowed:
-        raise AppError("not_found", "Asset not found", 404)
-    root = Path(__file__).resolve().parents[3] / "HTML" / "owner"
-    return FileResponse(root / asset_path)
+async def console(asset_path: str = ""):
+    routes = {"": "/owner/", "index.html": "/owner/", "dashboard.html": "/owner/dashboard/"}
+    if asset_path not in routes:
+        raise AppError("not_found", "Legacy console assets are no longer served", 404)
+    return RedirectResponse(get_settings().frontend_origin.rstrip("/") + routes[asset_path], status_code=307)

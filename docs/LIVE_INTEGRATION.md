@@ -30,7 +30,7 @@ npm run dev
 
 - 客户：http://127.0.0.1:3210/
 - 老板：http://127.0.0.1:3210/owner/
-- 仪表盘：http://127.0.0.1:3210/owner/dashboard.html
+- 仪表盘：http://127.0.0.1:3210/owner/dashboard/
 - OpenAPI：http://127.0.0.1:8000/docs
 
 三个进程均需运行。客户默认开发身份为 `local-customer`，老板为 `owner`，通过同源 fetch 的 `X-User-Id` 传递。仍是本机开发身份与模拟订单。客户与老板各开一个页面即可；本轮没有引入正式登录或税务申报。
@@ -89,7 +89,7 @@ transaction_date,counterparty,direction,amount,description,external_id
 | `GET /owner/agents/{role}/trace` | 老板可见派单、工具成果与决策摘要 |
 | `GET /owner/events/stream` | 跨订单事件续传 |
 
-复用上传、CSV 导入、异常补充/决定、报告审核和下载接口。客户事件按字段白名单过滤，不包含老板决定内容、内部任务载荷、模型私有推理或未发布报告。老板静态资产来自 `sunset@451c88a87d196cb257ceee5d9e4c0eb3d415a291`，仅通过 FastAPI 白名单提供 `HTML/owner/`；旧原型不参与生产路由。Next 关闭代理压缩以保持 SSE 逐帧到达。
+复用上传、CSV 导入、异常补充/决定、报告审核和下载接口。客户事件按字段白名单过滤，不包含老板决定内容、内部任务载荷、模型私有推理或未发布报告。老板控制台已迁入 Next.js 原生 `/owner/` 路由，保留 `sunset@451c88a87d196cb257ceee5d9e4c0eb3d415a291` 的原作战室布局与工位插画；shadcn/ui 用于按钮、选择器、表单与审批抽屉。FastAPI 仅提供 API，旧 `/console/` 跳转至前端入口，跳转地址可用 `FRONTEND_ORIGIN` 配置。`HTML/owner/` 仅保留历史源码。Next 关闭代理压缩以保持 SSE 逐帧到达。
 
 ## 验证
 
