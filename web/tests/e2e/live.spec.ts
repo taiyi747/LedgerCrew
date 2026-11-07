@@ -15,9 +15,15 @@ test('customer materials → genuine delegations → owner decisions → publish
   await page.getByRole('button',{name:'确认服务资料'}).click();
   await expect(page.getByText('已确认',{exact:true})).toBeVisible();
   await page.locator('input[type=file]').first().setInputFiles(path.resolve('../fixtures/mvp/materials.zip'));
-  await page.getByRole('button',{name:'发送接洽消息',exact:true}).click();
-  await expect(page.getByRole('region',{name:'材料清单'}).getByText('statement.csv',{exact:true})).toBeVisible();
-  await page.getByRole('button',{name:'检查材料',exact:true}).click();
+  const materials=page.getByRole('region',{name:'材料清单'});
+  await expect(materials.getByText('statement.csv',{exact:true})).toBeVisible();
+  await expect(materials.getByText('已收到的材料 · 7 份已上传',{exact:true})).toBeVisible();
+  await expect(page.locator('.composer .pending-files')).toHaveCount(0);
+  await expect(page.getByRole('region',{name:'客服对话'}).getByText('materials.zip',{exact:true})).toHaveCount(0);
+  await expect(page.getByRole('button',{name:'发送接洽消息',exact:true})).toBeDisabled();
+  await page.reload();
+  await expect(materials.getByText('statement.csv',{exact:true})).toBeVisible();
+  await page.getByRole('button',{name:'开始对话',exact:true}).click();
   const offer=page.getByRole('region',{name:'服务确认卡'});
   await expect(offer).toBeVisible({timeout:60_000});
   expect(await (await page.request.get('/api/v1/orders',{headers:{'X-User-Id':'local-customer'}})).json()).toEqual([]);
@@ -87,4 +93,38 @@ test('brand and preview use native customer and owner routes without legacy asse
   for (const asset of ['css/style.css','js/api.js','js/app.js']) {
     expect((await request.get(`/workspace/${asset}`)).status()).toBe(404);
   }
+});
+
+test('material-card uploads show failure and retry without using chat send',async({page})=>{
+  await page.goto('/upload/');
+  await page.getByRole('button',{name:'新建咨询',exact:true}).click();
+  const materials=page.getByRole('region',{name:'材料清单'});
+  const start=materials.getByRole('button',{name:'开始对话',exact:true});
+  await expect(start).toBeDisabled();
+  let attempts=0;
+  let release=()=>{};
+  const gate=new Promise<void>(resolve=>{release=resolve;});
+  await page.route('**/api/v1/intakes/*/files',async route=>{
+    if(route.request().method()!=='POST')return route.continue();
+    attempts++;
+    if(attempts===1)return route.fulfill({status:503,contentType:'application/json',body:JSON.stringify({error:{message:'上传连接中断，请重试。'}})});
+    await gate;
+    await route.continue();
+  });
+  await page.locator('input[type=file]').first().setInputFiles(path.resolve('../fixtures/mvp/statement-live.csv'));
+  await expect(materials.getByRole('alert')).toContainText('上传连接中断');
+  await expect(materials.getByText('已收到的材料 · 0 份已上传',{exact:true})).toBeVisible();
+  await expect(start).toBeDisabled();
+  await expect(page.locator('.composer .pending-files')).toHaveCount(0);
+  await materials.getByRole('button',{name:'重试上传',exact:true}).click();
+  await expect(materials.getByRole('status')).toContainText('正在上传');
+  await expect(start).toBeDisabled();
+  release();
+  await expect(materials.getByText('已收到的材料 · 1 份已上传',{exact:true})).toBeVisible();
+  await expect(materials.getByRole('alert')).toHaveCount(0);
+  await expect(start).toBeEnabled();
+  expect(attempts).toBe(2);
+  await page.reload();
+  await expect(materials.getByText('已收到的材料 · 1 份已上传',{exact:true})).toBeVisible();
+  await expect(materials.getByText('statement-live.csv',{exact:true})).toHaveCount(1);
 });

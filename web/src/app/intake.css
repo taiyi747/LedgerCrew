@@ -36,6 +36,15 @@
   .intake-file-controls select { max-width: 115px; }
   .intake-file-controls label { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; }
   .intake-file-excluded { background: var(--raised); }
+  .intake-upload-hint { margin-bottom: 16px; }
+  .intake-upload-state { margin: 14px 0; padding: 16px; border: 1px solid #8bdae7; border-radius: 12px; background: color-mix(in srgb, var(--accent-soft) 12%, var(--surface)); }
+  .intake-upload-item { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; font-size: 12px; }
+  .intake-upload-item > span { min-width: 0; overflow-wrap: anywhere; }
+  .intake-upload-item small { display: block; color: var(--muted); font-size: 11px; }
+  .intake-upload-state > p { display: flex; align-items: center; gap: 8px; margin-top: 12px; font-size: 12px; }
+  .intake-upload-failed { border-color: #d9a58e; background: #fcf5f1; }
+  .intake-upload-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 12px; }
+  .intake-conversation { scroll-margin-top: 12px; }
   .intake-card-actions { display: flex; align-items: center; justify-content: space-between; gap: 15px; margin-top: 18px; }
   .intake-price { display: block; margin: 14px 0; color: var(--ink); font-size: 29px; font-weight: 600; font-variant-numeric: tabular-nums; }
   .intake-price small { color: var(--muted); font-size: 11px; font-weight: 400; }

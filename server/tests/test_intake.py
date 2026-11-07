@@ -563,3 +563,34 @@ def test_repeated_checks_without_progress_stop_explicitly(tmp_path, monkeypatch)
         assert await count([Order]) == [0]
 
     exercise(tmp_path, monkeypatch, scenario)
+
+
+def test_precheck_questions_are_persisted_in_customer_conversation(tmp_path, monkeypatch):
+    async def scenario(client, _):
+        summary = "已查看你提交的流水。"
+        question = "这笔支出是否还有对应票据可以补充？"
+
+        class QuestionRunner(LiveScriptedRunner):
+            async def generate(self, role, prompt, schema, budget, **kw):
+                named = {tool.__name__: tool for tool in kw.get("tools", [])}
+                if schema is PrecheckNarrative and "save_precheck_result" in named:
+                    await budget.reserve()
+                    return PrecheckNarrative.model_validate_json(
+                        await named["save_precheck_result"](
+                            summary=summary, questions=[question], evidence_refs=[]
+                        )
+                    )
+                return await super().generate(role, prompt, schema, budget, **kw)
+
+        item = await prepare(client, csv_only=True)
+        job = await check(client, item)
+        await execute(job["id"], QuestionRunner())
+        url = f"/api/v1/intakes/{item['id']}/messages"
+        for _ in range(2):
+            messages = (await client.get(url, headers=CUSTOMER)).json()
+            replies = [m for m in messages if m["role"] == "assistant" and m["job_id"] == job["id"]]
+            assert len(replies) == 1
+            assert replies[0]["content"] == summary + "\n\n" + question
+        assert await count([Order, InvoiceRecord, ReconciliationBatch]) == [0, 0, 0]
+
+    exercise(tmp_path, monkeypatch, scenario)

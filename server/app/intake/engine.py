@@ -383,7 +383,9 @@ async def execute_job(sessions, job_id, token, *, runner=None, storage=None, rai
                 if cached["warnings"]
                 else "ready"
             )
-            await save_answer(s, item, job, cached["narrative"]["summary"])
+            narrative = cached["narrative"]
+            content = "\n\n".join([narrative["summary"], *narrative["questions"]])
+            await save_answer(s, item, job, content)
             await service.event(
                 s, intake_id, "precheck.completed", {"revision": job.revision, "status": item.status}
             )
