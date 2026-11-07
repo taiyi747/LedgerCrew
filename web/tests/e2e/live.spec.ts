@@ -36,12 +36,15 @@ test('customer materials → genuine delegations → owner decisions → publish
   await expect(materials.getByRole('region',{name:'Agent 待办'})).toBeVisible();
   const offer=page.getByRole('region',{name:'服务确认卡'});
   await expect(offer).toBeVisible({timeout:60_000});
+  await expect(offer).toContainText('本次处理材料：6 张图片、1 份流水文件');
+  await expect(offer).not.toContainText('有效材料');
+  await expect(offer).not.toContainText('receipt-01.png');
   expect(await (await page.request.get('/api/v1/orders',{headers:{'X-User-Id':'local-customer'}})).json()).toEqual([]);
   await page.reload();
   await expect(page.getByRole('region',{name:'服务确认卡'})).toBeVisible();
   const checkboxes=page.getByRole('region',{name:'服务确认卡'}).getByRole('checkbox');
   for(let i=0;i<await checkboxes.count();i++)await checkboxes.nth(i).check();
-  await page.getByRole('button',{name:'确认创建订单',exact:true}).click();
+  await page.getByRole('button',{name:'确认并开始处理',exact:true}).click();
   await expect(page.getByRole('heading',{name:'4 笔匹配，3 项待核实事项'})).toBeVisible({timeout:60_000});
   await expect(page.getByText('差 ¥270.00',{exact:true})).toBeVisible();
   await page.reload();

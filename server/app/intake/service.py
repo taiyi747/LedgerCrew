@@ -321,7 +321,8 @@ async def inspect_materials(session, item, storage, samples=None):
         "invoice_count": len(invoices),
         "active_count": len(active),
         "sampled_file_ids": list(samples or {}),
-        "note": "Agent 按待办读取材料并整理启动条件；图片先判断用途和可读性，正式识别仍可能发现未知字段、缺票和差额。",
+        "skipped_file_ids": [f.id for f in active if f.mime_type.startswith("image/")],
+        "note": "接洽阶段只收取票据图片并跳过预读；正式下单后再识别图片。流水文档由工具整理，后续仍可能发现未知字段、缺票和差额。",
     }
 
 

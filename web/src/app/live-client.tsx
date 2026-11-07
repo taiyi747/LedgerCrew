@@ -24,19 +24,21 @@ export default function LiveClient({initialOrderId,onNewConsultation,onBackToInt
   const [report,setReport]=useState<Report|null>(null),[materialsOpen,setMaterialsOpen]=useState(false);
   const fileInput=useRef<HTMLInputElement>(null), bottom=useRef<HTMLDivElement>(null), debounce=useRef<ReturnType<typeof setTimeout>|null>(null);
   const lock=useRef(false), selected=useRef(''); selected.current=orderId;
+  const refreshSerial=useRef(0);
 
   const refreshOrders=useCallback(async()=>{
     const all=await api<Order[]>('/orders');setOrders(all);return all;
   },[]);
   const refresh=useCallback(async()=>{
     if(!orderId)return;
+    const request=++refreshSerial.current;
     const base=`/orders/${orderId}`;
     const [current,files,messages,run,invoices,transactions,batch,matches,tickets,reports]=await Promise.all([
       api<Order>(base),api<Material[]>(base+'/files'),api<Message[]>(base+'/messages'),api<Run|null>(base+'/runs/current'),
       api<Invoice[]>(base+'/invoices'),api<Transaction[]>(base+'/transactions'),optional<Batch|null>(base+'/reconciliation',null),
       optional<Match[]>(base+'/matches',[]),optional<Ticket[]>(base+'/exceptions',[]),api<Report[]>(base+'/reports'),
     ]);
-    if(selected.current!==orderId)return;
+    if(selected.current!==orderId||request!==refreshSerial.current)return;
     setOrder(current);setView({files,messages,run,invoices,transactions,batch:run?.batch_current?batch:null,matches:run?.batch_current?matches:[],tickets:run?.batch_current?tickets:[],reports});
   },[orderId]);
 
@@ -52,7 +54,8 @@ export default function LiveClient({initialOrderId,onNewConsultation,onBackToInt
       if(debounce.current)clearTimeout(debounce.current);
       debounce.current=setTimeout(()=>void refresh().catch(e=>setError(e.message)),300);
     },setConnected);
-    return()=>{stop();if(debounce.current)clearTimeout(debounce.current);};
+    const poll=setInterval(()=>void refresh().catch(e=>setError(e.message)),5000);
+    return()=>{refreshSerial.current++;stop();clearInterval(poll);if(debounce.current)clearTimeout(debounce.current);};
   },[orderId,refresh]);
   useEffect(()=>{bottom.current?.scrollIntoView({behavior:'smooth'});},[view.messages.length]);
 

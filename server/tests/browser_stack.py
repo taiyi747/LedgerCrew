@@ -53,6 +53,7 @@ def main():
             DATABASE_URL="sqlite+aiosqlite:///" + Path(temporary, "e2e.db").as_posix(),
             STORAGE_ROOT=str(Path(temporary, "storage")),
             ENVIRONMENT="test",
+            WORKER_ENABLED="false",
             LEDGERCREW_LIVE_DATA_DIR=str(Path(temporary, "runtime")),
             LEDGERCREW_API_ORIGIN="http://127.0.0.1:8010",
             FRONTEND_ORIGIN="http://127.0.0.1:3211",

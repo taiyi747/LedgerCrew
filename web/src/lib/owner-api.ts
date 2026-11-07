@@ -23,14 +23,14 @@ export type OwnerTrace = {
   tasks: { id: string; order_id: string; task_type: string; status: string; started_at: string | null; ended_at: string | null; delegation_id: string | null; error_message: string | null }[];
   delegations: { id: string; decision_id: string; task_type: string; goal: string; input_revision: number; input_refs: string[]; status: string; result: { summary?: string } | null; receipts: { tool: string; [key: string]: unknown }[]; todos: DelegationTodo[]; error: string | null }[];
 };
-export type IntakeTodo = { id: string; file_id: string; kind: string; title: string; status: 'pending' | 'running' | 'completed' | 'blocked'; detail: string };
+export type IntakeTodo = { id: string; file_id: string; kind: string; title: string; status: 'pending' | 'running' | 'completed' | 'blocked' | 'skipped'; detail: string };
 export type OwnerIntake = {
   id: string; studio_name: string | null; period_start: string | null; period_end: string | null; status: string; revision: number; order_id: string | null;
   service: { name: string; price_cents: number; is_simulated: boolean };
   files: { id: string; original_filename: string; category: string; included: boolean; validation_status: string; archive_entry_path: string | null; derived_from_file_id: string | null }[];
   precheck: { status: string; requests_used: number; request_limit: number | null; error: string | null; todos: IntakeTodo[]; result: {
     narrative: { summary: string; questions: string[] }; blockers: { id: string; message: string }[]; warnings: { id: string; message: string }[];
-    sampled_file_ids: string[]; note: string;
+    sampled_file_ids: string[]; skipped_file_ids?: string[]; note: string;
   } | null } | null;
 };
 export type OwnerReport = Report & { evidence_references: string[]; reconciliation_summary: { matched_count: number; unmatched_count: number; exception_count: number }; exception_snapshot: { exception_no: string; exception_type: string; status: string; difference_cents: number | null }[] };
@@ -47,7 +47,7 @@ export const stateLabels: Record<string, string> = {
   in_review: '待审核', published: '已发布', superseded: '历史版本',
 };
 export const roleLabels: Record<string, string> = { supervisor: '财税运营总管', invoice_processing: '票据处理', data_reconciliation: '数据核对', customer_reception: '客户服务', risk_delivery: '风险与交付' };
-export const intakeTodoLabels: Record<string, string> = { pending: '待处理', running: '读取中', completed: '已完成', blocked: '待确认' };
+export const intakeTodoLabels: Record<string, string> = { pending: '待处理', running: '读取中', completed: '已完成', blocked: '待确认', skipped: '已跳过' };
 export const todoStatusLabels: Record<string, string> = { pending: '待办', running: '进行中', completed: '已完成', blocked: '受阻' };
 export const taskLabels: Record<string, string> = { workflow_dispatch: '决策与派工', invoice_batch: '批量票据处理', invoice_extraction: '票据识别', reconcile_order: '流水核对', intake: '材料接待', questions: '补充问题草稿', risk_summary: '风险说明', report_draft: '报告草稿', answer_question: '订单问答' };
 export const toolLabels: Record<string, string> = { process_invoice_batch: '读取、识别与保存票据', reconcile_transactions: '确定性对账', save_customer_message: '保存受理说明', save_customer_questions: '保存询问草稿', save_risk_summary: '保存风险说明', create_report_draft: '创建报告草稿', save_answer: '保存答复', read_customer_context: '读取订单上下文', plan_todos: '规划待办清单', todo_status: '更新待办进度' };

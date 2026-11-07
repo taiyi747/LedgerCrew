@@ -126,8 +126,14 @@ def test_intake_zip_to_actual_order_delivery(tmp_path, monkeypatch):
         item = await snapshot(client, item)
         iid = item["id"]
         assert item["status"] == "ready_with_warnings"
-        assert len(item["precheck"]["result"]["sampled_file_ids"]) == 5
-        assert len([c for c in runner.calls if c[1] == "ImageSample"]) == 6
+        assert item["precheck"]["result"]["sampled_file_ids"] == []
+        assert len(item["precheck"]["result"]["skipped_file_ids"]) == 6
+        assert all(
+            t["status"] == "skipped"
+            for t in item["precheck"]["todos"]
+            if t["kind"] == "read_document" and t["file_id"] in item["precheck"]["result"]["skipped_file_ids"]
+        )
+        assert not any(c[1] == "ImageSample" for c in runner.calls)
         assert not any(c[1] == "InvoiceExtractionOutput" for c in runner.calls)
         assert await count([Order, InvoiceRecord, ReconciliationBatch, BankTransaction]) == [0, 0, 0, 0]
         assert (await check(client, item))["id"] == job["id"]
@@ -287,14 +293,14 @@ def test_precheck_restart_preserves_samples_and_budget(tmp_path, monkeypatch):
 
         await execute(job["id"], Interrupted(), raise_errors=False)
         failed = await snapshot(client, item)
-        assert failed["precheck"]["requests_used"] == 7 and failed["status"] == "precheck_failed"
+        assert failed["precheck"]["requests_used"] == 1 and failed["status"] == "precheck_failed"
         again = await check(client, failed)
-        assert again["id"] == job["id"] and again["requests_used"] == 7
+        assert again["id"] == job["id"] and again["requests_used"] == 1
         runner = LiveScriptedRunner()
         await execute(job["id"], runner)
         assert not any(name == "ImageSample" for _, name in runner.calls)
         done = await snapshot(client, item)
-        assert done["precheck"]["requests_used"] == 8 and done["confirmation"]
+        assert done["precheck"]["requests_used"] == 2 and done["confirmation"]
 
     exercise(tmp_path, monkeypatch, scenario)
 
@@ -505,7 +511,7 @@ def test_saved_tool_result_survives_final_model_ack_failure(tmp_path, monkeypatc
         job = await check(client, item)
         await execute(job["id"], SavedThenFailed())
         done = await snapshot(client, item)
-        assert done["confirmation"] and done["precheck"]["requests_used"] == 7
+        assert done["confirmation"] and done["precheck"]["requests_used"] == 1
         assert await count([Order, InvoiceRecord, ReconciliationBatch]) == [0, 0, 0]
 
     exercise(tmp_path, monkeypatch, scenario)

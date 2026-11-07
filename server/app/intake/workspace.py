@@ -25,6 +25,14 @@ from app.services.file_service import inspect_archive
 
 FIELDS = ("transaction_date", "counterparty", "direction", "amount", "description", "external_id")
 KINDS = {"inspect_archive", "read_document", "normalize_statement", "prepare_receipts", "check_materials"}
+IMAGE_DEFERRED = "接洽阶段跳过图片预读，下单后由票据 Agent 正式识别。"
+
+
+def defer_image_todos(todos, image_ids):
+    for task in todos:
+        if task["kind"] == "read_document" and task["file_id"] in image_ids and task["status"] != "completed":
+            task["status"], task["detail"] = "skipped", IMAGE_DEFERRED
+    return todos
 
 
 def decode_text(content):
@@ -221,7 +229,9 @@ class MaterialWorkspace:
         async with self.lock:
             async with self.sessions() as session:
                 await self.store.job(session)
-                allowed = {f.id for f in await service.files(session, self.intake_id)}
+                material = await service.files(session, self.intake_id)
+                allowed = {f.id for f in material}
+                image_ids = {f.id for f in material if f.mime_type.startswith("image/")}
             old = {t["id"]: t for t in await self.store.load_artifact(self.identity, "todos") or []}
             result = list(old.values())
             task_ids = set()
@@ -249,9 +259,18 @@ class MaterialWorkspace:
                             "detail": "",
                         }
                     )
+            defer_image_todos(result, image_ids)
             await self.save("todos", result)
             await self.notify()
             return json.dumps(result, ensure_ascii=False)
+
+    async def skip_image_reads(self):
+        async with self.lock:
+            image_ids = {f["id"] for f in await self.list_files() if f["type"].startswith("image/")}
+            todos = await self.store.load_artifact(self.identity, "todos") or []
+            defer_image_todos(todos, image_ids)
+            await self.save("todos", todos)
+            await self.notify()
 
     async def notify(self):
         async with self.sessions() as session:
@@ -276,6 +295,16 @@ class MaterialWorkspace:
                 return json.dumps(
                     {"error": "请先调用 plan_materials，为这份材料安排对应待办。"}, ensure_ascii=False
                 )
+            if kind == "read_document":
+                source = await self.source(file_id)
+                if source.mime_type.startswith("image/"):
+                    defer_image_todos(todos, {file_id})
+                    await self.save("todos", todos)
+                    await self.notify()
+                    return json.dumps(
+                        {"file_id": file_id, "status": "skipped", "message": IMAGE_DEFERRED},
+                        ensure_ascii=False,
+                    )
             await self.task_status(kind, file_id, "running")
             try:
                 result = await operation()
