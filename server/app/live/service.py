@@ -322,7 +322,7 @@ async def snapshot(session, run_id):
     }
 
 
-async def start_run(session, order_id, principal, key, expected_revision):
+async def start_run(session, order_id, principal, key, expected_revision, *, commit=True):
     order = await order_for_user(session, order_id, principal)
     if order.input_revision != expected_revision:
         raise AppError("stale_revision", "材料版本已变化，请刷新后重试。", 409)
@@ -335,7 +335,8 @@ async def start_run(session, order_id, principal, key, expected_revision):
     if active and active.status in {"queued", "running", "paused", "failed"}:
         if active.status == "paused" and active.input_revision != order.input_revision:
             await wake_supervisor(session, order_id)
-            await session.commit()
+            if commit:
+                await session.commit()
         return active
     run = WorkflowRun(
         order_id=order_id,
@@ -350,6 +351,8 @@ async def start_run(session, order_id, principal, key, expected_revision):
     try:
         await session.flush()
     except IntegrityError:
+        if not commit:
+            raise
         await session.rollback()
         winner = await current_run(session, order_id)
         if winner:
@@ -357,11 +360,15 @@ async def start_run(session, order_id, principal, key, expected_revision):
         raise
     state = await snapshot(session, run.id)
     if not state["csv_ready"]:
-        await session.rollback()
+        if commit:
+            await session.rollback()
         raise AppError("missing_statement", "请上传并成功导入一份无错误行的 CSV 流水。", 422)
     order.status = "processing"
     await event(session, order.id, "workflow.queued", {"workflow_run_id": run.id})
-    await session.commit()
+    if commit:
+        await session.commit()
+    else:
+        await session.flush()
     return run
 
 

@@ -118,6 +118,30 @@ async def execute_run(sessions, run_id, token, *, runner=None, data_dir=None, ra
         await asyncio.gather(pulse, return_exceptions=True)
 
 
+async def claim_slot(session, kind, token):
+    from sqlalchemy import select
+
+    from app.intake import service as intake_service
+
+    intake_kind = "precheck" if kind == "processing" else "chat"
+    pending = await intake_service.queued(session, intake_kind)
+    now = utc_now()
+    order = await session.scalar(
+        select(WorkflowRun)
+        .where(
+            WorkflowRun.kind == kind,
+            (WorkflowRun.status == "queued")
+            | ((WorkflowRun.status == "running") & (WorkflowRun.lease_expires_at < now)),
+        )
+        .order_by(WorkflowRun.created_at)
+        .limit(1)
+    )
+    if pending and (not order or pending.created_at <= order.created_at):
+        return ("intake", pending.id) if await intake_service.claim(session, pending.id, token) else None
+    run_id = await service.claim_run(session, kind, token)
+    return ("order", run_id) if run_id else None
+
+
 async def worker(*, once=False):
     settings = Settings.from_env()
     runner = MiMoRunner(settings, request_semaphore=asyncio.Semaphore(2))
@@ -134,10 +158,13 @@ async def worker(*, once=False):
                 if kind not in active:
                     token = str(uuid4())
                     async with SessionLocal() as session:
-                        run_id = await service.claim_run(session, kind, token)
-                    if run_id:
+                        work = await claim_slot(session, kind, token)
+                    if work:
+                        from app.intake.engine import execute_job
+
+                        executor = execute_job if work[0] == "intake" else execute_run
                         active[kind] = asyncio.create_task(
-                            execute_run(SessionLocal, run_id, token, runner=runner)
+                            executor(SessionLocal, work[1], token, runner=runner)
                         )
             if once:
                 await asyncio.gather(*active.values())

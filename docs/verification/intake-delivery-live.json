@@ -1,0 +1,60 @@
+{
+  "verified_at": "2026-11-07T05:40:09.028699+00:00",
+  "provider": "real MiMo",
+  "models": [
+    "mimo-v2.6-pro",
+    "mimo-v2.6-flash"
+  ],
+  "materials": "six synthetic invoice images and six payment rows",
+  "human_review": "explicitly simulated by verification script for synthetic order only",
+  "order_id": "8371ed8b-38f6-4cf6-8984-c811b69cffc8",
+  "requests_used": 52,
+  "matched_count": 4,
+  "difference_cents": 27000,
+  "exception_count": 3,
+  "status": "succeeded",
+  "roles": {
+    "supervisor": {
+      "tasks": 12,
+      "delegations": 0,
+      "tools": [
+        "complete_workflow",
+        "delegate_tasks",
+        "request_owner_review",
+        "wait_for_customer"
+      ],
+      "decision_count": 12,
+      "delegated_tasks": 9
+    },
+    "invoice_processing": {
+      "tasks": 7,
+      "delegations": 1,
+      "tools": [
+        "process_invoice_batch"
+      ]
+    },
+    "data_reconciliation": {
+      "tasks": 1,
+      "delegations": 1,
+      "tools": [
+        "reconcile_transactions"
+      ]
+    },
+    "customer_reception": {
+      "tasks": 2,
+      "delegations": 2,
+      "tools": [
+        "save_customer_message",
+        "save_customer_questions"
+      ]
+    },
+    "risk_delivery": {
+      "tasks": 6,
+      "delegations": 5,
+      "tools": [
+        "create_report_draft",
+        "save_risk_summary"
+      ]
+    }
+  }
+}
