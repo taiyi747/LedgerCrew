@@ -160,6 +160,21 @@ def test_dispatch_runs_batched_delegations_in_parallel(tmp_path, monkeypatch):
     exercise(tmp_path, monkeypatch, scenario)
 
 
+def test_owner_facing_notes_reject_machine_text():
+    import pytest
+
+    from app.live.engine import owner_note
+
+    assert owner_note("重复发票一件、缺失发票若干，请决定是否接受未解决。")
+    for bad in (
+        "EX-E014E125933946EB8FD65814020F2651 需要决定",
+        "批次 cc6371fb-aee1-4460-ab04-b2cde7f9e595 存在异常",
+        "eligible_tasks 为空，无法继续派发",
+    ):
+        with pytest.raises(ValueError):
+            owner_note(bad)
+
+
 def test_supervised_live_flow_and_report_delivery(tmp_path, monkeypatch):
     async def scenario(client, storage):
         order_id, customer, _created_run = await prepare_live_order(client)
