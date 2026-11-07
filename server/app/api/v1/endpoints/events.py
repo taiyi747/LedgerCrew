@@ -4,6 +4,7 @@ import time
 from fastapi import APIRouter, Depends, Header, Query, Request
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
+from starlette.background import BackgroundTask
 
 from app.core.config import Settings, get_settings
 from app.core.exceptions import AppError
@@ -36,6 +37,9 @@ async def stream_events(
     if session.bind is None:
         raise RuntimeError("SSE requires a bound database session")
     sessions = async_sessionmaker(session.bind, expire_on_commit=False)
+    limiter = request.app.state.sse_connection_limiter
+    if not await limiter.acquire(settings.sse_max_connections):
+        raise AppError("sse_capacity", "Too many event streams", 429)
 
     async def events():
         nonlocal cursor
@@ -61,4 +65,5 @@ async def stream_events(
             await asyncio.sleep(settings.sse_poll_seconds)
 
     return StreamingResponse(events(), media_type="text/event-stream",
-                             headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
+                             headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+                             background=BackgroundTask(limiter.release))

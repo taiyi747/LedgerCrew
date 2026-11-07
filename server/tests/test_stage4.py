@@ -2,17 +2,17 @@ from datetime import date
 
 import pytest
 from sqlalchemy.ext.asyncio import async_sessionmaker
+from test_stage2 import create_order, exercise, png_bytes
+from test_stage3 import upload_csv
 
 from app.core.config import get_settings
 from app.core.exceptions import AppError
 from app.db.session import make_engine
-from app.schemas.reconciliation import InvoiceRecordCreate
 from app.schemas.agent import AgentTaskCreate
+from app.schemas.reconciliation import InvoiceRecordCreate
 from app.services import agent_service
 from app.services.reconciliation_engine import InvoiceInput, TransactionInput, reconcile
 from app.services.reconciliation_service import persist_invoice
-from test_stage2 import create_order, exercise, png_bytes
-from test_stage3 import upload_csv
 
 START = date(2026, 10, 1)
 END = date(2026, 10, 31)

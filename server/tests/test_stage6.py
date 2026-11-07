@@ -4,6 +4,9 @@ from datetime import date
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import async_sessionmaker
+from test_stage2 import create_order, exercise, png_bytes
+from test_stage3 import upload_csv
+from test_stage4 import accept_invoice_file
 
 from app.core.config import get_settings
 from app.db.session import make_engine
@@ -12,9 +15,6 @@ from app.schemas.agent import AgentTaskCreate
 from app.schemas.reconciliation import InvoiceRecordCreate
 from app.services import agent_service, report_service
 from app.services.reconciliation_service import persist_invoice
-from test_stage2 import create_order, exercise, png_bytes
-from test_stage4 import accept_invoice_file
-from test_stage3 import upload_csv
 
 ALICE = {"X-User-Id": "alice"}
 BOB = {"X-User-Id": "bob"}
@@ -22,9 +22,9 @@ OWNER = {"X-User-Id": "owner"}
 
 
 async def make_batch_with_exception(client, order_id: str):
-    content = ("transaction_date,counterparty,direction,amount,description,external_id\n"
-               "2026-10-12,Vendor,OUT,10.00,service,tx-1\n"
-               "2026-10-13,Unknown,IN,7.25,=1+1,tx-2\n").encode()
+    content = (b"transaction_date,counterparty,direction,amount,description,external_id\n"
+               b"2026-10-12,Vendor,OUT,10.00,service,tx-1\n"
+               b"2026-10-13,Unknown,IN,7.25,=1+1,tx-2\n")
     csv_id = await upload_csv(client, order_id, content)
     imported = await client.post(f"/api/v1/orders/{order_id}/imports/csv",
                                  json={"file_id": csv_id}, headers=ALICE)

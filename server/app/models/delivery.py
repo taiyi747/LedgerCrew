@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Any
 
-from sqlalchemy import CheckConstraint, ForeignKey, Index, Integer, JSON, String, Text, UniqueConstraint
+from sqlalchemy import JSON, CheckConstraint, ForeignKey, Index, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base
@@ -51,6 +51,7 @@ class ReportVersion(Base):
     __table_args__ = (
         UniqueConstraint("order_id", "version", name="uq_report_versions_order_version"),
         UniqueConstraint("source_task_id", name="uq_report_versions_source_task"),
+        UniqueConstraint("workflow_task_id", "workflow_report_version", name="uq_report_workflow_version"),
         CheckConstraint("version > 0", name="ck_report_version_positive"),
         CheckConstraint("status IN ('draft','in_review','approved','published','superseded')",
                         name="ck_report_version_status"),
@@ -62,6 +63,8 @@ class ReportVersion(Base):
     version: Mapped[int] = mapped_column(Integer, nullable=False)
     status: Mapped[str] = mapped_column(String(16), default="draft", nullable=False)
     source_task_id: Mapped[str | None] = mapped_column(ForeignKey("agent_tasks.id"), nullable=True)
+    workflow_task_id: Mapped[str | None] = mapped_column(ForeignKey("agent_tasks.id", name="fk_report_versions_workflow_task"), nullable=True)
+    workflow_report_version: Mapped[int | None] = mapped_column(Integer, nullable=True)
     reconciliation_batch_id: Mapped[str] = mapped_column(ForeignKey("reconciliation_batches.id"), nullable=False)
     report_content: Mapped[str] = mapped_column(Text, nullable=False)
     financial_summary: Mapped[dict[str, int]] = mapped_column(JSON, nullable=False)

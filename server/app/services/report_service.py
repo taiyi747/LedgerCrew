@@ -6,16 +6,29 @@ from datetime import datetime
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.agents.contracts import ReportDraft as WorkflowReportDraft
 from app.core.exceptions import AppError
 from app.core.security import Principal, assert_owner
 from app.db.types import utc_now
 from app.integrations.agents.contracts import ReportDraftInput, ReportDraftOutput
-from app.models import (AgentTask, AuditLog, BankTransaction, ExceptionSupplement, InvoiceRecord,
-                        ReportReviewAction, ReportVersion, ReconciliationMatch, UploadedFile, WorkflowEvent)
+from app.models import (
+    AgentRun,
+    AgentTask,
+    AuditLog,
+    BankTransaction,
+    ExceptionSupplement,
+    InvoiceRecord,
+    ReconciliationBatch,
+    ReconciliationMatch,
+    ReportReviewAction,
+    ReportVersion,
+    UploadedFile,
+    WorkflowEvent,
+)
 from app.repositories import delivery as delivery_repo
 from app.repositories import reconciliation as reconciliation_repo
-from app.services.access import order_for_user
 from app.services import order_state
+from app.services.access import order_for_user
 
 
 def _content_hash(report: ReportVersion) -> str:
@@ -150,6 +163,110 @@ async def create_from_agent_task(session: AsyncSession, task_id: str) -> ReportV
     return report
 
 
+async def create_from_workflow(session: AsyncSession, task_id: str,
+                               draft: WorkflowReportDraft) -> ReportVersion:
+    """Create an auditable report from the existing MAF graph and backend reconciliation."""
+    existing = await session.scalar(select(ReportVersion).where(
+        ReportVersion.workflow_task_id == task_id,
+        ReportVersion.workflow_report_version == draft.report_version))
+    if existing is not None:
+        return existing
+    task = await session.get(AgentTask, task_id)
+    if (task is None or task.task_type != "full_workflow" or task.order_id != draft.identity.order_id
+            or task.run_id != draft.identity.run_id):
+        raise AppError("invalid_workflow_report", "Workflow report identity differs", 422)
+    batch = await session.scalar(select(ReconciliationBatch).where(
+        ReconciliationBatch.workflow_task_id == task_id))
+    latest = await reconciliation_repo.latest_batch(session, task.order_id)
+    if batch is None or latest is None or latest.id != batch.id:
+        raise AppError("stale_workflow_report", "Workflow reconciliation is not current", 409)
+    snapshot = await _exception_snapshot(session, batch.id)
+    if {item["exception_id"] for item in snapshot} != set(draft.unresolved_issue_ids):
+        raise AppError("invalid_workflow_report", "Workflow issues differ from backend exceptions", 422)
+    refs = []
+    invoice_ids = {"invoice-" + file_id: record_id for file_id, record_id in
+                   (await session.execute(select(UploadedFile.id, InvoiceRecord.id).join(
+                       InvoiceRecord, InvoiceRecord.source_file_id == UploadedFile.id).where(
+                       InvoiceRecord.workflow_task_id == task_id))).all()}
+    for note in draft.narrative.evidence_notes:
+        refs.append(invoice_ids.get(note.evidence_ref, note.evidence_ref))
+    await _validate_evidence_references(session, task.order_id, batch.id, refs)
+    version = await delivery_repo.next_report_version(session, task.order_id)
+    content = "\n".join([draft.narrative.summary, *draft.narrative.next_steps,
+                         *(note.explanation for note in draft.narrative.evidence_notes)])
+    report = ReportVersion(
+        order_id=task.order_id, version=version, status="draft", source_task_id=None,
+        workflow_task_id=task_id, workflow_report_version=draft.report_version,
+        reconciliation_batch_id=batch.id, report_content=content,
+        financial_summary={
+            "income_total_cents": batch.income_total_cents,
+            "expense_total_cents": batch.expense_total_cents,
+            "net_cash_change_cents": batch.net_cash_change_cents,
+        },
+        reconciliation_summary={
+            "matched_count": batch.matched_count, "unmatched_count": batch.unmatched_count,
+            "exception_count": batch.exception_count,
+            "match_ids": [item.id for item in await reconciliation_repo.list_matches(session, batch.id)],
+            "exception_ids": [item["exception_id"] for item in snapshot],
+        },
+        exception_snapshot=snapshot, evidence_references=list(dict.fromkeys(refs)),
+        unresolved_items=[f"{item['exception_no']}: {item['exception_type']} ({item['status']})"
+                          for item in snapshot if item["status"] != "resolved"],
+        content_hash="",
+    )
+    report.content_hash = _content_hash(report)
+    session.add(report)
+    await session.flush()
+    for previous in await delivery_repo.list_reports(session, task.order_id):
+        if previous.id != report.id and previous.status in {"draft", "in_review", "approved"}:
+            previous.status = "superseded"
+    session.add(AuditLog(order_id=task.order_id, actor_type="agent_workflow", actor_id=task_id,
+                         action="report.created", entity_type="report_version", entity_id=report.id,
+                         details={"version": version, "workflow_report_version": draft.report_version}))
+    await session.commit()
+    return report
+
+
+async def submit_workflow_review(session: AsyncSession, report_id: str) -> ReportVersion:
+    report = await session.get(ReportVersion, report_id)
+    if report is None or report.workflow_task_id is None or report.status != "draft":
+        raise AppError("invalid_workflow_report", "Workflow report draft is required", 409)
+    await _fresh(session, report)
+    await order_state.begin_processing(session, report.order_id)
+    await order_state.move(session, report.order_id, "awaiting_owner_review", "workflow_report_review")
+    report.status = "in_review"
+    session.add(AuditLog(order_id=report.order_id, actor_type="system", actor_id=report.workflow_task_id,
+                         action="report.submitted_review", entity_type="report_version", entity_id=report.id))
+    await session.commit()
+    return report
+
+
+async def approve_workflow_in_transaction(session: AsyncSession, task: AgentTask,
+                                          run: AgentRun, output: dict) -> None:
+    """Approve report in the same commit as the completed full workflow task."""
+    report = await session.get(ReportVersion, output["report_id"])
+    checkpoint = run.checkpoint_data or {}
+    reply = checkpoint.get("reply") or {}
+    actor_id = checkpoint.get("review_actor_id")
+    if (report is None or report.workflow_task_id != task.id or report.status != "in_review"
+            or reply.get("action") != "approve_delivery"
+            or reply.get("request_id") != output["approval_request_id"] or not actor_id):
+        raise AppError("workflow_approval_missing", "Matching owner approval is required", 409)
+    reports = await delivery_repo.list_reports(session, task.order_id)
+    if not reports or reports[0].id != report.id:
+        raise AppError("old_report_version", "Only the latest report can be approved", 409)
+    await _fresh(session, report)
+    await order_state.move(session, report.order_id, "approved", "report_approved", "owner", actor_id)
+    report.status = "approved"
+    report.approved_at = utc_now()
+    report.approved_by = actor_id
+    session.add(ReportReviewAction(report_id=report.id, report_version=report.version,
+                                   action="approved", actor_id=actor_id,
+                                   content_hash=report.content_hash))
+    _audit(session, report, Principal(user_id=actor_id, role="owner"),
+           "report.approved", {"content_hash": report.content_hash})
+
+
 async def _get(session: AsyncSession, report_id: str, principal: Principal) -> ReportVersion:
     report = await session.get(ReportVersion, report_id)
     if report is None:
@@ -217,6 +334,10 @@ async def submit_review(session: AsyncSession, report_id: str, principal: Princi
 
 async def approve(session: AsyncSession, report_id: str, principal: Principal, reason: str | None = None) -> ReportVersion:
     report = await _owner_report(session, report_id, principal)
+    if report.workflow_task_id is not None:
+        workflow_task = await session.get(AgentTask, report.workflow_task_id)
+        if workflow_task is None or workflow_task.status != "succeeded":
+            raise AppError("workflow_approval_pending", "Workflow approval must complete first", 409)
     if report.status != "in_review":
         raise AppError("invalid_report_transition", "Only an in-review report can be approved", 409)
     await _fresh(session, report)
@@ -232,8 +353,11 @@ async def approve(session: AsyncSession, report_id: str, principal: Principal, r
     return report
 
 
-async def reject(session: AsyncSession, report_id: str, principal: Principal, reason: str) -> ReportVersion:
+async def reject(session: AsyncSession, report_id: str, principal: Principal, reason: str,
+                 *, from_workflow: bool = False, commit: bool = True) -> ReportVersion:
     report = await _owner_report(session, report_id, principal)
+    if report.workflow_task_id is not None and not from_workflow:
+        raise AppError("workflow_reply_required", "Use the workflow review endpoint", 409)
     if report.status != "in_review":
         raise AppError("invalid_report_transition", "Only an in-review report can be rejected", 409)
     if not reason.strip():
@@ -244,7 +368,8 @@ async def reject(session: AsyncSession, report_id: str, principal: Principal, re
                                    action="rejected", actor_id=principal.user_id,
                                    reason=reason.strip(), content_hash=report.content_hash))
     _audit(session, report, principal, "report.rejected", {"reason": reason.strip()})
-    await session.commit()
+    if commit:
+        await session.commit()
     return report
 
 
@@ -256,12 +381,13 @@ async def publish(session: AsyncSession, report_id: str, principal: Principal) -
     approval = await delivery_repo.approval_for_report(session, report.id)
     if approval is None or approval.report_version != report.version or approval.content_hash != report.content_hash:
         raise AppError("approval_missing", "This report version has no matching approval", 409)
-    await order_state.move(session, report.order_id, "delivered", "report_published", "owner", principal.user_id)
     for previous in await delivery_repo.list_reports(session, report.order_id):
         if previous.id != report.id and previous.status == "published":
             previous.status = "superseded"
     report.status = "published"
     report.published_at = utc_now()
+    await session.flush()
+    await order_state.deliver_published_report(session, report.id, principal.user_id)
     _audit(session, report, principal, "report.published")
     await session.commit()
     return report

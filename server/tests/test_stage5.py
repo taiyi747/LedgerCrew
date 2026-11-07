@@ -1,24 +1,27 @@
 import asyncio
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import pytest
 from pydantic import ValidationError
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import async_sessionmaker
+from test_stage2 import create_order, exercise
 
 from app.core.config import get_settings
 from app.core.exceptions import AppError
 from app.db.session import make_engine
 from app.integrations.agents.contracts import (
-    AgentInvocationRequest, AgentInvocationResponse, InvoiceExtractionOutput,
-    MaterialReviewOutput, ReconciliationAgentOutput,
+    AgentInvocationRequest,
+    AgentInvocationResponse,
+    InvoiceExtractionOutput,
+    MaterialReviewOutput,
+    ReconciliationAgentOutput,
 )
 from app.integrations.agents.fake_gateway import FakeAgentGateway, FakeResult
 from app.models import AgentRun, AgentTask, AuditLog, WorkflowEvent
 from app.schemas.agent import AgentTaskCreate
 from app.services import agent_service
-from test_stage2 import create_order, exercise
 
 
 def reception_task(order_id: str, key: str = "reception-1") -> AgentTaskCreate:
@@ -93,7 +96,7 @@ def test_each_agent_role_has_structured_input(role, task_type, input_payload):
 
 
 def test_agent_response_validation():
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     valid = AgentInvocationResponse(task_id="task", status="succeeded", output_payload=reception_output(),
                                     started_at=now, finished_at=now)
     assert valid.status == "succeeded"
@@ -224,7 +227,8 @@ def test_gateway_invocation_persists_success_failure_and_pause(tmp_path, monkeyp
                 invalid_fake = FakeAgentGateway({"customer_reception": FakeResult("succeeded", {"matched_count": 999})})
                 invalid = await agent_service.invoke_task(session, invalid_task.id, invalid_fake)
                 assert invalid.status == "failed" and invalid.output_data is None
-                assert "invalid_agent_output" in invalid.error_message
+                assert invalid.error_message == "invalid_agent_output"
+                assert "matched_count" not in invalid.error_message
 
                 class BrokenGateway:
                     async def invoke(self, _request):
@@ -232,7 +236,9 @@ def test_gateway_invocation_persists_success_failure_and_pause(tmp_path, monkeyp
 
                 broken_task = await agent_service.create_task(session, reception_task(order_id, "disconnected"))
                 broken = await agent_service.invoke_task(session, broken_task.id, BrokenGateway())
-                assert broken.status == "failed" and "provider disconnected" in broken.error_message
+                assert broken.status == "failed"
+                assert broken.error_message == "agent_invocation_failed: ConnectionError"
+                assert "provider disconnected" not in broken.error_message
             async with sessions() as session:
                 runs = (await session.scalars(select(AgentRun).where(AgentRun.order_id == order_id))).all()
                 assert len(runs) == 5

@@ -2,6 +2,8 @@ import hashlib
 
 from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import async_sessionmaker
+from test_stage2 import create_order, exercise, png_bytes, zip_bytes
+from test_stage3 import upload_csv
 
 from app.core.config import get_settings
 from app.core.exceptions import AppError
@@ -13,8 +15,6 @@ from app.schemas.reconciliation import InvoiceRecordCreate
 from app.services import agent_service, report_service
 from app.services.reconciliation_service import persist_invoice, persist_invoice_from_task
 from app.storage.local import LocalStorage
-from test_stage2 import create_order, exercise, png_bytes, zip_bytes
-from test_stage3 import upload_csv
 
 ALICE = {"X-User-Id": "alice"}
 BOB = {"X-User-Id": "bob"}
@@ -103,7 +103,7 @@ def test_full_monthly_flow_with_fake_agents(tmp_path, monkeypatch):
                         idempotency_key="extract-rejected", correlation_id="flow-1",
                         input_payload={"order_id": order_id, "file_id": entry["id"], "mime_type": "image/png"},
                     ))
-                    assert False, "Rejected invoice must not enter extraction"
+                    raise AssertionError("Rejected invoice must not enter extraction")
                 except AppError as exc:
                     assert exc.code == "invoice_review_required"
                 accepted_review = await agent_service.create_task(session, AgentTaskCreate(
@@ -295,7 +295,7 @@ def test_invoice_amount_failure_rolls_back_without_raw_data_changes(tmp_path, mo
                 })
                 try:
                     await persist_invoice_from_task(session, task.id)
-                    assert False, "Sub-cent amount must be rejected"
+                    raise AssertionError("Sub-cent amount must be rejected")
                 except AppError as exc:
                     assert exc.code == "invalid_invoice_amount"
                 await session.rollback()

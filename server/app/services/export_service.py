@@ -1,7 +1,7 @@
 import csv
 import io
 import json
-from datetime import date, datetime, timezone
+from datetime import UTC, date, datetime
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -47,7 +47,7 @@ async def export_csv(session: AsyncSession, order_id: str, export_type: str,
         raise AppError("not_found", "No published report exists for this order", 404)
     batch = (await session.get(ReconciliationBatch, published.reconciliation_batch_id)
              if principal.role != "owner" else await reconciliation_repo.latest_batch(session, order_id))
-    cutoff = published.created_at if principal.role != "owner" else datetime.now(timezone.utc)
+    cutoff = published.created_at if principal.role != "owner" else datetime.now(UTC)
     if export_type == "invoices":
         records = (await session.scalars(select(InvoiceRecord).where(
             InvoiceRecord.order_id == order_id, InvoiceRecord.created_at <= cutoff)

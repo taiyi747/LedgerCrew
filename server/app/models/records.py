@@ -2,7 +2,7 @@ from datetime import date, datetime
 from typing import Any
 from uuid import uuid4
 
-from sqlalchemy import CheckConstraint, ForeignKey, Index, Integer, JSON, String, Text, UniqueConstraint
+from sqlalchemy import JSON, CheckConstraint, ForeignKey, Index, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
@@ -47,6 +47,7 @@ class Order(Base):
     period_month: Mapped[int] = mapped_column(Integer, nullable=False)
     status: Mapped[str] = mapped_column(String(32), default="draft", nullable=False)
     price_cents: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    currency: Mapped[str | None] = mapped_column(String(3), nullable=True)
     service_scope: Mapped[str | None] = mapped_column(String(200), nullable=True)
     is_simulated: Mapped[bool] = mapped_column(default=True, nullable=False)
     created_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now, nullable=False)
@@ -82,7 +83,7 @@ class UploadedFile(Base):
 class AgentRun(Base):
     __tablename__ = "agent_runs"
     __table_args__ = (
-        CheckConstraint("status IN ('queued','running','paused','succeeded','failed')", name="ck_agent_runs_status"),
+        CheckConstraint("status IN ('queued','running','paused','succeeded','failed','cancelled','retrying','timeout')", name="ck_agent_runs_status"),
         Index("ix_agent_runs_order_created", "order_id", "created_at"),
     )
 
@@ -107,9 +108,10 @@ class AgentTask(Base):
     __tablename__ = "agent_tasks"
     __table_args__ = (
         UniqueConstraint("run_id", "task_key", name="uq_agent_tasks_run_task_key"),
-        CheckConstraint("status IN ('queued','running','paused','succeeded','failed')", name="ck_agent_tasks_status"),
+        CheckConstraint("status IN ('queued','running','paused','succeeded','failed','cancelled','retrying','timeout')", name="ck_agent_tasks_status"),
         Index("ix_agent_tasks_order_status", "order_id", "status"),
         Index("ix_agent_tasks_order_idempotency", "order_id", "idempotency_key", unique=True),
+        Index("ix_agent_tasks_claim", "status", "next_attempt_at", "lease_expires_at"),
     )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
@@ -126,6 +128,10 @@ class AgentTask(Base):
     output_data: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
     provider_metadata: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
     attempt_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default="0")
+    lease_owner: Mapped[str | None] = mapped_column(ForeignKey("worker_instances.id", name="fk_agent_tasks_lease_owner"), nullable=True)
+    lease_expires_at: Mapped[datetime | None] = mapped_column(UTCDateTime(), nullable=True)
+    lease_generation: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default="0")
+    next_attempt_at: Mapped[datetime | None] = mapped_column(UTCDateTime(), nullable=True)
     error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now, nullable=False)
     started_at: Mapped[datetime | None] = mapped_column(UTCDateTime(), nullable=True)

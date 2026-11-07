@@ -48,7 +48,7 @@ def normalize_counterparty(value: str) -> str:
 
 class CSVService:
     def __init__(self, column_map: dict[str, str], date_format: str = "%Y-%m-%d", max_rows: int = 200) -> None:
-        if not REQUIRED_COLUMNS <= column_map.keys() or not column_map.keys() <= ALL_COLUMNS:
+        if not column_map.keys() >= REQUIRED_COLUMNS or not column_map.keys() <= ALL_COLUMNS:
             raise AppError("invalid_column_map", "Column map must define required standard fields only", 422)
         if any(not name.strip() for name in column_map.values()) or len(set(column_map.values())) != len(column_map):
             raise AppError("invalid_column_map", "Column names must be nonempty and unique", 422)
@@ -90,7 +90,7 @@ class CSVService:
                 if total_rows > self.max_rows:
                     raise AppError("csv_row_limit", "CSV exceeds configured row limit", 413)
                 row_number = reader.line_num
-                raw: dict[str, Any] = dict(zip(header, values))
+                raw: dict[str, Any] = dict(zip(header, values, strict=False))
                 if len(values) > len(header):
                     raw["__extra__"] = values[len(header):]
                     errors.append(ParsedRowError(row_number, "column_count_mismatch", raw))

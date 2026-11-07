@@ -6,12 +6,12 @@ import zipfile
 from pathlib import Path
 from uuid import uuid4
 
-from alembic import command
 from alembic.config import Config
 from httpx import ASGITransport, AsyncClient
 from PIL import Image
 from sqlalchemy.ext.asyncio import async_sessionmaker
 
+from alembic import command
 from app.core.config import get_settings
 from app.db.session import get_session, make_engine
 from app.main import app
@@ -226,8 +226,8 @@ def test_production_rejects_simulated_identity(monkeypatch) -> None:
     async def check():
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             result = await client.get("/api/v1/studios", headers={"X-User-Id": "alice"})
-            assert result.status_code == 503
-            assert result.json()["error"]["code"] == "authentication_unavailable"
+            assert result.status_code == 401
+            assert result.json()["error"]["code"] == "unauthorized"
 
     asyncio.run(check())
     get_settings.cache_clear()

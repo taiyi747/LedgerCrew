@@ -1,16 +1,29 @@
 """Persistent Agent task lifecycle and validated gateway invocation."""
 
+from datetime import timedelta
 from typing import Any
 
 from pydantic import BaseModel, JsonValue, TypeAdapter, ValidationError
+from sqlalchemy import or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import get_settings
 from app.core.exceptions import AppError
 from app.db.types import utc_now
 from app.integrations.agents.contracts import AgentInvocationRequest, AgentInvocationResponse, contract_for
 from app.integrations.agents.gateway import AgentGateway
-from app.models import AgentRun, AgentTask, AuditLog, ExceptionTicket, Order, ReconciliationBatch, UploadedFile, WorkflowEvent
+from app.models import (
+    AgentRun,
+    AgentTask,
+    AgentTaskHistory,
+    AuditLog,
+    ExceptionTicket,
+    Order,
+    ReconciliationBatch,
+    UploadedFile,
+    WorkflowEvent,
+)
 from app.repositories import agents as repo
 from app.repositories import reconciliation as reconciliation_repo
 from app.schemas.agent import AgentTaskCreate
@@ -40,6 +53,17 @@ async def _validate_references(session: AsyncSession, data: AgentTaskCreate) -> 
             source = await session.get(UploadedFile, file_id)
             if source is None or source.order_id != data.order_id:
                 raise AppError("invalid_agent_source", "Submitted file must belong to the task order", 422)
+    if data.task_type == "full_workflow":
+        from app.integrations.agents.workflow_backend import order_snapshot, snapshot_fingerprint
+
+        snapshot = await order_snapshot(session, data.order_id)
+        if snapshot_fingerprint(snapshot) != data.input_payload["input_fingerprint"]:
+            raise AppError("stale_workflow_input", "Order materials changed before task creation", 409)
+        active = await session.scalar(select(AgentTask.id).where(
+            AgentTask.order_id == data.order_id, AgentTask.task_type == "full_workflow",
+            AgentTask.status.in_(("queued", "running", "paused", "retrying"))))
+        if active is not None:
+            raise AppError("workflow_already_active", "Order already has an active workflow", 409)
     if data.task_type in {"material_review", "invoice_extraction"}:
         source = await session.get(UploadedFile, data.input_payload["file_id"])
         if source is None or source.order_id != data.order_id:
@@ -113,15 +137,16 @@ async def create_task(session: AsyncSession, data: AgentTaskCreate) -> AgentTask
                          task_type=data.task_type, status="queued", input_data=data.input_payload)
         session.add(task)
         await session.flush()
+        session.add(AgentTaskHistory(task_id=task.id, from_status=None, to_status="queued", reason="created"))
         _event(session, task, "agent.task.queued", {"agent_role": data.agent_role, "task_type": data.task_type})
         await session.commit()
-    except IntegrityError:
+    except IntegrityError as exc:
         await session.rollback()
         existing = await repo.task_by_idempotency(session, data.order_id, data.idempotency_key)
         if existing is None:
             raise
         if not _same_request(existing, data):
-            raise AppError("idempotency_conflict", "Idempotency key was used with different task data", 409)
+            raise AppError("idempotency_conflict", "Idempotency key was used with different task data", 409) from exc
         return existing
     return task
 
@@ -138,36 +163,96 @@ async def _load(session: AsyncSession, task_id: str) -> tuple[AgentTask, AgentRu
 
 async def _transition(session: AsyncSession, task_id: str, expected: set[str], target: str,
                       *, output: dict[str, JsonValue] | None = None, error: str | None = None,
-                      metadata: dict[str, JsonValue] | None = None) -> AgentTask:
+                      metadata: dict[str, JsonValue] | None = None,
+                      commit: bool = True) -> AgentTask:
     task, run = await _load(session, task_id)
+    await session.refresh(task)
+    await session.refresh(run)
     if task.status not in expected:
         raise AppError("invalid_task_transition", f"Cannot change task from {task.status} to {target}", 409)
+    previous = task.status
     task.status = run.status = target
     now = utc_now()
     if target == "running":
         task.attempt_count += 1
-        task.started_at = task.started_at or now
-        run.started_at = run.started_at or now
+        task.started_at = run.started_at = now
+        task.ended_at = run.ended_at = None
+        task.error_message = run.error_message = None
+        task.next_attempt_at = None
         if task.task_type in {"material_review", "invoice_extraction", "reconciliation_summary", "risk_analysis", "report_draft"}:
             await order_state.begin_processing(session, task.order_id)
-    if target in {"succeeded", "failed"}:
+    if target in {"succeeded", "failed", "cancelled", "timeout"}:
         task.ended_at = run.ended_at = now
+    if target in {"succeeded", "failed", "cancelled", "timeout", "paused"}:
+        task.lease_owner = None
+        task.lease_expires_at = None
+    if target in {"failed", "cancelled", "timeout"}:
+        order = await session.get(Order, task.order_id)
+        if (task.task_type == "full_workflow" and target in {"failed", "cancelled"}
+                and order.status == "awaiting_owner_review"):
+            from app.models import ReportVersion
+
+            for report in (await session.scalars(select(ReportVersion).where(
+                ReportVersion.workflow_task_id == task.id,
+                ReportVersion.status.in_(("draft", "in_review"))))).all():
+                report.status = "superseded"
+            await order_state.move(session, task.order_id, "processing", "workflow_review_abandoned")
+        if order.status == "processing":
+            await order_state.move(session, task.order_id, "failed", f"agent_task_{target}")
     if output is not None:
         task.output_data = run.output_data = output
         if task.task_type == "material_review" and output.get("review_status") in {"REJECTED", "NEEDS_REUPLOAD"}:
             await order_state.request_customer(session, task.order_id)
+        if task.task_type == "full_workflow" and target == "succeeded":
+            from app.services import report_service
+
+            await report_service.approve_workflow_in_transaction(session, task, run, output)
     if error is not None:
         task.error_message = run.error_message = error
+    elif target == "timeout":
+        task.error_message = run.error_message = "worker_timeout"
     if metadata is not None:
         task.provider_metadata = metadata
+    session.add(AgentTaskHistory(task_id=task.id, from_status=previous, to_status=target,
+                                 reason=error or ("worker_timeout" if target == "timeout" else None)))
     _event(session, task, f"agent.task.{target}", {"attempt_count": task.attempt_count,
                                                      "has_error": target == "failed"})
-    await session.commit()
+    if commit:
+        await session.commit()
     return task
 
 
 async def start_task(session: AsyncSession, task_id: str) -> AgentTask:
-    return await _transition(session, task_id, {"queued"}, "running")
+    return await _transition(session, task_id, {"queued", "retrying"}, "running")
+
+
+async def cancel_task(session: AsyncSession, task_id: str) -> AgentTask:
+    task, _ = await _load(session, task_id)
+    if task.status == "cancelled":
+        return task
+    return await _transition(session, task_id, {"queued", "running", "paused", "retrying"}, "cancelled")
+
+
+async def retry_task(session: AsyncSession, task_id: str) -> AgentTask:
+    task, _ = await _load(session, task_id)
+    if task.attempt_count >= get_settings().worker_max_attempts:
+        raise AppError("retry_limit", "Task retry limit reached", 409)
+    return await _transition(session, task_id, {"failed", "timeout"}, "retrying")
+
+
+async def timeout_stale_tasks(session: AsyncSession) -> list[AgentTask]:
+    threshold = utc_now() - timedelta(seconds=get_settings().worker_timeout_seconds)
+    stale = (await session.scalars(select(AgentTask).where(AgentTask.status == "running",
+        AgentTask.started_at <= threshold,
+        or_(AgentTask.lease_owner.is_(None), AgentTask.lease_expires_at <= utc_now())))).all()
+    result = []
+    for task in stale:
+        try:
+            result.append(await _transition(session, task.id, {"running"}, "timeout"))
+        except AppError as exc:
+            if exc.code != "invalid_task_transition":
+                raise
+    return result
 
 
 async def pause_task(session: AsyncSession, task_id: str,
@@ -220,14 +305,25 @@ async def save_checkpoint(session: AsyncSession, run_id: str,
     return run
 
 
-async def invoke_task(session: AsyncSession, task_id: str, gateway: AgentGateway) -> AgentTask:
+async def invoke_task(session: AsyncSession, task_id: str, gateway: AgentGateway,
+                      *, lease_owner: str | None = None,
+                      lease_generation: int | None = None) -> AgentTask:
     task, _ = await _load(session, task_id)
-    if task.status == "succeeded" or task.status == "failed":
+    if task.status in {"succeeded", "failed", "cancelled", "timeout"}:
         return task  # repeated delivery cannot invoke again
-    if task.status == "queued":
+    if get_settings().environment == "production" and lease_owner is None:
+        raise AppError("worker_lease_required", "Production Agent execution requires a lease", 409)
+    if lease_owner is not None and (task.lease_owner != lease_owner
+                                    or task.lease_generation != lease_generation
+                                    or task.lease_expires_at is None
+                                    or task.lease_expires_at <= utc_now()):
+        raise AppError("worker_lease_lost", "Task lease is no longer held", 409)
+    if task.status in {"queued", "retrying"}:
         task = await start_task(session, task_id)
     elif task.status == "paused":
         task = await resume_task(session, task_id)
+    elif task.status == "running" and lease_owner is not None:
+        pass  # A claimed task can resume after start was committed.
     else:
         raise AppError("task_already_running", "Task is already running", 409)
     request = AgentInvocationRequest(
@@ -243,12 +339,27 @@ async def invoke_task(session: AsyncSession, task_id: str, gateway: AgentGateway
         if response.task_id != task.id:
             raise ValueError("Agent response task_id does not match invocation")
     except Exception as exc:
-        return await fail_task(session, task.id, f"agent_invocation_failed: {exc}")
+        await session.refresh(task)
+        if task.status in {"cancelled", "timeout"} or (lease_owner is not None and
+            (task.lease_owner != lease_owner or task.lease_generation != lease_generation
+             or task.lease_expires_at is None or task.lease_expires_at <= utc_now())):
+            return task
+        return await fail_task(session, task.id, f"agent_invocation_failed: {type(exc).__name__}")
+    await session.refresh(task)
+    if task.status in {"cancelled", "timeout"} or (lease_owner is not None and
+        (task.lease_owner != lease_owner or task.lease_generation != lease_generation
+         or task.lease_expires_at is None or task.lease_expires_at <= utc_now())):
+        return task
     if response.status == "succeeded":
         try:
             return await complete_task(session, task.id, response.output_payload, response.provider_metadata)
-        except (ValueError, ValidationError) as exc:
-            return await fail_task(session, task.id, f"invalid_agent_output: {exc}", response.provider_metadata)
+        except (ValueError, ValidationError):
+            # Pydantic errors may include the rejected model output (customer data).
+            return await fail_task(session, task.id, "invalid_agent_output", response.provider_metadata)
+        except AppError as exc:
+            await session.rollback()
+            return await fail_task(session, task.id, f"workflow_commit_failed: {exc.code}",
+                                   response.provider_metadata)
     if response.status == "paused":
         return await pause_task(session, task.id, response.provider_metadata)
     if response.status == "failed":

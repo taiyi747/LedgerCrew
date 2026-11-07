@@ -2,7 +2,7 @@
 
 ## 交付范围
 
-本模块实现 MVP 五个角色、真实 MiMo 调用、显式工作流、人工待办、报告草稿、检查点恢复与持久请求预算。Python **3.14** 为本次实际运行和验证版本。
+本模块实现 MVP 五个角色、MiMo 调用代码、显式工作流、人工待办、报告草稿、检查点恢复与持久请求预算。当前后端固定 Python **3.11**；第二轮全量隔离测试 232 passed，但没有真实 MiMo 凭证。后端单任务和完整 MAF 工作流均复用 MiMoRunner，并接入业务数据库、Worker 心跳/租约与人工审核 API；外部供应商调用仍待实际验证，详见 [真实环境联调边界](LIVE_INTEGRATION.md)。
 
 后端基础与 AI 共用 `ledgercrew-server` 项目和依赖锁文件；`.[test]` 或开发依赖均包含异步测试插件。Alembic 迁移路径相对配置文件定位，支持从仓库根目录和 `server/` 目录运行测试。
 
@@ -15,10 +15,10 @@
 在仓库根目录执行：
 
 ```powershell
-uv sync --project server --extra dev --frozen --python D:\python\python.exe
+uv sync --project server --extra dev --frozen --python 3.11
 ```
 
-也可创建 Python 3.14 虚拟环境，安装 `server[dev]`；可复现安装优先使用已提交的 `server/uv.lock`。
+也可创建 Python 3.11 虚拟环境，安装 `server[dev]`；可复现安装优先使用已提交的 `server/uv.lock`。
 
 本地配置文件为 `server/.env`，Git 已忽略。用 `server/.env.example` 作为模板，配置 `MIMO_API_KEY`。其余默认配置：
 
@@ -144,7 +144,7 @@ server/.venv/Scripts/python.exe -m app.agents.cli resume --request-id <交付待
 
 ```powershell
 uv run --project server --frozen --extra dev pytest server/tests -q
-uv run --project server --frozen --extra dev ruff check server/app/agents server/scripts server/tests/agents
+cd server && uv run --frozen --extra dev ruff check app scripts tests
 ```
 
 AI 测试位于 `server/tests/agents/`，pytest 运行完整后端与 AI 测试，Ruff 检查 AI 负责的模块、脚本和测试目录。AI 测试使用测试替身和 HTTP 模拟，不发送真实 API 请求，不要求密钥。`smoke` 和演示命令为显式真实调用。模型图片提取的字段不确定时必须保留人工确认；对账与报告不保证所有原始识别字段已被人类逐项核实。

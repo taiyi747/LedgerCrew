@@ -21,7 +21,7 @@ class AgentTaskCreate(BaseModel):
     def validate_payload(self) -> "AgentTaskCreate":
         input_model, _ = contract_for(self.agent_role, self.task_type, self.input_schema_version)
         payload = input_model.model_validate(self.input_payload)
-        if getattr(payload, "order_id") != self.order_id:
+        if payload.order_id != self.order_id:
             raise ValueError("Payload order_id must match task order_id")
         return self
 
@@ -76,4 +76,15 @@ class WorkflowEventRead(BaseModel):
     task_id: str | None
     event_type: str
     payload: dict[str, Any] | None
+    created_at: datetime
+
+
+class AgentTaskHistoryRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    task_id: str
+    from_status: str | None
+    to_status: str
+    reason: str | None
     created_at: datetime

@@ -1,13 +1,13 @@
 # SQLite 数据库迁移、备份与恢复
 
-状态：**MVP 迁移操作手册；v0.2 迁移尚不存在，不可据此上线 v0.2。** 当前 Alembic head 为 `0008_invoice_provenance`。执行生产数据库升级、降级或恢复前，须由负责人批准具体数据库、目标 revision 和维护窗口；本次 BE2-10 只在隔离的合成测试库执行。
+状态：**MVP 与生产基础设施迁移操作手册；不代表第二阶段申报功能上线。** 当前 Alembic head 为 `0016_workflow_provenance`。`0009`～`0014` 加认证、Sandbox、反馈、审核、任务恢复和模型预算；`0015` 加 Worker 租约，`0016` 加工作流来源字段。执行真实数据库升级、降级或恢复前，须由负责人批准具体数据库、目标 revision 和维护窗口。第二轮曾误触工作区默认 `server/ledgercrew.db`，详情见文末事件记录。
 
 ## 迁移前检查
 
 1. 固定 Python 3.11，安装 `server/uv.lock` 对应依赖；核对 `server/pyproject.toml` 和 Ruff 均为 py311。记录应用提交、`DATABASE_URL` 的绝对 SQLite 路径、`alembic current` 和 `alembic heads`；确认目标 revision 有对应已审查迁移。
 2. 检查磁盘空间可容纳原库、快照和升级期间 SQLite 临时文件；确定应用停写时段。WAL 模式下不能把正在写入的 `.db` 单文件复制当作唯一备份。
 3. 对真实环境先在**数据库副本**上运行 upgrade、`PRAGMA integrity_check`、`PRAGMA foreign_key_check`、业务读写回归及回退演练。若旧数据和新模型不能匹配，停止发布。
-4. 当前未实现 BE2-01～09，也没有 v0.2 migration；不得把 `0008` 称作 v0.2 head。
+4. 当前未实现完整 BE2-01～09 申报领域；不得把 `0016` 称为已上线申报版本。旧 Studio 没有所有者时不能猜测归属，须通过明确授权加入成员关系。
 
 ## 一致性备份
 
@@ -38,7 +38,9 @@ python scripts/sqlite_snapshot.py inspect "C:\path\to\ledgercrew.db"
 
 ## 回退与恢复
 
-**不要在真实已有业务数据的库上直接 `alembic downgrade`。** 当前各 revision 的 downgrade 可能删表或删列；`0008→0007` 删除 `invoice_records.source_task_id` 与 `material_review_task_id`，对已有来源数据不是无损操作。先在副本上确认可逆性；有数据转换或删列风险时，停止写入并恢复升级前快照。
+**不要在真实已有业务数据的库上直接 `alembic downgrade`。** `0014→0013` 会删除模型预算和遥测，`0013→0012` 若已有 cancelled/retrying/timeout 状态会与旧约束冲突；`0012`～`0009` 降级会删除审核、反馈、支付或账号数据；`0008→0007` 还会删除发票来源列。先在副本上确认；有数据转换或删列风险时停止写入并恢复升级前快照。
+
+`0016→0015` 会删除工作流来源和报告版本字段；`0015→0014` 会删除 Worker 实例/租约。即使表当前为空，也应先做经批准的快照和副本演练。
 
 ```powershell
 python scripts/sqlite_snapshot.py restore "C:\path\to\backups\ledgercrew-before-upgrade.db" "C:\path\to\recovery\ledgercrew-restored.db"
@@ -56,3 +58,7 @@ python scripts/sqlite_snapshot.py inspect "C:\path\to\recovery\ledgercrew-restor
 `server/tests/test_migration_safety.py` 在 Python 3.11 的独立合成库验证空库升级、ORM 结构一致性、`0007→0008→0007→0008` 的 MVP 数据保留，以及 WAL 备份/恢复、拒绝覆盖和 manifest 校验。它不证明不存在的 v0.2 migration 可回退；未来每个新增 revision 都需补同等级测试，且对真实数据的可逆性另行评估。
 
 补充的 [BE2-10-04 备份与恢复测试](BE2_10_04_BACKUP_RESTORE.md)在 `server/tests/test_backup_restore.py` 中实测未 checkpoint 的 WAL 数据、损坏/错误路径拒绝，以及**有值的** `0008` 发票来源字段在 downgrade 后丢失、通过升级前快照恢复。该结果证明此迁移在有来源数据时不能无损 downgrade，不能替代真实环境的备份、审批和副本演练。
+
+## 第二轮工作区默认库事件
+
+2026-11-07 的一次迁移验证命令路径转换报错，`DATABASE_URL` 未成功赋值；PowerShell 继续执行，Alembic 将工作区默认 `server/ledgercrew.db` 从 `0004_statement_imports` 升级到 `0016_workflow_provenance`。这是超出计划的写入，不应被描述为隔离库验证。发现后只读检查：所有业务表及 Worker 表行数均为 0，`PRAGMA integrity_check=ok`，`PRAGMA foreign_key_check` 无结果。没有对该库执行降级、覆盖或删除，也没有据此声称生产库已安全迁移。随后在明确指定的新 `.pytest_tmp/workflow-migration-*.db` 上重新完成从空库升级至 `0016` 和 `alembic check`。默认库需由负责人确认保留现状或经备份/演练后恢复目标版本；在此之前不要把它作为生产数据源。

@@ -19,6 +19,14 @@ jobs:
           python-version: "3.11"
       - run: uv sync --project server --frozen --extra dev
       - run: uv run --project server --frozen --extra dev python -m compileall -q server/app server/scripts server/tests contracts
-      - run: uv run --project server --frozen --extra dev ruff check server/app/agents server/scripts server/tests/agents
+      - run: uv run --frozen --extra dev ruff check app scripts tests
+        working-directory: server
       - run: uv run --project server --frozen --extra dev ruff check --config server/pyproject.toml contracts
       - run: uv run --project server --frozen --extra dev pytest server/tests -q
+      - name: Validate empty database migration and model drift
+        working-directory: server
+        env:
+          DATABASE_URL: sqlite+aiosqlite:///./ci-check.db
+        run: |
+          uv run --frozen --extra dev alembic upgrade head
+          uv run --frozen --extra dev alembic check

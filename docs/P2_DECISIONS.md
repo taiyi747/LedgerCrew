@@ -176,12 +176,26 @@
 | --- | --- |
 | decision_id | DEC-013 |
 | question | 生产身份服务、角色映射及租户授权何时确定？ |
-| current_status | pending |
+| current_status | confirmed |
 | proposed_options | 延续开发模拟头仅用于非生产；生产方案另行确定。 |
 | decision_owner | 业务负责人 + 后端 + 前端 |
 | business_impact | 决定真实客户是否可安全使用。 |
-| technical_impact | 认证依赖、鉴权测试、生产环境开关；MVP 当前生产 503 门禁保留。 |
-| confirmed_decision | — |
+| technical_impact | 本地用户表、密码哈希、服务端会话、Cookie/CSRF；沿用 MVP 的 customer/owner 角色，Studio 成员授权显式记录。 |
+| confirmed_decision | 用户明确选择用户名和密码作为最简单的生产登录方式；账号由运维脚本开通，生产不接受 X-User-Id。角色与 Studio 授权采用现有 owner/customer 边界和显式成员关系。 |
+| confirmation_date | 2026-11-07 |
+
+## DEC-015 收费与支付供应商
+
+| 字段 | 内容 |
+| --- | --- |
+| decision_id | DEC-015 |
+| question | 正式收费规则、币种、支付供应商与退款审批流程是什么？ |
+| current_status | pending |
+| proposed_options | 由业务负责人确定价格与供应商后，再接入真实扣款与结算对账。 |
+| decision_owner | 业务负责人 + 后端 |
+| business_impact | 决定应收金额、真实支付、退款与交付条件。 |
+| technical_impact | 当前只提供显式价格配置与 Sandbox 支付状态机，所有 Sandbox 订单仍为模拟。 |
+| confirmed_decision | —（用户仅确认先做 Sandbox，未确认正式价格/币种/供应商） |
 | confirmation_date | — |
 
 ## DEC-014 Agent 与后端运行边界

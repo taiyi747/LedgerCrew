@@ -1,15 +1,15 @@
 import asyncio
 import sqlite3
-from datetime import date, datetime, timedelta, timezone
+from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 from uuid import uuid4
 
-from alembic import command
 from alembic.config import Config
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import async_sessionmaker
 
+from alembic import command
 from app.core.config import get_settings
 from app.db.session import make_engine
 from app.main import app
@@ -40,7 +40,17 @@ def test_migration_creates_tables_and_constraints(tmp_path: Path, monkeypatch) -
     with sqlite3.connect(db_path) as connection:
         names = {row[0] for row in connection.execute("SELECT name FROM sqlite_master WHERE type='table'")}
         assert {"studios", "orders", "uploaded_files", "agent_runs", "agent_tasks", "workflow_events", "audit_logs", "alembic_version", "invoice_records", "reconciliation_batches", "reconciliation_matches", "exception_tickets", "exception_supplements", "exception_decisions", "report_versions", "report_review_actions"} <= names
-        assert connection.execute("SELECT version_num FROM alembic_version").fetchone()[0] == "0008_invoice_provenance"
+        assert connection.execute("SELECT version_num FROM alembic_version").fetchone()[0] == "0016_workflow_provenance"
+        assert {"users", "user_sessions", "tenant_memberships"} <= names
+        assert {"payment_intents", "payment_events", "payment_reconciliations"} <= names
+        assert {"customer_feedback", "feedback_actions"} <= names
+        assert "agent_result_reviews" in names
+        assert "agent_task_history" in names
+        assert "agent_model_artifacts" in names
+        assert "worker_instances" in names
+        assert "workflow_task_id" in {row[1] for row in connection.execute("PRAGMA table_info(report_versions)")}
+        assert {"lease_owner", "lease_expires_at", "lease_generation", "next_attempt_at"} <= {
+            row[1] for row in connection.execute("PRAGMA table_info(agent_tasks)")}
         task_columns = {row[1] for row in connection.execute("PRAGMA table_info(agent_tasks)")}
         assert {"idempotency_key", "correlation_id", "input_schema_version", "provider_metadata", "attempt_count"} <= task_columns
         run_columns = {row[1] for row in connection.execute("PRAGMA table_info(agent_runs)")}
@@ -65,7 +75,7 @@ def test_async_database_connection_and_utc_round_trip(tmp_path: Path, monkeypatc
                 await session.refresh(order)
                 assert order.status == "draft"
                 assert order.created_at.utcoffset() == timedelta(0)
-                assert order.created_at <= datetime.now(timezone.utc)
+                assert order.created_at <= datetime.now(UTC)
         finally:
             await engine.dispose()
 

@@ -1,6 +1,6 @@
 # LedgerCrew 后端（v0.1 阶段 7 交付检查）
 
-当前提供工作室、模拟订单、文件上传、安全 ZIP 解压、资金流水 CSV 导入、确定性票据对账、Agent 集成契约、异常处理、报告审批与交付。阶段 7 使用 Fake Agent 验证完整业务链。独立的真实 MiMo 工作流位于 `app/agents/`，但与后端 `AgentGateway` 的适配、可信任务调度及生产认证尚未完成。
+当前提供工作室、模拟订单、文件上传、安全 ZIP 解压、资金流水 CSV 导入、确定性票据对账、Agent 集成契约、异常处理、报告审批与交付，并新增本地生产账号、Sandbox 支付、客户反馈、Agent 结果审核和有上限的任务重试/超时恢复。后端任务通过既有 MiMoRunner 执行单任务或完整 MAF 工作流；Worker 有持久身份、心跳、租约和异常回收。真实外部 MiMo 服务尚无凭证验证，`/health/ready` 因此返回 503。
 
 ## 项目结构
 
@@ -39,11 +39,11 @@ alembic upgrade head
 uvicorn app.main:app --reload
 ```
 
-访问 `http://127.0.0.1:8000/health`，预期返回 `{"status":"ok"}`。OpenAPI 位于 `/openapi.json`，业务 API 挂载在 `/api/v1`。接口清单和身份规则见 [API 说明](docs/api.md)。
+访问 `http://127.0.0.1:8000/health/live`，进程存活时返回 `{"status":"ok"}`；`/health/ready` 会检查数据库迁移和任务队列，并如实报告 Worker 心跳/外部 AI 尚未联调（503）。OpenAPI 位于 `/openapi.json`，业务 API 挂载在 `/api/v1`，完整清单见 [API 说明](../docs/API.md)。
 
 ## 开发身份与 API
 
-开发和测试环境的受保护接口必须传 `X-User-Id`，它只是可替换的模拟身份。`DEV_OWNER_USER_IDS`（默认 `["owner"]`）指定平台老板，其他身份为客户。工作室 `owner_user_id` 是客户归属 ID，由创建身份确定；无权限对象返回 404。客户只能读取自己订单的已发布报告。**生产环境禁用模拟身份，受保护接口返回 503，接入真实认证前不可用于生产。**
+开发和测试环境可使用 `X-User-Id` 模拟身份，或开发令牌。`DEV_OWNER_USER_IDS`（默认 `["owner"]`）指定模拟老板。**生产环境仅接受本地用户名/密码签发的服务端 Cookie 会话，忽略 `X-User-Id` 和 Authorization；修改请求需 `X-CSRF-Token`。** 客户通过显式 Studio 成员关系访问数据，无权限对象返回 404。账号开通：先 `alembic upgrade head`，再在 `server/` 执行 `python scripts/create_user.py <username> [--role owner|customer] [--studio-id <现有Studio>]`；密码从终端安全提示输入，不能写进命令行或配置文件。
 
 | 方法 | 路径 | 说明 |
 | --- | --- | --- |
@@ -83,7 +83,7 @@ CSV 默认字段、列名映射、金额规则、导入步骤和模板见 [CSV �
 
 票据写入契约、确定性匹配与异常规则、收支汇总口径见 [对账说明](docs/RECONCILIATION.md)。后端与真实票据识别 Agent 尚未联调；可信编排器需先保存 `material_review` 的 `ACCEPTED` 结果，再创建 `invoice_extraction` 任务，最后调用 `persist_invoice_from_task`。发票记录保留审核任务与识别任务 ID。对账只匹配两个方向均唯一的候选；每次运行保留一个新批次，查询接口返回最新批次。
 
-五个 Agent 角色的 Pydantic 契约、`AgentGateway` 接入方法、任务状态、Fake 与 SSE 用法见 [Agent 接入说明](docs/agent-integration.md)。`app/integrations/agents/` 提供后端集成边界，真实工作流实现与依赖协议见 [AI 模块接入说明](../docs/AI_INTEGRATION.md)。`FakeAgentGateway` 必须显式传入预设结果，仅供开发和测试，生产环境调用会报错。任务创建和调用是可信后端服务接口，不对客户开放 HTTP 写入入口。
+五个 Agent 角色的 Pydantic 契约、`AgentGateway` 接入方法、任务状态、Fake 与 SSE 用法见 [Agent 接入说明](docs/agent-integration.md)。`MiMoAgentGateway` 和 `FullWorkflowGateway` 共用现有 MiMoRunner；预算、用量状态和非内容元数据持久化至 `agent_model_artifacts`。在 `server/` 下使用 `uv run --project . python -m scripts.run_agent_tasks --once` 执行一个队列任务；持续运行去掉 `--once`。SQLite 默认单 Worker 部署，多进程竞争仅在隔离测试验证。`FakeAgentGateway` 只供开发测试，生产调用会报错。完整工作流可通过认证 API 创建，见 [API](../docs/API.md)。
 
 客户补充、老板决定、报告版本、审批、HTML 与 CSV 导出口径见 [交付说明](docs/DELIVERY.md)。报告草稿由已校验的 `report_draft` 任务输出创建，财务数字仍取自确定性对账批次；客户只能在发布后查看。
 
@@ -92,6 +92,7 @@ CSV 默认字段、列名映射、金额规则、导入步骤和模板见 [CSV �
 | 设置 | 默认值 |
 | --- | ---: |
 | `MAX_UPLOAD_FILES` | 每次普通上传 20 个 |
+| `MAX_UPLOAD_REQUEST_BYTES` | 每次普通上传累计 50 MiB |
 | `MAX_IMAGE_BYTES` | 5 MiB |
 | `MAX_CSV_BYTES` | 2 MiB |
 | `MAX_ARCHIVE_BYTES` | 25 MiB |
@@ -99,9 +100,15 @@ CSV 默认字段、列名映射、金额规则、导入步骤和模板见 [CSV �
 | `MAX_ARCHIVE_ENTRY_BYTES` | 5 MiB |
 | `MAX_ARCHIVE_TOTAL_BYTES` | 50 MiB |
 | `MAX_ARCHIVE_RATIO` | 100:1 |
+| `MAX_ORDER_ARCHIVE_BYTES` | 每订单 ZIP 原包累计 100 MiB |
+| `MAX_ORDER_EXTRACTED_BYTES` | 每订单 ZIP 解压文件累计 200 MiB |
 | `CSV_MAX_ROWS` | 200 行 |
 | `SSE_POLL_SECONDS` | 1 秒 |
 | `SSE_HEARTBEAT_SECONDS` | 15 秒 |
+| `API_RATE_LIMIT_REQUESTS` / `API_RATE_LIMIT_WINDOW_SECONDS` | 单进程同一客户端地址 1000 次 / 60 秒 |
+| `SSE_MAX_CONNECTIONS` | 单进程同时 20 条 SSE |
+
+认证和 Sandbox 支付配置：`AUTH_SESSION_TTL_SECONDS`、`AUTH_MAX_FAILED_ATTEMPTS`、`AUTH_LOCK_SECONDS`、`SERVICE_PRICES_CENTS`（JSON 字典，无默认价格）、`SERVICE_CURRENCY`（无默认币种）、`PAYMENT_SANDBOX_WEBHOOK_SECRET`（至少 32 字符）。Worker 配置：`WORKER_MAX_ATTEMPTS`、`WORKER_TIMEOUT_SECONDS`、`WORKER_LEASE_SECONDS`、`WORKER_HEARTBEAT_SECONDS`。缺少价格/币种时支付意图拒绝创建；缺少回调密钥时回调返回 503。所有订单仍标记 `is_simulated=true`。
 
 ## 测试
 
@@ -122,8 +129,8 @@ pytest
 
 ## 尚未完成与待确认
 
-- 独立 MiMo Agent 工作流已存在，但与后端 `AgentGateway` 的适配、真实模型联调和自动任务调度尚未完成；Fake 只用于本地和测试。
+- 完整 MAF 工作流、Worker 心跳/租约已由隔离数据库测试覆盖；真实 MiMo 模型联调、跨存储恢复和多进程压力验收尚未完成。Fake 只用于本地和测试。
 - 第二阶段后端 Python 已锁定为 3.11；新业务仅按仓库根目录 `AGENTS.md` 和 `docs/P2_DECISIONS.md` 中 confirmed 的决策实施。MVP 模拟身份规则继续有效，不能自动作为 P2 审批或发布规则。
-- 生产认证尚未接入，生产环境受保护 API 当前返回 503。PDF、支付、外部通知与电子签署未实现。
+- 生产本地认证代码已接入但尚未完成真实部署验证；支付仅为 Sandbox，不会真实扣款或退款。PDF、外部通知与电子签署未实现；真实 Agent Gateway 和常驻 Worker 仍需生产环境联调。
 - 同一账期是否允许多个订单、订单价格策略、跨批次异常处理结果沿用、客户可见的事件文案与保留周期需确认。
 - 第一阶段旧工作室没有所有者，迁移不猜测归属；需要后续管理流程明确归属后客户才能访问。

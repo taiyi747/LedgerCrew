@@ -19,7 +19,15 @@ from pydantic import BaseModel, ValidationError
 
 from .config import Settings
 from .contracts import AgentDependencies, RunIdentity
-from .errors import AgentError, ModelOutputError, RequestBudgetExceeded
+from .errors import (
+    AgentError,
+    ModelNetworkError,
+    ModelOutputError,
+    ModelRateLimitError,
+    ModelServiceUnavailable,
+    ModelTimeoutError,
+    RequestBudgetExceeded,
+)
 
 T = TypeVar("T", bound=BaseModel)
 
@@ -50,8 +58,11 @@ class RequestBudget:
         self.limit = limit
         self._lock = asyncio.Lock()
 
-    async def reserve(self) -> None:
+    async def reserve(self) -> str | None:
         async with self._lock:
+            atomic_reserve = getattr(self.deps, "reserve_request", None)
+            if atomic_reserve is not None:
+                return await atomic_reserve(self.limit)
             previous = await self.deps.load_artifact(self.identity, "usage") or {}
             count = int(previous.get("requests", 0))
             if count >= self.limit:
@@ -62,6 +73,14 @@ class RequestBudget:
                 {"requests": count + 1, "limit": self.limit},
                 f"usage:{count + 1}",
             )
+            return None
+
+    async def settle(self, reservation_id: str | None, status: str,
+                     http_status: int | None = None, usage: dict[str, int] | None = None) -> None:
+        if reservation_id is not None:
+            settlement = getattr(self.deps, "settle_request", None)
+            if settlement is not None:
+                await settlement(self.identity, reservation_id, status, http_status, usage)
 
 
 class ModelRunner(Protocol):
@@ -81,6 +100,8 @@ _active_budget: contextvars.ContextVar[RequestBudget | None] = contextvars.Conte
     "ledgercrew_model_budget",
     default=None,
 )
+_active_reservations: contextvars.ContextVar[set[str] | None] = contextvars.ContextVar(
+    "ledgercrew_model_reservations", default=None)
 
 
 def _find_cause(error: BaseException, cls: type[BaseException]) -> BaseException | None:
@@ -116,7 +137,12 @@ class MiMoRunner:
             current = _active_budget.get()
             if current is None:
                 raise AgentError("模型请求缺少运行预算上下文。")
-            await current.reserve()
+            reservation_id = await current.reserve()
+            if reservation_id is not None:
+                request.extensions["ledgercrew_reservation"] = reservation_id
+                pending = _active_reservations.get()
+                if pending is not None:
+                    pending.add(reservation_id)
             payload = json.loads(request.content)
             await current.deps.save_artifact(
                 current.identity,
@@ -130,6 +156,25 @@ class MiMoRunner:
                 "wire:" + uuid.uuid4().hex,
             )
 
+        async def after_response(response: httpx.Response) -> None:
+            reservation_id = response.request.extensions.get("ledgercrew_reservation")
+            current = _active_budget.get()
+            if reservation_id is None or current is None:
+                return
+            await response.aread()
+            try:
+                raw_usage = response.json().get("usage")
+            except (ValueError, AttributeError):
+                raw_usage = None
+            usage = ({key: value for key, value in raw_usage.items()
+                      if key in {"prompt_tokens", "completion_tokens", "total_tokens"}
+                      and type(value) is int and value >= 0}
+                     if isinstance(raw_usage, dict) else None)
+            await current.settle(reservation_id, "http_response", response.status_code, usage or None)
+            pending = _active_reservations.get()
+            if pending is not None:
+                pending.discard(reservation_id)
+
         key = self.settings.api_key.get_secret_value()
         model = (
             self.settings.model_flash if role in {"invoice", "customer_service"} else self.settings.model_pro
@@ -137,7 +182,7 @@ class MiMoRunner:
         async with (
             httpx.AsyncClient(
                 timeout=self.settings.timeout_seconds,
-                event_hooks={"request": [before_request]},
+                event_hooks={"request": [before_request], "response": [after_response]},
                 transport=self.transport,
             ) as http_client,
             AsyncOpenAI(
@@ -197,6 +242,8 @@ class MiMoRunner:
             if self.schema_supported and not force_tools:
                 options["response_format"] = schema
             token = _active_budget.set(budget)
+            pending: set[str] = set()
+            pending_token = _active_reservations.set(pending)
             try:
                 response = await agent.run([Message("user", contents=contents)], options=options)
                 text = response.text.strip()
@@ -210,13 +257,16 @@ class MiMoRunner:
                     {
                         "agent": role,
                         "model": model,
-                        "usage": dict(usage) if usage else {},
+                        "usage": dict(usage) if usage else None,
+                        "usage_status": "known" if usage else "unknown",
                         "elapsed_ms": round((time.monotonic() - started) * 1000),
                     },
                     f"model-usage:{role}:{uuid.uuid4().hex}",
                 )
                 return output
             except (ValidationError, ValueError) as error:
+                for reservation_id in pending:
+                    await budget.settle(reservation_id, "request_failed")
                 output_errors += 1
                 if output_errors > self.settings.output_retries:
                     raise ModelOutputError(f"{role} 的结构化输出连续校验失败，请人工处理。") from None
@@ -228,6 +278,8 @@ class MiMoRunner:
                 )
                 correction = "\n上次输出未通过校验，请重新生成：" + json.dumps(locations)
             except Exception as error:
+                for reservation_id in pending:
+                    await budget.settle(reservation_id, "request_failed")
                 budget_error = _find_cause(error, RequestBudgetExceeded)
                 if budget_error:
                     raise budget_error from None
@@ -253,6 +305,13 @@ class MiMoRunner:
                 if isinstance(error, AgentError):
                     raise
                 detail = f"HTTP {status}" if status else type(error).__name__
-                raise AgentError(f"{role} 模型调用失败（{detail}），运行未完成。") from None
+                failure = (
+                    ModelRateLimitError if status == 429 else
+                    ModelServiceUnavailable if status in {500, 502, 503, 504} else
+                    ModelTimeoutError if status == 408 or _find_cause(error, APITimeoutError) else
+                    ModelNetworkError if _find_cause(error, APIConnectionError) else AgentError
+                )
+                raise failure(f"{role} 模型调用失败（{detail}），运行未完成。") from None
             finally:
+                _active_reservations.reset(pending_token)
                 _active_budget.reset(token)

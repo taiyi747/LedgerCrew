@@ -1,7 +1,6 @@
 """MVP migration and SQLite backup checks on isolated synthetic databases.
 
-There are no v0.2 migrations yet. These checks establish the baseline that a
-future BE2 migration must preserve; they do not certify v0.2 rollback.
+The local identity migration must preserve all existing MVP business rows.
 """
 
 import json
@@ -19,7 +18,7 @@ from app.core.config import get_settings
 from app.db.base import Base
 from scripts.sqlite_snapshot import backup_database, restore_database
 
-MVP_HEAD = "0008_invoice_provenance"
+MVP_HEAD = "0016_workflow_provenance"
 PREVIOUS_REVISION = "0007_delivery"
 WHEN = "2026-11-07T00:00:00+00:00"
 
@@ -96,7 +95,7 @@ def test_empty_upgrade_matches_mvp_metadata(tmp_path, monkeypatch) -> None:
     scripts = ScriptDirectory.from_config(config)
     assert scripts.get_heads() == [MVP_HEAD]
     revisions = list(scripts.walk_revisions(base="base", head="heads"))
-    assert len(revisions) == 8
+    assert len(revisions) == 16
     assert revisions[-1].revision == "0001_initial"
 
     command.upgrade(config, "head")

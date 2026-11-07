@@ -1,13 +1,12 @@
 from datetime import date, datetime
 from typing import Any
 
-from sqlalchemy import CheckConstraint, ForeignKey, Index, Integer, JSON, String, UniqueConstraint
+from sqlalchemy import JSON, CheckConstraint, ForeignKey, Index, Integer, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base
 from app.db.types import UTCDateTime, utc_now
 from app.models.records import new_id
-
 
 EXCEPTION_TYPES = (
     "AMOUNT_MISMATCH", "MISSING_INVOICE", "MISSING_TRANSACTION", "DUPLICATE_INVOICE",
@@ -26,6 +25,7 @@ class InvoiceRecord(Base):
         Index("ix_invoice_records_order_date", "order_id", "issue_date"),
         Index("ix_invoice_records_order_number", "order_id", "invoice_number"),
         Index("ix_invoice_records_source_task", "source_task_id", unique=True),
+        UniqueConstraint("workflow_task_id", "source_file_id", name="uq_invoice_workflow_file"),
     )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
@@ -33,6 +33,7 @@ class InvoiceRecord(Base):
     source_file_id: Mapped[str] = mapped_column(ForeignKey("uploaded_files.id"), nullable=False)
     source_task_id: Mapped[str | None] = mapped_column(ForeignKey("agent_tasks.id"), nullable=True)
     material_review_task_id: Mapped[str | None] = mapped_column(ForeignKey("agent_tasks.id"), nullable=True)
+    workflow_task_id: Mapped[str | None] = mapped_column(ForeignKey("agent_tasks.id", name="fk_invoice_records_workflow_task"), nullable=True)
     invoice_number: Mapped[str | None] = mapped_column(String(100), nullable=True)
     issue_date: Mapped[date | None] = mapped_column(nullable=True)
     seller: Mapped[str | None] = mapped_column(String(300), nullable=True)
@@ -51,10 +52,12 @@ class ReconciliationBatch(Base):
         UniqueConstraint("order_id", "batch_number", name="uq_reconciliation_batch_number"),
         CheckConstraint("batch_number > 0", name="ck_reconciliation_batch_number"),
         Index("ix_reconciliation_batches_order_created", "order_id", "created_at"),
+        UniqueConstraint("workflow_task_id", name="uq_reconciliation_workflow_task"),
     )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
     order_id: Mapped[str] = mapped_column(ForeignKey("orders.id"), nullable=False)
+    workflow_task_id: Mapped[str | None] = mapped_column(ForeignKey("agent_tasks.id", name="fk_reconciliation_workflow_task"), nullable=True)
     batch_number: Mapped[int] = mapped_column(Integer, nullable=False)
     income_total_cents: Mapped[int] = mapped_column(Integer, nullable=False)
     expense_total_cents: Mapped[int] = mapped_column(Integer, nullable=False)

@@ -9,7 +9,7 @@ DEC-013（生产认证与角色）当前为 pending：本模块只定义与具�
 from datetime import datetime
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, SecretStr, field_validator
+from pydantic import BaseModel, ConfigDict, Field, SecretStr, field_validator, model_validator
 
 # 保守的邮箱格式校验（不引入新依赖）；生产身份服务确认后可替换为其正式规则。
 EMAIL_PATTERN = r"^[A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]+@[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?(?:\.[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?)+$"
@@ -23,8 +23,19 @@ class LoginRequest(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    email: Annotated[str, Field(pattern=EMAIL_PATTERN, max_length=_MAX_EMAIL_LENGTH)]
+    email: Annotated[str, Field(pattern=EMAIL_PATTERN, max_length=_MAX_EMAIL_LENGTH)] | None = None
+    username: str | None = Field(default=None, min_length=1, max_length=100, pattern=r"^[A-Za-z0-9_.@-]+$")
     password: SecretStr
+
+    @model_validator(mode="after")
+    def one_login_name(self):
+        if (self.email is None) == (self.username is None):
+            raise ValueError("Provide exactly one username or email")
+        return self
+
+    @property
+    def login_name(self) -> str:
+        return self.username if self.username is not None else self.email  # type: ignore[return-value]
 
     @field_validator("password")
     @classmethod
@@ -41,7 +52,8 @@ class AuthUser(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     user_id: str = Field(min_length=1, max_length=100)
-    email: str = Field(min_length=1, max_length=_MAX_EMAIL_LENGTH)
+    email: str | None = Field(default=None, min_length=1, max_length=_MAX_EMAIL_LENGTH)
+    username: str | None = Field(default=None, min_length=1, max_length=100)
 
 
 class AuthCredential(BaseModel):
@@ -62,7 +74,7 @@ class LoginResponse(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     user: AuthUser
-    credential: AuthCredential
+    credential: AuthCredential | None = None
 
 
 class LogoutResponse(BaseModel):

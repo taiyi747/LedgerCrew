@@ -5,14 +5,23 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import AppError
 from app.core.security import Principal
-from app.models import AgentTask, AuditLog, ExceptionTicket, InvoiceRecord, ReconciliationBatch, ReconciliationMatch, Studio, WorkflowEvent
 from app.integrations.agents.contracts import InvoiceExtractionOutput
+from app.models import (
+    AgentTask,
+    AuditLog,
+    ExceptionTicket,
+    InvoiceRecord,
+    ReconciliationBatch,
+    ReconciliationMatch,
+    Studio,
+    WorkflowEvent,
+)
 from app.repositories import reconciliation as repo
 from app.schemas.reconciliation import InvoiceRecordCreate
 from app.services import order_state
 from app.services.access import order_for_user
 from app.services.material_review import accepted_invoice_review
-from app.services.reconciliation_engine import InvoiceInput, MATCH_RULE, TransactionInput, reconcile
+from app.services.reconciliation_engine import MATCH_RULE, InvoiceInput, TransactionInput, reconcile
 from app.utils.money import parse_cents
 
 
@@ -59,11 +68,21 @@ async def persist_invoice_from_task(session: AsyncSession, task_id: str) -> Invo
     return await persist_invoice(session, task.order_id, data, source_task_id=task.id)
 
 
-async def run(session: AsyncSession, order_id: str, principal: Principal) -> ReconciliationBatch:
+async def run(session: AsyncSession, order_id: str, principal: Principal,
+              *, workflow_task_id: str | None = None) -> ReconciliationBatch:
+    if workflow_task_id is not None:
+        existing = await session.scalar(select(ReconciliationBatch).where(
+            ReconciliationBatch.workflow_task_id == workflow_task_id))
+        if existing is not None:
+            if existing.order_id != order_id:
+                raise AppError("invalid_workflow_source", "Workflow batch belongs to another order", 409)
+            return existing
     order = await order_for_user(session, order_id, principal)
     await order_state.begin_processing(session, order_id)
     studio = await session.get(Studio, order.studio_id)
     invoices = await repo.list_invoices(session, order_id)
+    if workflow_task_id is not None:
+        invoices = [item for item in invoices if item.workflow_task_id == workflow_task_id]
     transactions = await repo.list_transactions(session, order_id)
     hashes = await repo.invoice_file_hashes(session, order_id)
     result = reconcile(
@@ -75,7 +94,8 @@ async def run(session: AsyncSession, order_id: str, principal: Principal) -> Rec
                           item.direction, item.amount_cents, item.description) for item in transactions],
     )
     batch = ReconciliationBatch(
-        order_id=order_id, batch_number=await repo.next_batch_number(session, order_id),
+        order_id=order_id, workflow_task_id=workflow_task_id,
+        batch_number=await repo.next_batch_number(session, order_id),
         income_total_cents=result.income_total_cents, expense_total_cents=result.expense_total_cents,
         net_cash_change_cents=result.net_cash_change_cents, matched_count=result.matched_count,
         unmatched_count=result.unmatched_count, exception_count=result.exception_count,

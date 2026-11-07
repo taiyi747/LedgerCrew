@@ -4,7 +4,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import AppError
-from app.models import AuditLog, Order, UploadedFile, WorkflowEvent
+from app.models import AuditLog, Order, PaymentIntent, ReportVersion, UploadedFile, WorkflowEvent
 
 ALLOWED: dict[str, set[str]] = {
     "draft": {"awaiting_materials"},
@@ -62,3 +62,20 @@ async def request_customer(session: AsyncSession, order_id: str) -> Order:
     if order.status in {"awaiting_materials", "ready_to_process", "processing"}:
         await move(session, order_id, "awaiting_customer", "supplement_requested")
     return order
+
+
+async def deliver_published_report(session: AsyncSession, report_id: str, actor_id: str) -> Order:
+    """Deliver only a published version whose configured charge has succeeded."""
+    report = await session.get(ReportVersion, report_id)
+    if report is None or report.status != "published" or report.published_at is None:
+        raise AppError("delivery_not_ready", "A published report is required", 409)
+    order = await session.get(Order, report.order_id)
+    if order is None:
+        raise AppError("not_found", "Order not found", 404)
+    if order.price_cents is not None and order.currency is not None:
+        paid = await session.scalar(select(PaymentIntent.id).where(
+            PaymentIntent.order_id == order.id, PaymentIntent.status == "succeeded",
+            PaymentIntent.amount_cents == order.price_cents, PaymentIntent.currency == order.currency))
+        if paid is None:
+            raise AppError("payment_required", "Order payment has not succeeded", 409)
+    return await move(session, order.id, "delivered", "published_report_delivered", "owner", actor_id)

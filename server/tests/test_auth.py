@@ -6,6 +6,7 @@ MVP 权限回归。测试使用 FakeIdentityProvider 测试替身，不依赖任
 """
 
 import asyncio
+import hashlib
 import json
 import logging
 from datetime import UTC, datetime, timedelta
@@ -28,6 +29,8 @@ from app.core.security import (
 )
 from app.db.session import get_session, make_engine
 from app.main import app
+from app.models import UserSession
+from app.services.local_auth import SCHEME, LocalIdentityProvider, create_user
 
 LOGIN = "/api/v1/auth/login"
 LOGOUT = "/api/v1/auth/logout"
@@ -68,7 +71,8 @@ class FakeIdentityProvider:
         return self.sessions.pop(credential, None) is not None
 
 
-def serve(tmp_path: Path, monkeypatch, scenario, *, environment: str = "test", provider=None, env=None, db: bool = False) -> None:
+def serve(tmp_path: Path, monkeypatch, scenario, *, environment: str = "test", provider=None, env=None,
+          db: bool = False, seed_users=None) -> None:
     monkeypatch.setenv("ENVIRONMENT", environment)
     for key, value in (env or {}).items():
         monkeypatch.setenv(key, value)
@@ -94,7 +98,11 @@ def serve(tmp_path: Path, monkeypatch, scenario, *, environment: str = "test", p
                         yield session
 
                 app.dependency_overrides[get_session] = session_override
-            async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+                for username, password, role in seed_users or []:
+                    async with sessions() as session:
+                        await create_user(session, username, password, role)
+            async with AsyncClient(transport=ASGITransport(app=app),
+                                   base_url="https://test" if environment == "production" else "http://test") as client:
                 await scenario(client)
         finally:
             if engine is not None:
@@ -355,20 +363,104 @@ def test_dev_provider_refuses_production_settings() -> None:
 # 11. 生产环境 503 安全门禁
 
 
-def test_production_gate_keeps_auth_unavailable(tmp_path, monkeypatch) -> None:
+def test_production_rejects_dev_credentials_and_spoofed_identity(tmp_path, monkeypatch) -> None:
     async def scenario(client: AsyncClient) -> None:
         login = await client.post(LOGIN, json={"email": DEMO_EMAIL, "password": DEMO_PASSWORD})
         me = await client.get(ME, headers=DEMO_HEADERS)
         logout = await client.post(LOGOUT, headers=DEMO_HEADERS)
         studios = await client.get("/api/v1/studios", headers={"X-User-Id": "alice"})
         for response in (login, me, logout, studios):
-            assert response.status_code == 503
-            assert response.json() == {
-                "error": {"code": "authentication_unavailable", "message": "Production authentication is not configured"}
-            }
+            assert response.status_code == 401
+            assert response.json()["error"]["code"] == "unauthorized"
             assert DEMO_PASSWORD not in response.text
 
     serve(tmp_path, monkeypatch, scenario, environment="production", db=True)
+
+
+def test_production_cookie_csrf_roles_and_tenant_isolation(tmp_path, monkeypatch) -> None:
+    async def scenario(client: AsyncClient) -> None:
+        alice = await client.post(LOGIN, json={"username": "alice", "password": "alice-long-password"})
+        assert alice.status_code == 200
+        assert alice.json()["user"]["username"] == "alice"
+        assert "credential" not in alice.json()
+        assert "HttpOnly" in alice.headers["set-cookie"]
+        assert "Secure" in alice.headers["set-cookie"]
+        assert (await client.get(ME)).status_code == 200
+        csrf = client.cookies["lc_csrf"]
+        body = {"name": "Alice Studio", "business_type": "studio"}
+        assert (await client.post("/api/v1/studios", json=body)).status_code == 403
+        created = await client.post("/api/v1/studios", json=body, headers={"X-CSRF-Token": csrf})
+        assert created.status_code == 201
+        studio_id = created.json()["id"]
+        assert (await client.get(f"/api/v1/studios/{studio_id}", headers={"X-User-Id": "owner"})).status_code == 200
+
+        bob = await client.post(LOGIN, json={"username": "bob", "password": "bob-long-password"})
+        assert bob.status_code == 200
+        assert (await client.get(f"/api/v1/studios/{studio_id}", headers={"X-User-Id": "alice"})).status_code == 404
+        assert (await client.get("/api/v1/studios")).json() == []
+        assert (await client.post("/api/v1/reports/unknown/publish",
+                                  headers={"X-CSRF-Token": client.cookies["lc_csrf"]})).status_code == 403
+
+        owner = await client.post(LOGIN, json={"username": "admin", "password": "admin-long-password"})
+        assert owner.status_code == 200
+        assert (await client.get(f"/api/v1/studios/{studio_id}")).status_code == 200
+        assert (await client.post(LOGOUT)).status_code == 403
+        assert (await client.post(LOGOUT, headers={"X-CSRF-Token": client.cookies["lc_csrf"]})).status_code == 200
+        assert (await client.get(ME)).status_code == 401
+
+    serve(tmp_path, monkeypatch, scenario, environment="production", db=True,
+          seed_users=[("alice", "alice-long-password", "customer"),
+                      ("bob", "bob-long-password", "customer"),
+                      ("admin", "admin-long-password", "owner")])
+
+
+def test_production_login_failure_limit(tmp_path, monkeypatch) -> None:
+    async def scenario(client: AsyncClient) -> None:
+        for _ in range(5):
+            bad = await client.post(LOGIN, json={"username": "alice", "password": "wrong-password"})
+            assert bad.status_code == 401
+        locked = await client.post(LOGIN, json={"username": "alice", "password": "alice-long-password"})
+        assert locked.status_code == 401
+        assert locked.json() == bad.json()
+
+    serve(tmp_path, monkeypatch, scenario, environment="production", db=True,
+          seed_users=[("alice", "alice-long-password", "customer")])
+
+
+def test_local_session_expiry_and_revocation(tmp_path, monkeypatch) -> None:
+    db_path = tmp_path / "expired-session.db"
+    monkeypatch.setenv("DATABASE_URL", f"sqlite+aiosqlite:///{db_path.as_posix()}")
+    get_settings.cache_clear()
+    config = Config(str(Path(__file__).parents[1] / "alembic.ini"))
+    command.upgrade(config, "head")
+    settings = Settings(environment="production", database_url=f"sqlite+aiosqlite:///{db_path.as_posix()}")
+    engine = make_engine(settings.database_url)
+    sessions = async_sessionmaker(engine, expire_on_commit=False)
+
+    async def check() -> None:
+        try:
+            async with sessions() as db:
+                await create_user(db, "alice", "alice-long-password")
+            provider = LocalIdentityProvider(sessions, settings)
+            first = await provider.login("alice", SecretStr("alice-long-password"))
+            assert first is not None
+            assert await provider.resolve(SCHEME, first.credential) is not None
+            assert await provider.validate_csrf(first.credential, first.csrf_token or "")
+            assert await provider.logout(SCHEME, first.credential)
+            assert await provider.resolve(SCHEME, first.credential) is None
+            second = await provider.login("alice", SecretStr("alice-long-password"))
+            assert second is not None
+            async with sessions() as db:
+                row = await db.get(UserSession, hashlib.sha256(second.credential.encode()).hexdigest())
+                assert row is not None
+                row.expires_at = datetime.now(UTC) - timedelta(seconds=1)
+                await db.commit()
+            assert await provider.resolve(SCHEME, second.credential) is None
+            assert not await provider.validate_csrf(second.credential, second.csrf_token or "")
+        finally:
+            await engine.dispose()
+
+    asyncio.run(check())
 
 
 # 12. 原有 MVP 权限回归（含凭据身份下的租户隔离）

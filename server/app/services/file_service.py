@@ -9,6 +9,7 @@ from uuid import uuid4
 
 from fastapi import UploadFile
 from PIL import Image, UnidentifiedImageError
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import Settings
@@ -16,8 +17,8 @@ from app.core.exceptions import AppError
 from app.core.security import Principal
 from app.models import AuditLog, UploadedFile
 from app.repositories import records
-from app.services.access import file_for_user, order_for_user
 from app.services import order_state
+from app.services.access import file_for_user, order_for_user
 from app.storage.base import Storage
 
 CATEGORIES = {"invoice_image", "bank_statement_csv", "supporting_material"}
@@ -101,9 +102,13 @@ async def upload_files(
     if len(uploads) > settings.max_upload_files:
         raise AppError("upload_file_limit", "Too many files in one upload", 413)
     prepared = []
+    request_size = 0
     for upload in uploads:
         filename = PureWindowsPath(upload.filename or "unnamed").name
         content = await read_upload(upload, limit_for(category, settings))
+        request_size += len(content)
+        if request_size > settings.max_upload_request_bytes:
+            raise AppError("upload_request_too_large", "Upload request exceeds total size limit", 413)
         mime, status = classify(filename, category, content)
         prepared.append((filename, content, mime, status))
     result = []
@@ -140,9 +145,7 @@ def _safe_entry(info: zipfile.ZipInfo) -> bool:
         return False
     if len(parts) > 2:
         return False
-    if stat.S_ISLNK(info.external_attr >> 16):
-        return False
-    return True
+    return not stat.S_ISLNK(info.external_attr >> 16)
 
 
 def inspect_archive(content: bytes, settings: Settings) -> list[tuple[zipfile.ZipInfo, bytes]]:
@@ -190,6 +193,10 @@ async def upload_archive(
     await order_for_user(session, order_id, principal)
     check_category(category)
     content = await read_upload(upload, settings.max_archive_bytes)
+    previous_archive_bytes = await session.scalar(select(func.coalesce(func.sum(UploadedFile.file_size), 0)).where(
+        UploadedFile.order_id == order_id, UploadedFile.file_category == "archive"))
+    if previous_archive_bytes + len(content) > settings.max_order_archive_bytes:
+        raise AppError("order_archive_quota", "Order archive quota exceeded", 413)
     name = PureWindowsPath(upload.filename or "archive.zip").name
     if PurePosixPath(name.lower()).suffix != ".zip":
         raise AppError("unsupported_archive", "A ZIP file is required", 415)
@@ -197,6 +204,10 @@ async def upload_archive(
     await session.commit()
     try:
         extracted = inspect_archive(content, settings)
+        previous_extracted_bytes = await session.scalar(select(func.coalesce(func.sum(UploadedFile.file_size), 0)).where(
+            UploadedFile.order_id == order_id, UploadedFile.upload_source == "archive"))
+        if previous_extracted_bytes + sum(len(data) for _, data in extracted) > settings.max_order_extracted_bytes:
+            raise AppError("order_extracted_quota", "Order extracted file quota exceeded", 413)
         if any(len(data) > limit_for(category, settings) for _, data in extracted):
             raise AppError("archive_entry_too_large", "Archive entry exceeds category size limit", 413)
         entries = []

@@ -1,15 +1,22 @@
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import AppError
 from app.core.security import Principal
-from app.models import Order, Studio, UploadedFile
+from app.models import Order, Studio, TenantMembership, UploadedFile
 from app.repositories import records
 
 
 async def studio_for_user(session: AsyncSession, studio_id: str, principal: Principal) -> Studio:
     studio = await records.get_studio(session, studio_id)
-    if studio is None or (principal.role != "owner" and studio.owner_user_id != principal.user_id):
+    if studio is None:
         raise AppError("not_found", "Studio not found", 404)
+    if principal.role != "owner" and studio.owner_user_id != principal.user_id:
+        membership = (await session.scalar(select(TenantMembership.id).where(
+            TenantMembership.studio_id == studio_id, TenantMembership.user_id == principal.user_id))
+            if principal.local else None)
+        if membership is None:
+            raise AppError("not_found", "Studio not found", 404)
     return studio
 
 

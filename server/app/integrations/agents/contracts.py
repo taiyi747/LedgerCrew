@@ -7,9 +7,9 @@ from pydantic import BaseModel, ConfigDict, Field, JsonValue, StrictInt, model_v
 
 AgentRole = Literal[
     "customer_reception", "material_review", "invoice_processing",
-    "data_reconciliation", "risk_delivery",
+    "data_reconciliation", "risk_delivery", "supervisor",
 ]
-AgentStatus = Literal["queued", "running", "paused", "succeeded", "failed"]
+AgentStatus = Literal["queued", "running", "paused", "succeeded", "failed", "cancelled", "retrying", "timeout"]
 ReviewStatus = Literal["ACCEPTED", "REJECTED", "NEEDS_REUPLOAD", "NEEDS_REVIEW"]
 
 
@@ -148,6 +148,19 @@ class ReportDraftOutput(StrictContract):
     unresolved_items: list[str] = Field(default_factory=list)
 
 
+class FullWorkflowInput(StrictContract):
+    order_id: str
+    input_fingerprint: str = Field(pattern=r"^[0-9a-f]{64}$")
+    revision: int = Field(ge=1)
+
+
+class FullWorkflowOutput(StrictContract):
+    order_id: str
+    report_id: str
+    report_version: int = Field(ge=1)
+    approval_request_id: str
+
+
 TASK_CONTRACTS: dict[str, tuple[AgentRole, type[StrictContract], type[StrictContract]]] = {
     "customer_reception": ("customer_reception", CustomerReceptionInput, CustomerReceptionOutput),
     "material_review": ("material_review", MaterialReviewInput, MaterialReviewOutput),
@@ -155,6 +168,7 @@ TASK_CONTRACTS: dict[str, tuple[AgentRole, type[StrictContract], type[StrictCont
     "reconciliation_summary": ("data_reconciliation", ReconciliationAgentInput, ReconciliationAgentOutput),
     "risk_analysis": ("risk_delivery", RiskAnalysisInput, RiskAnalysisOutput),
     "report_draft": ("risk_delivery", ReportDraftInput, ReportDraftOutput),
+    "full_workflow": ("supervisor", FullWorkflowInput, FullWorkflowOutput),
 }
 
 
@@ -179,7 +193,7 @@ class AgentInvocationRequest(StrictContract):
     def validate_business_input(self) -> "AgentInvocationRequest":
         input_model, _ = contract_for(self.agent_role, self.task_type, self.input_schema_version)
         payload = input_model.model_validate(self.input_payload)
-        if getattr(payload, "order_id") != self.order_id:
+        if payload.order_id != self.order_id:
             raise ValueError("Payload order_id must match invocation order_id")
         return self
 

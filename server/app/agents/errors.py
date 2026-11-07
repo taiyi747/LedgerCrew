@@ -14,5 +14,21 @@ class RequestBudgetExceeded(AgentError):
     pass
 
 
+class ModelRateLimitError(AgentError):
+    pass
+
+
+class ModelServiceUnavailable(AgentError):
+    pass
+
+
+class ModelTimeoutError(AgentError):
+    pass
+
+
+class ModelNetworkError(AgentError):
+    pass
+
+
 class StaleReviewError(AgentError):
     pass

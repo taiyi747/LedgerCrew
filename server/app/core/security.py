@@ -1,17 +1,4 @@
-"""身份与认证抽象（v0.2）。
-
-DEC-013（生产身份服务、角色映射、租户授权）当前为 pending：
-
-- 生产环境一律走 ``UnconfiguredIdentityProvider``，任何认证操作都返回 503
-  ``authentication_unavailable``，保持 MVP 的生产安全门禁，不伪造认证能力；
-- 开发/测试环境使用 ``DevSimulatedIdentityProvider``（进程内模拟凭据），
-  仅是开发适配，禁止用于生产；
-- 业务代码只依赖 ``IdentityProvider`` 协议，与具体身份服务（JWT/OAuth/Session
-  等）解耦，最终机制由已确认的身份服务决定。
-
-MVP 兼容：``Principal``、``get_current_principal``、``assert_owner`` 保持原有
-行为；无 ``Authorization`` 头时仍走 ``X-User-Id`` 开发模拟（原有测试不受影响）。
-"""
+"""生产使用数据库本地账号和可撤销 Cookie 会话；开发测试保留模拟适配。"""
 
 import hmac
 import secrets
@@ -20,7 +7,7 @@ from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from typing import Literal, Protocol
 
-from fastapi import Depends, Header
+from fastapi import Depends, Header, Request
 from pydantic import SecretStr
 
 from app.core.config import Settings, get_settings
@@ -33,6 +20,7 @@ DEV_SESSION_SCHEME = "DevSession"
 class Principal:
     user_id: str
     role: Literal["customer", "owner"] = "customer"
+    local: bool = False
 
 
 @dataclass(frozen=True)
@@ -41,20 +29,23 @@ class AuthenticatedIdentity:
 
     user_id: str
     email: str
+    username: str | None = None
+    role: Literal["customer", "owner"] = "customer"
 
 
 @dataclass(frozen=True)
 class AuthSession:
-    """一次认证签发的不透明认证状态（形状中立，不预设 Token/Session 机制）。"""
+    """一次认证签发的不透明认证状态。"""
 
     scheme: str
     credential: str
     expires_at: datetime | None
     identity: AuthenticatedIdentity
+    csrf_token: str | None = None
 
 
 class IdentityProvider(Protocol):
-    """认证提供者接口。生产实现由 DEC-013 确认后接入。"""
+    """认证提供者接口。"""
 
     async def login(self, email: str, password: SecretStr) -> AuthSession | None:
         """认证并签发认证状态；失败返回 ``None``（调用方必须给出统一错误）。"""
@@ -67,7 +58,7 @@ class IdentityProvider(Protocol):
 
 
 class UnconfiguredIdentityProvider:
-    """生产环境占位提供者：DEC-013 确认前不提供任何认证能力。"""
+    """生产认证不可配置时的安全关闭提供者。"""
 
     def _blocked(self) -> None:
         raise AppError("authentication_unavailable", "Production authentication is not configured", 503)
@@ -148,11 +139,18 @@ _provider_cache: tuple[Settings, IdentityProvider] | None = None
 
 
 def get_identity_provider(settings: Settings = Depends(get_settings)) -> IdentityProvider:
-    """按环境选择认证提供者：生产为 503 门禁占位，其余为开发模拟。"""
+    """Use durable local sessions in production, explicit simulation elsewhere."""
     global _provider_cache
-    if settings.environment == "production":
-        return UnconfiguredIdentityProvider()
     if _provider_cache is not None and _provider_cache[0] is settings:
+        return _provider_cache[1]
+    if settings.environment == "production":
+        from sqlalchemy.ext.asyncio import async_sessionmaker
+
+        from app.db.session import make_engine
+        from app.services.local_auth import LocalIdentityProvider
+
+        sessions = async_sessionmaker(make_engine(settings.database_url), expire_on_commit=False)
+        _provider_cache = (settings, LocalIdentityProvider(sessions, settings))
         return _provider_cache[1]
     _provider_cache = (settings, DevSimulatedIdentityProvider(settings))
     return _provider_cache[1]
@@ -181,14 +179,19 @@ class AuthContext:
 
 
 async def require_auth_context(
+    request: Request,
     authorization: str | None = Header(default=None),
+    csrf_header: str | None = Header(default=None, alias="X-CSRF-Token"),
     provider: IdentityProvider = Depends(get_identity_provider),
+    settings: Settings = Depends(get_settings),
 ) -> AuthContext:
     """认证依赖：解析 ``Authorization: <scheme> <value>``。
 
     缺失、格式非法、伪造或过期一律 401 ``unauthorized``（统一响应，不做区分）；
     生产环境由占位提供者直接返回 503，安全门禁优先于一切。
     """
+    if settings.environment == "production":
+        return await _local_cookie_context(request, csrf_header, provider)
     parsed = _parse_authorization(authorization) if authorization else None
     scheme, credential = parsed if parsed else ("", "")
     identity = await provider.resolve(scheme, credential)
@@ -198,8 +201,10 @@ async def require_auth_context(
 
 
 async def get_current_principal(
+    request: Request,
     user_id: str | None = Header(default=None, alias="X-User-Id"),
     authorization: str | None = Header(default=None),
+    csrf_header: str | None = Header(default=None, alias="X-CSRF-Token"),
     provider: IdentityProvider = Depends(get_identity_provider),
     settings: Settings = Depends(get_settings),
 ) -> Principal:
@@ -210,7 +215,8 @@ async def get_current_principal(
     - 非生产且无 ``Authorization``：原样走 ``X-User-Id`` 开发模拟（MVP 行为不变）。
     """
     if settings.environment == "production":
-        raise AppError("authentication_unavailable", "Production authentication is not configured", 503)
+        context = await _local_cookie_context(request, csrf_header, provider)
+        return Principal(user_id=context.identity.user_id, role=context.identity.role, local=True)
     if authorization is not None:
         parsed = _parse_authorization(authorization)
         identity = await provider.resolve(*parsed) if parsed else None
@@ -225,6 +231,24 @@ async def get_current_principal(
 
 def _role_for(user_id: str, settings: Settings) -> Literal["customer", "owner"]:
     return "owner" if user_id in settings.dev_owner_user_ids else "customer"
+
+
+async def _local_cookie_context(request: Request, csrf_header: str | None,
+                                provider: IdentityProvider) -> AuthContext:
+    from app.services.local_auth import SCHEME, LocalIdentityProvider
+
+    if not isinstance(provider, LocalIdentityProvider):
+        raise AppError("authentication_unavailable", "Production authentication is not configured", 503)
+    credential = request.cookies.get("lc_session", "")
+    identity = await provider.resolve(SCHEME, credential)
+    if identity is None:
+        raise AppError("unauthorized", "Authentication required", 401)
+    if request.method not in {"GET", "HEAD", "OPTIONS"}:
+        csrf_cookie = request.cookies.get("lc_csrf", "")
+        if (not csrf_header or not csrf_cookie or not hmac.compare_digest(csrf_header, csrf_cookie)
+                or not await provider.validate_csrf(credential, csrf_header)):
+            raise AppError("csrf_rejected", "CSRF token is required", 403)
+    return AuthContext(identity=identity, scheme=SCHEME, credential=credential)
 
 
 def assert_owner(principal: Principal) -> None:

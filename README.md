@@ -43,7 +43,7 @@ Junction China 2026 人工智能赛道参赛项目：为小型工作室提供票
 
 ## 当前状态
 
-**v0.2 后端验收状态（2026-11-07）：未通过，不能上线申报功能。** BE2-05/07 仅有 synthetic 候选 JSON 预检，其余 BE2-01～09 核心模型、迁移和业务 API 尚未实现；第二阶段 13 项业务决策仍为 pending。BE2-10 已完成现有 MVP 迁移与备份基线检查，Python 3.11 全量后端测试为 139 passed；这不代表 v0.2 功能通过。详情见 [审查报告](docs/BE2_10_AUDIT_REPORT.md)、[测试报告](docs/BE2_10_TEST_REPORT.md)、[验收清单](docs/V2_ACCEPTANCE_CHECKLIST.md)及 [数据库迁移手册](docs/DATABASE_MIGRATION.md)。
+**生产改造进行中（2026-11-07）：尚不可接入真实客户。** 后端已有本地账号/会话、Studio 成员授权、Sandbox 支付、反馈、Agent 审核、完整 MAF 业务工作流、Worker 心跳与租约。第二轮 Python 3.11 隔离测试为 232 passed；真实 MiMo 凭证缺失，供应商调用尚未验证，`/health/ready` 保持 503。当前结果与限制见 [两轮交付报告](docs/PRODUCTION_UPGRADE_REPORT_2026-11-07.md)、[API](docs/API.md)、[待办](docs/BACKLOG.md)和 [联调说明](docs/LIVE_INTEGRATION.md)。第二阶段申报、政策和税务功能仍未上线。
 
 前端已新增 Next.js 客户端聊天界面和对账预览，运行说明见 [web/README.md](web/README.md)。
 
@@ -51,7 +51,7 @@ Junction China 2026 人工智能赛道参赛项目：为小型工作室提供票
 
 后端 v0.1 的第六个开发阶段已提供工作室、模拟订单、文件上传、ZIP 安全解压、资金流水 CSV 导入、确定性票据对账、Agent 集成契约、异常处理和版本化报告交付，安装、启动和测试说明见 [server/README.md](server/README.md)。
 
-第一阶段 AI 模块已实现五个 Agent、真实 MiMo 调用、人工待办、报告草稿和检查点恢复。后端按依赖协议接入正式对账、数据库和 Worker，前端通过后端接口展示结果。
+AI 模块的五节点 MAF 图现已接入后端业务数据库、文件存储、Worker 和人工审核 API；MiMoRunner 的外部真实服务调用仍待受控环境验证。前端只应通过实际挂载的后端 API 展示结果。
 
 **[AI 模块安装、演示与后端接入](docs/AI_INTEGRATION.md)** · [真实调用验证记录](docs/verification/ai-live.json)
 

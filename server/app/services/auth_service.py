@@ -15,7 +15,7 @@ NOT_AUTHENTICATED_MESSAGE = "Authentication required"
 
 
 async def login(provider: IdentityProvider, request: LoginRequest) -> LoginResponse:
-    session: AuthSession | None = await provider.login(request.email, request.password)
+    session: AuthSession | None = await provider.login(request.login_name, request.password)
     if session is None:
         raise AppError("unauthorized", INVALID_CREDENTIALS_MESSAGE, 401)
     return LoginResponse(
