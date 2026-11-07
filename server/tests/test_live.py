@@ -1,3 +1,4 @@
+import asyncio
 import csv
 import json
 from pathlib import Path
@@ -115,6 +116,46 @@ def test_run_budget_covers_large_material_batches(tmp_path, monkeypatch):
         assert created["request_limit"] == 300, created
         state = (await client.get(f"/api/v1/orders/{order_id}/runs/current", headers=customer)).json()
         assert state["request_limit"] == created["request_limit"], state
+
+    exercise(tmp_path, monkeypatch, scenario)
+
+
+def test_dispatch_runs_batched_delegations_in_parallel(tmp_path, monkeypatch):
+    async def scenario(client, storage):
+        _order_id, _customer, _created_run = await prepare_live_order(client)
+        state = {"active": 0, "peak": 0}
+
+        class ParallelProbe(LiveScriptedRunner):
+            async def generate(self, role, prompt, schema, budget, *, tools=None, image=None):
+                from app.live.contracts import TASK_ROLE, Assignment, SupervisorDecision
+
+                if schema is SupervisorDecision:
+                    named = {tool.__name__: tool for tool in tools or []}
+                    snapshot = json.loads(prompt.split("\n")[-1])
+                    eligible = snapshot["eligible_tasks"]
+                    if len(eligible) >= 2:
+                        # 同批派出两件独立任务，验证 Dispatch 并发执行。
+                        await named["delegate_tasks"](
+                            [
+                                Assignment(
+                                    agent_role=TASK_ROLE[task], task_type=task, goal="同批派出的独立任务"
+                                ).model_dump()
+                                for task in eligible[:2]
+                            ]
+                        )
+                        return SupervisorDecision(action="delegated", summary="同批派出两件独立任务")
+                if schema.__name__ == "RoleResult":
+                    state["active"] += 1
+                    state["peak"] = max(state["peak"], state["active"])
+                    await asyncio.sleep(0.05)
+                    try:
+                        return await super().generate(role, prompt, schema, budget, tools=tools, image=image)
+                    finally:
+                        state["active"] -= 1
+                return await super().generate(role, prompt, schema, budget, tools=tools, image=image)
+
+        await run_worker(tmp_path, ParallelProbe())
+        assert state["peak"] >= 2, f"同批派单应并发执行，实际并发峰值 {state['peak']}"
 
     exercise(tmp_path, monkeypatch, scenario)
 
