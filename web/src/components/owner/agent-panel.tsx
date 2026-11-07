@@ -20,11 +20,16 @@ const DeskArtwork = memo(function DeskArtwork({visual, seed}:{visual:DeskVisual;
   return <span className="warroom-desk-svg" aria-hidden="true" dangerouslySetInnerHTML={{__html:deskSVG(visual, seed)}}/>;
 });
 
+const deskStatusLabel = (agent: OwnerAgent) =>
+  agent.status === 'waiting_children' && agent.waiting_on?.length
+    ? `等待${agent.waiting_on.map(r => roleLabels[r] || r).join('、')}`
+    : stateLabels[agent.status] || agent.status;
+
 export function AgentDesk({agent,onOpen,disabled=false}:{agent:OwnerAgent;onOpen:()=>void;disabled?:boolean}) {
   const visual:DeskVisual=agent.status==='running'?'working':agent.status==='failed'?'urgent':['paused','waiting_children','queued'].includes(agent.status)?'dormant':'idle';
-  return <button type="button" className="warroom-desk" disabled={disabled} onClick={onOpen} aria-label={`${agent.name} · ${stateLabels[agent.status]||agent.status}`}>
+  return <button type="button" className="warroom-desk" disabled={disabled} onClick={onOpen} aria-label={`${agent.name} · ${deskStatusLabel(agent)}`}>
     <span className="warroom-nameplate">{agent.name}</span>
-    <span className="warroom-art-wrap"><DeskArtwork visual={visual} seed={agent.id}/><Badge variant="secondary" className={`warroom-desk-pill warroom-desk-pill-${visual}`}>{stateLabels[agent.status]||agent.status}</Badge></span>
+    <span className="warroom-art-wrap"><DeskArtwork visual={visual} seed={agent.id}/><Badge variant="secondary" className={`warroom-desk-pill warroom-desk-pill-${visual}`}>{deskStatusLabel(agent)}</Badge></span>
     <small>{agent.model} · 完成 {agent.completed} · 失败 {agent.failed} · 排队 {agent.queued}{agent.todos?.total ? ` · 待办 ${agent.todos.done}/${agent.todos.total}` : ''}</small>
   </button>;
 }

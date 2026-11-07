@@ -270,6 +270,7 @@ async def dashboard(
         else []
     )
     agents = []
+    waiting_on = sorted({d.agent_role for d in delegations if d.status in {"queued", "running"}})
     for role, meta in ROLES.items():
         mine = [d for d in delegations if d.agent_role == role]
         last = mine[-1] if mine else None
@@ -283,6 +284,8 @@ async def dashboard(
                 "id": role,
                 **meta,
                 "status": status,
+                # 总管等待子任务时，指名正在执行或排队的专业 Agent，供工位显示。
+                "waiting_on": waiting_on if role == "supervisor" and status == "waiting_children" else [],
                 "current_task": last.goal if last else None,
                 "queued": supervisor_statuses.count("queued")
                 if role == "supervisor"
