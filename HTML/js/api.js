@@ -129,7 +129,22 @@ const state = {
   webhookResult: "",  // 回调调试回执
   eventSeq: 12,
   lang: readLang(),   // "zh" | "en"，三页共用 localStorage["aiwho.lang"]
+  theme: readTheme(), // "light" | "dark"，三页共用 localStorage["aiwho.theme"]
+  uiLocked: false,    // 界面锁定（防误触）：锁定后工位卡与指令按钮不响应
 };
+
+function readTheme() {
+  try { return localStorage.getItem("aiwho.theme") === "dark" ? "dark" : "light"; } catch (err) { return "light"; }
+}
+function setTheme(theme) {
+  state.theme = theme === "dark" ? "dark" : "light";
+  try { localStorage.setItem("aiwho.theme", state.theme); } catch (err) {}
+  renderAll();
+}
+function toggleLock() {
+  state.uiLocked = !state.uiLocked;
+  renderAll();
+}
 
 /* ---------- 格式化（规格书） ---------- */
 function relativeTime(iso) {
