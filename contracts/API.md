@@ -1,6 +1,6 @@
 # LedgerCrew P2-0 后端接口契约（待三人确认）
 
-状态：**设计稿，P2-0 尚未冻结**。`openapi.json` 合并了当前 FastAPI 的 29 条既有路径（28 条 `/api/v1` 路径和 `/health`）与标为 `x-ledgercrew-status: proposed` 的第二阶段路径；后者尚未挂载，也不能视为可调用接口。`schemas.py` 是独立的 Pydantic 2 线协议设计，不导入业务代码。本轮不创建表、不修改旧路由、不执行迁移。所有未获确认的范围、权限、任务粒度和交付行为均由 [决策登记表](../docs/P2_DECISIONS.md) 控制；旧草案中的业务默认值不得作为实现依据。Python 3.11 已由 DEC-001 确认。
+状态：**设计稿，P2-0 尚未冻结**。`openapi.json` 合并了当前 FastAPI 已挂载的 32 条路径（MVP 29 条：28 条 `/api/v1` 路径和 `/health`；v0.2 认证 3 条 `/api/v1/auth/login|logout|me`）与 36 个 `x-ledgercrew-status: proposed` 的候选操作（35 条第二阶段操作 + 1 条 `/api/v1/auth/refresh`）；`proposed` 操作未挂载，也不能视为可调用接口。v0.2 认证接口的 `implemented/enabled` 区分见 §5.1：仅开发/测试环境启用，生产环境一律 503（DEC-013 pending）。`schemas.py` 是独立的 Pydantic 2 线协议设计，不导入业务代码。本轮不创建表、不修改旧路由、不执行迁移。所有未获确认的范围、权限、任务粒度和交付行为均由 [决策登记表](../docs/P2_DECISIONS.md) 控制；旧草案中的业务默认值不得作为实现依据。Python 3.11 已由 DEC-001 确认。
 
 ## 1. MVP 盘点与扩展边界
 
@@ -106,6 +106,78 @@ FilingTask、Draft 和 Package 的枚举目前仅是前端/AI 协作的**候选�
 
 分类决策统一返回 `AccountingDecisionResult`；拒绝时 `entry=null`，接受或纠正时返回确认分录。前端可始终读取 `suggestion.status` 与 `data_version`。
 
+## 5.1 认证接口（v0.2，受 DEC-013 约束）
+
+状态区分：`proposed` = 候选设计、未实现未挂载；`implemented` = 已实现并挂载；`enabled` = 允许启用的环境。**生产环境没有任何 enabled 的认证接口。**
+
+| Method / URL | 状态 | enabled | 说明 |
+| --- | --- | --- | --- |
+| POST `/auth/login` | implemented | 仅开发/测试 | 请求 `LoginRequest`，响应 `LoginResponse`；认证失败统一 401，不泄露邮箱是否注册 |
+| POST `/auth/logout` | implemented | 仅开发/测试 | 真实撤销认证状态；无效/过期凭据 401，不做"只返回成功"的假退出 |
+| GET `/auth/me` | implemented | 仅开发/测试 | 返回服务端验证的身份；未认证 401；不信任客户端自报 user_id |
+| POST `/auth/refresh` | proposed | 否 | 刷新机制依赖最终认证方案（DEC-013 pending）；未实现、未挂载、未生成任何 Token/Session |
+
+三条 `implemented` 接口挂载于 `server/app/api/v1/endpoints/auth.py`，但**不构成生产认证能力**：`ENVIRONMENT=production` 时全部由安全门禁返回 503 `authentication_unavailable`，开发模拟提供者（`DevSimulatedIdentityProvider`）拒绝在生产环境构造。生产身份服务、JWT/OAuth/Session 机制选择、角色映射与 Studio-用户授权关系均待 DEC-013 确认后另行设计；当前只提供 `IdentityProvider` 协议抽象、Pydantic 契约、测试替身与开发环境适配。
+
+通用约定：
+
+- 认证凭据请求头：`Authorization: <scheme> <value>`。`scheme`/`value` 由最终身份服务定义（开发模拟值为 `DevSession <不透明句柄>`，仅进程内有效，不代表任何生产机制）。
+- 错误响应沿用 MVP 外形 `{"error":{"code","message"}}`：401 `unauthorized`（认证失败统一响应）、422 `validation_error`、503 `authentication_unavailable`。
+- 密码用 Pydantic `SecretStr` 承载，不写日志、不回显，错误响应不含提交值。
+- 同一账号重复登录会替换旧凭据（防重复提交堆积认证状态）；登录限流、凭证管理与会话生命周期待正式安全方案确认后设计（若最终采用本地邮箱密码认证）。
+
+### 请求与响应 JSON 示例
+
+POST `/api/v1/auth/login` 请求：
+
+```json
+{
+  "email": "demo@example.com",
+  "password": "example-password"
+}
+```
+
+200 响应：
+
+```json
+{
+  "user": {
+    "user_id": "demo",
+    "email": "demo@example.com"
+  },
+  "credential": {
+    "scheme": "DevSession",
+    "value": "<不透明凭据>",
+    "expires_at": "2026-11-07T13:00:00Z"
+  }
+}
+```
+
+401 响应（统一错误；`nobody@example.com` 与错误密码返回完全相同）：
+
+```json
+{
+  "error": {
+    "code": "unauthorized",
+    "message": "Invalid email or password"
+  }
+}
+```
+
+422 响应：`{"error": {"code": "validation_error", "message": "Invalid request"}}`
+
+503 响应（生产环境，login/logout/me 一律如此）：`{"error": {"code": "authentication_unavailable", "message": "Production authentication is not configured"}}`
+
+POST `/api/v1/auth/logout`（请求头 `Authorization: DevSession <value>`）：
+
+200 响应：`{"status": "logged_out"}`；无效或过期凭据返回 401（认证状态未被撤销时不允许假成功）。
+
+GET `/api/v1/auth/me`（请求头同上）：
+
+200 响应：`{"user_id": "demo", "email": "demo@example.com"}`；未认证返回 401。响应不含角色/租户权限字段（待 DEC-013/DEC-010 确认）。
+
+前端可直接使用的完整示例（含失败/过期用例）见 [`examples/auth.json`](examples/auth.json)。
+
 ## 6. 前端 Mock 与显示规则
 
 `examples/` 按主要资源给出 `success`、`empty`、`validation_error`、`forbidden`、`business_blocked` JSON，可直接作为前端静态 fixture；目录 README 列出调用与字段说明。数字是**界面测试假数据**，不是税率、政策或实际申报表字段。Mock 不证明后端路由已经实现。前端在金额上按整数分显示，不能把 `null` 显示为零。显示规则或表单版本时带证据、状态和生效期；`blocked/stale` 草稿不能出现“可提交税局”按钮。站内交付只叫“已交付资料包”。
@@ -134,6 +206,8 @@ AI 不可修改：MVP 订单/文件/流水/对账、P2 原始文件和原始行�
 | 规则/表单版本 | 规则、scope、表单模板、计算、草稿、包分别锁版本；BE2 测规则变更和表单变更导致审批失效。 |
 
 P2-0 契约文件可解析，11 组 Mock JSON 可读取，35 个提议操作的 Schema 引用完整，现有 29 条 OpenAPI 路径与当前应用输出一致。2026-11-07 使用 Python 3.11.18 和新 `uv.lock` 安装全部 47 个依赖包，`ruff check app/agents scripts tests/agents` 通过，现有后端测试 **102 passed**。先前在 3.12 环境的测试不能作为兼容性证明。第二阶段 API、迁移及业务流程仍未实现。
+
+v0.2 认证准备（2026-11-07）：挂载 `/api/v1/auth/login|logout|me`（`implemented`，仅开发/测试 `enabled`），`/api/v1/auth/refresh` 保持 `proposed` 未挂载；未新增数据库表与迁移。在 Python 3.11.9 下原有 102 项测试与新增 16 项认证测试共 **118 passed**，`ruff check app/agents scripts tests/agents` 保持通过。生产 503 安全门禁与 MVP `X-User-Id` 开发模拟行为保持不变。
 
 ## 9. 三人待确认的业务问题
 

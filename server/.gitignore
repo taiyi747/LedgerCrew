@@ -6,6 +6,10 @@ __pycache__/
 .pip-cache/
 *.egg-info/
 pytest-of-*/
+.pytest_run_tmp/
+pip-build-tracker-*/
+pip-ephem-wheel-cache-*/
+pip-install-*/
 *.py[cod]
 *.db
 *.db-journal

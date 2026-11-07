@@ -1,8 +1,20 @@
 from functools import lru_cache
 from typing import Literal
 
-from pydantic import Field
+from pydantic import BaseModel, Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+class DevAuthAccount(BaseModel):
+    """开发/测试模拟账号（fixture 级），禁止用于生产。
+
+    这里没有密码哈希方案：真实凭证存储与密码哈希属于 DEC-013 确认后的正式安全方案。
+    生产环境的认证提供者不读取本配置（见 ``app/core/security.py``）。
+    """
+
+    email: str = Field(min_length=3, max_length=254)
+    user_id: str = Field(min_length=1, max_length=100)
+    password: SecretStr
 
 
 class Settings(BaseSettings):
@@ -11,6 +23,10 @@ class Settings(BaseSettings):
     app_name: str = "LedgerCrew API"
     environment: Literal["development", "test", "production"] = "development"
     dev_owner_user_ids: list[str] = Field(default_factory=lambda: ["owner"])
+    dev_auth_accounts: list[DevAuthAccount] = Field(default_factory=lambda: [
+        DevAuthAccount(email="demo@example.com", user_id="demo", password=SecretStr("example-password")),
+    ])
+    dev_auth_credential_ttl_seconds: int = Field(default=3600, gt=0)
     database_url: str = "sqlite+aiosqlite:///./ledgercrew.db"
     sql_echo: bool = False
     storage_root: str = "./storage_data"

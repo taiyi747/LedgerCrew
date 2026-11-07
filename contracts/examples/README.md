@@ -4,4 +4,6 @@
 
 `REGION_TBD`、`ENTITY_TBD`、`FORM_TBD`、`example.invalid` 和候选规则均为**占位测试数据**，不代表实际支持地区、政策、税率或申报表。Mock 中的阻塞计算和草稿没有任何税额/字段，不应被展示为可申报成果。API 尚未实现；错误场景是目标契约。
 
+`auth.json` 是 v0.2 认证接口（login/logout/me）的请求与响应示例（手工维护，不由 `build_examples` 生成），含认证失败、无效/过期状态和生产 503 场景。`credential` 为提供者定义的不透明认证状态，开发环境取值不代表任何生产机制；`POST /api/v1/auth/refresh` 仍是 `proposed`，未实现未挂载。详见 [API.md §5.1](../API.md)。
+
 使用 Python 3.11 环境从仓库根目录执行 `python -m contracts.build_examples` 可重新生成，成功响应会先经过 Pydantic 2 校验。OpenAPI 用 `python contracts/build_openapi.py` 重新导出；两者均为设计产物，不是运行服务。

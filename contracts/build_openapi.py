@@ -57,10 +57,15 @@ _, definitions = models_json_schema([(model, "validation") for model in MODELS],
 spec = deepcopy(app.openapi())
 spec["info"]["title"] = "LedgerCrew MVP + Phase 2 proposed contract"
 spec["info"]["version"] = "2.0.0-draft"
-spec["info"]["description"] = "P2 paths are design-only and are not mounted by server/app/main.py. Existing MVP paths are copied from the live app."
+spec["info"]["description"] = (
+    "P2 paths are design-only and are not mounted by server/app/main.py. Existing MVP paths are copied from the live app. "
+    "v0.2 auth: /api/v1/auth/login|logout|me are implemented and mounted but enabled only outside production "
+    "(production returns 503 authentication_unavailable until DEC-013); /api/v1/auth/refresh is proposed only."
+)
 spec["components"]["schemas"].update(definitions["$defs"])
 spec["components"]["securitySchemes"] = {
-    "DevUserId": {"type": "apiKey", "in": "header", "name": "X-User-Id", "description": "MVP development/test identity only; production returns 503 until real auth is integrated."}
+    "DevUserId": {"type": "apiKey", "in": "header", "name": "X-User-Id", "description": "MVP development/test identity only; production returns 503 until real auth is integrated."},
+    "AuthCredential": {"type": "apiKey", "in": "header", "name": "Authorization", "description": "Opaque provider-defined credential in the form '<scheme> <value>' (v0.2; semantics decided by the identity service confirmed under DEC-013)."},
 }
 
 ERROR_CODES = {
@@ -143,5 +148,48 @@ spec["paths"]["/api/v1/filing-tasks/{filing_task_id}/files"] = {
 }
 
 output = ROOT / "contracts" / "openapi.json"
+
+# v0.2 auth endpoints: mounted by the live app, marked explicitly per proposal/implementation/enablement.
+# production stays disabled behind the 503 gate until DEC-013 confirms an identity service.
+AUTH_ENDPOINT_STATUS = {
+    "/api/v1/auth/login": {
+        "security": [],
+        "x-ledgercrew-status": "implemented",
+        "x-ledgercrew-enabled": "development/test only",
+        "x-ledgercrew-decision": "DEC-013 pending; production always returns 503 authentication_unavailable",
+    },
+    "/api/v1/auth/logout": {
+        "security": [{"AuthCredential": []}],
+        "x-ledgercrew-status": "implemented",
+        "x-ledgercrew-enabled": "development/test only",
+        "x-ledgercrew-decision": "DEC-013 pending; production always returns 503 authentication_unavailable",
+    },
+    "/api/v1/auth/me": {
+        "security": [{"AuthCredential": []}],
+        "x-ledgercrew-status": "implemented",
+        "x-ledgercrew-enabled": "development/test only",
+        "x-ledgercrew-decision": "DEC-013 pending; production always returns 503 authentication_unavailable",
+    },
+}
+for auth_path, markers in AUTH_ENDPOINT_STATUS.items():
+    for op in spec["paths"].get(auth_path, {}).values():
+        op.update(markers)
+
+# POST /api/v1/auth/refresh is PROPOSED only: its mechanism depends on the final
+# authentication scheme (DEC-013). Not implemented, not mounted, never enabled.
+spec["paths"]["/api/v1/auth/refresh"] = {
+    "post": {
+        "tags": ["auth", "phase-2-proposed"], "operationId": "refresh_auth_state", "summary": "Refresh authentication state",
+        "description": "PROPOSED, not implemented. Depends on the final authentication mechanism confirmed under DEC-013; "
+                       "the request/response shapes below are candidates only and no token or session refresh is implemented.",
+        "security": [{"AuthCredential": []}],
+        "x-ledgercrew-status": "proposed", "x-ledgercrew-enabled": "never (until DEC-013)",
+        "x-ledgercrew-decision": "DEC-013 pending",
+        "requestBody": {"required": True, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/AuthCredential"}}}},
+        "responses": {"200": {"description": "Refreshed credential (candidate shape)", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/LoginResponse"}}}},
+                      **{str(status): {"description": code, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}, "example": {"error": {"code": code, "message": code, "blockers": []}}}}} for status, code in ERROR_CODES.items()}},
+    }
+}
+
 output.write_text(json.dumps(spec, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 print(f"wrote {output} with {len(spec['paths'])} paths")
