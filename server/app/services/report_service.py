@@ -15,6 +15,7 @@ from app.models import (AgentTask, AuditLog, BankTransaction, ExceptionSupplemen
 from app.repositories import delivery as delivery_repo
 from app.repositories import reconciliation as reconciliation_repo
 from app.services.access import order_for_user
+from app.services import order_state
 
 
 def _content_hash(report: ReportVersion) -> str:
@@ -205,6 +206,9 @@ async def submit_review(session: AsyncSession, report_id: str, principal: Princi
     if report.status != "draft":
         raise AppError("invalid_report_transition", "Only a draft can enter review", 409)
     await _fresh(session, report)
+    await order_state.begin_processing(session, report.order_id)
+    await order_state.move(session, report.order_id, "awaiting_owner_review", "report_submitted_review",
+                           "owner", principal.user_id)
     report.status = "in_review"
     _audit(session, report, principal, "report.submitted_review")
     await session.commit()
@@ -216,6 +220,7 @@ async def approve(session: AsyncSession, report_id: str, principal: Principal, r
     if report.status != "in_review":
         raise AppError("invalid_report_transition", "Only an in-review report can be approved", 409)
     await _fresh(session, report)
+    await order_state.move(session, report.order_id, "approved", "report_approved", "owner", principal.user_id)
     report.status = "approved"
     report.approved_at = utc_now()
     report.approved_by = principal.user_id
@@ -233,6 +238,7 @@ async def reject(session: AsyncSession, report_id: str, principal: Principal, re
         raise AppError("invalid_report_transition", "Only an in-review report can be rejected", 409)
     if not reason.strip():
         raise AppError("reason_required", "Rejection reason is required", 422)
+    await order_state.move(session, report.order_id, "processing", "report_rejected", "owner", principal.user_id)
     report.status = "draft"
     session.add(ReportReviewAction(report_id=report.id, report_version=report.version,
                                    action="rejected", actor_id=principal.user_id,
@@ -250,6 +256,7 @@ async def publish(session: AsyncSession, report_id: str, principal: Principal) -
     approval = await delivery_repo.approval_for_report(session, report.id)
     if approval is None or approval.report_version != report.version or approval.content_hash != report.content_hash:
         raise AppError("approval_missing", "This report version has no matching approval", 409)
+    await order_state.move(session, report.order_id, "delivered", "report_published", "owner", principal.user_id)
     for previous in await delivery_repo.list_reports(session, report.order_id):
         if previous.id != report.id and previous.status == "published":
             previous.status = "superseded"

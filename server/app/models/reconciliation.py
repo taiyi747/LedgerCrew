@@ -25,11 +25,14 @@ class InvoiceRecord(Base):
         CheckConstraint("extraction_status IN ('ready','needs_review','invalid')", name="ck_invoice_extraction_status"),
         Index("ix_invoice_records_order_date", "order_id", "issue_date"),
         Index("ix_invoice_records_order_number", "order_id", "invoice_number"),
+        Index("ix_invoice_records_source_task", "source_task_id", unique=True),
     )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
     order_id: Mapped[str] = mapped_column(ForeignKey("orders.id"), nullable=False)
     source_file_id: Mapped[str] = mapped_column(ForeignKey("uploaded_files.id"), nullable=False)
+    source_task_id: Mapped[str | None] = mapped_column(ForeignKey("agent_tasks.id"), nullable=True)
+    material_review_task_id: Mapped[str | None] = mapped_column(ForeignKey("agent_tasks.id"), nullable=True)
     invoice_number: Mapped[str | None] = mapped_column(String(100), nullable=True)
     issue_date: Mapped[date | None] = mapped_column(nullable=True)
     seller: Mapped[str | None] = mapped_column(String(300), nullable=True)

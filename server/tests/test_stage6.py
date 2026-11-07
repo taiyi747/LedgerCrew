@@ -13,6 +13,7 @@ from app.schemas.reconciliation import InvoiceRecordCreate
 from app.services import agent_service, report_service
 from app.services.reconciliation_service import persist_invoice
 from test_stage2 import create_order, exercise, png_bytes
+from test_stage4 import accept_invoice_file
 from test_stage3 import upload_csv
 
 ALICE = {"X-User-Id": "alice"}
@@ -38,6 +39,7 @@ async def make_batch_with_exception(client, order_id: str):
     try:
         sessions = async_sessionmaker(engine, expire_on_commit=False)
         async with sessions() as session:
+            await accept_invoice_file(session, order_id, file_id)
             await persist_invoice(session, order_id, InvoiceRecordCreate(
                 source_file_id=file_id, invoice_number="INV-1", issue_date=date(2026, 10, 10),
                 seller="Vendor", buyer="Studio", amount_cents=900, tax_cents=100,

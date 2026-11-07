@@ -1,4 +1,4 @@
-# Agent 接入说明（v0.1 阶段 5）
+# Agent 接入说明（v0.1）
 
 后端只负责结构化契约、调用边界、状态与事件持久化。本阶段不包含 Prompt、模型调用、OCR、Agent 推理或 Microsoft Agent Framework WorkflowBuilder 实现。其他开发者可以实现 `AgentGateway`，并在其可信编排代码中调用 `agent_service`。当前没有对客户开放的任务创建或调用 HTTP 接口。
 
@@ -15,7 +15,7 @@
 | `risk_delivery` | `risk_analysis` | `RiskAnalysisInput` / `RiskAnalysisOutput` |
 | `risk_delivery` | `report_draft` | `ReportDraftInput` / `ReportDraftOutput` |
 
-发票金额在 Agent 输出中是**原样字符串**；后端后续必须确定性校验、解析并转换为整数分，才能写入 `InvoiceRecord`。`ReconciliationAgentInput` 载入后端确定性对账结果；其输出只允许叙述、观察、未解决事项和证据引用，不含可覆盖金额、匹配或异常类型的字段。风险和报告草稿输出同样不能更改业务数据。Agent 输出仅存入 AgentTask/AgentRun，不会自动写原始文件、流水、审批、异常类型或已发布报告。
+发票金额在 Agent 输出中是**原样字符串**；后端用 `Decimal` 严格解析并转换为整数分，超过两位小数直接拒绝。`ReconciliationAgentInput` 载入后端确定性对账结果；其输出只允许叙述、观察、未解决事项和证据引用，不含可覆盖金额、匹配或异常类型的字段。风险和报告草稿输出同样不能更改业务数据。Agent 输出仅存入 AgentTask/AgentRun，不会自动写原始文件、流水、审批、异常类型或已发布报告。
 
 ## 实现网关
 
@@ -30,7 +30,9 @@ class MyAgentGateway:
 
 请求包含 `task_id`、`run_id`、`order_id`、`agent_role`、`task_type`、`input_schema_version`、`idempotency_key`、`correlation_id` 和 `input_payload`。响应包含 `task_id`、`status`、`output_payload`、`error`、带时区的 `started_at`/`finished_at`、`provider_metadata`。网关应把幂等键和关联 ID 传递给外部执行方，并保留调用关联信息。成功响应必须有输出和完成时间；失败响应必须有错误和完成时间；暂停响应没有完成时间。
 
-创建任务时，后端会检查输入文件属于当前订单、票据图片类别与 MIME 匹配；风险输入必须与当前订单的异常工单一致；对账和报告草稿输入的金额、计数及关联 ID 必须与持久化对账批次一致。后端在写入成功结果前按任务类型验证输出，并检查 `file_id`、`exception_id`、报告 `order_id`/版本号与任务输入一致。调用异常、非法响应或非法输出会使任务和运行进入 `failed`，错误被记录，不会改写原始业务数据。终态任务再次调用 `invoke_task` 不会重新调用网关。
+创建任务时，后端会检查输入文件属于当前订单、票据图片类别与 MIME 匹配；`invoice_extraction` 还要求该文件的最新材料审核任务结果为 `ACCEPTED` 且 `is_invoice=true`。风险输入必须与当前订单的异常工单一致；对账和报告草稿输入的金额、计数及关联 ID 必须与持久化对账批次一致。后端在写入成功结果前按任务类型验证输出，并检查 `file_id`、`exception_id`、报告 `order_id`/版本号与任务输入一致。调用异常、非法响应或非法输出会使任务和运行进入 `failed`，错误被记录，不会改写原始业务数据。终态任务再次调用 `invoke_task` 不会重新调用网关。
+
+票据识别成功后，可信编排器调用 `app.services.reconciliation_service.persist_invoice_from_task(session, task_id)` 写入 `InvoiceRecord`，并提交当前事务。该函数只接受已成功的 `invoice_processing/invoice_extraction` 任务，再次核查材料审核结果、文件归属及金额格式；发票记录保留 `source_file_id`、`material_review_task_id`、`source_task_id`。同一识别任务重复调用返回原记录。调用方不能把未审核图片或未经校验的 Agent 字符串直接当作确定性金额。
 
 ## 创建、执行和恢复任务
 
@@ -73,6 +75,6 @@ Last-Event-ID: 42
 
 ## 待确认事项
 
-- 真实 Agent 运行框架、任务调度入口和认证方式由后续集成阶段确定。本阶段不会自动执行排队任务。
+- 真实 Agent 运行框架、任务调度入口和认证方式由后续集成阶段确定。当前不会自动执行排队任务；完整业务流程仅由 Fake Agent 测试验证。
 - 多任务运行与外部文件检查点的生命周期需要与队友的 WorkflowBuilder/FileCheckpointStorage 实现共同确定；当前按一个运行对应一个任务持久化。
 - 客户可见的 Agent 进度文案和事件保留周期尚未定义；事件 API 当前返回已授权订单的原始结构化事件。

@@ -8,7 +8,7 @@ from app.models import AuditLog, ExceptionDecision, ExceptionSupplement, Excepti
 from app.repositories import delivery as repo
 from app.schemas.agent import AgentTaskCreate
 from app.schemas.delivery import ExceptionDecisionCreate
-from app.services import agent_service, file_service
+from app.services import agent_service, file_service, order_state
 from app.services.access import order_for_user
 from app.storage.base import Storage
 
@@ -44,6 +44,7 @@ async def add_supplement(
                                      file_id=file.id if file else None)
     session.add(supplement)
     ticket.status = "waiting_owner"
+    await order_state.begin_processing(session, ticket.order_id)
     await session.flush()
     session.add(AuditLog(order_id=ticket.order_id, actor_type="customer", actor_id=principal.user_id,
                          action="exception.supplemented", entity_type="exception_supplement", entity_id=supplement.id,
@@ -70,6 +71,7 @@ async def decide(session: AsyncSession, exception_id: str, data: ExceptionDecisi
         ticket.status = "resolved"
     elif data.decision == "request_supplement":
         ticket.status = "waiting_customer"
+        await order_state.request_customer(session, ticket.order_id)
     elif data.decision == "reanalyze":
         ticket.status = "open"
     elif data.decision == "correct_classification":

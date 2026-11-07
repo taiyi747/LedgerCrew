@@ -7,6 +7,8 @@ from app.core.config import get_settings
 from app.core.exceptions import AppError
 from app.db.session import make_engine
 from app.schemas.reconciliation import InvoiceRecordCreate
+from app.schemas.agent import AgentTaskCreate
+from app.services import agent_service
 from app.services.reconciliation_engine import InvoiceInput, TransactionInput, reconcile
 from app.services.reconciliation_service import persist_invoice
 from test_stage2 import create_order, exercise, png_bytes
@@ -14,6 +16,22 @@ from test_stage3 import upload_csv
 
 START = date(2026, 10, 1)
 END = date(2026, 10, 31)
+
+
+async def accept_invoice_file(session, order_id: str, file_id: str):
+    task = await agent_service.create_task(session, AgentTaskCreate(
+        order_id=order_id, agent_role="material_review", task_type="material_review",
+        idempotency_key=f"review:{file_id}", correlation_id=f"review:{file_id}",
+        input_payload={"order_id": order_id, "file_id": file_id,
+                       "file_category": "invoice_image", "mime_type": "image/png"},
+    ))
+    await agent_service.start_task(session, task.id)
+    await agent_service.complete_task(session, task.id, {
+        "file_id": file_id, "document_type": "invoice", "review_status": "ACCEPTED",
+        "is_invoice": True, "readability": "clear", "reason": None,
+        "confidence": 1.0, "next_action": "extract",
+    })
+    return task
 
 
 def invoice(id="i1", **changes):
@@ -159,6 +177,7 @@ def test_persisted_batch_routes_permission_and_version(tmp_path, monkeypatch):
         try:
             sessions = async_sessionmaker(engine, expire_on_commit=False)
             async with sessions() as session:
+                await accept_invoice_file(session, order_id, image_id)
                 record = await persist_invoice(session, order_id, InvoiceRecordCreate(
                     source_file_id=image_id, invoice_number="N-1", issue_date=date(2026, 10, 10),
                     seller="Vendor", buyer="Studio", amount_cents=900, tax_cents=100,

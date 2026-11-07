@@ -17,6 +17,7 @@ from app.core.security import Principal
 from app.models import AuditLog, UploadedFile
 from app.repositories import records
 from app.services.access import file_for_user, order_for_user
+from app.services import order_state
 from app.storage.base import Storage
 
 CATEGORIES = {"invoice_image", "bank_statement_csv", "supporting_material"}
@@ -108,6 +109,8 @@ async def upload_files(
     result = []
     for filename, content, mime, status in prepared:
         result.append(await _save_record(session, storage, order_id, filename, category, content, mime, status, "direct", principal))
+    await session.flush()
+    await order_state.refresh_materials(session, order_id)
     await session.commit()
     return result
 
@@ -202,6 +205,8 @@ async def upload_archive(
             mime, status = classify(filename, category, data)
             entries.append(await _save_record(session, storage, order_id, filename, category, data, mime, status, "archive", principal, archive_record.id, info.filename))
         archive_record.validation_status = "valid"
+        await session.flush()
+        await order_state.refresh_materials(session, order_id)
         session.add(AuditLog(order_id=order_id, actor_type="system", action="archive.validated", entity_type="uploaded_file", entity_id=archive_record.id, details={"entry_count": len(entries)}))
         await session.commit()
         return archive_record, entries

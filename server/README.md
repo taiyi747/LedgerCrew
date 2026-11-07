@@ -1,6 +1,10 @@
-# LedgerCrew 后端（v0.1 开发阶段 6）
+# LedgerCrew 后端（v0.1 阶段 7 交付检查）
 
-当前提供工作室、模拟订单、文件上传、安全 ZIP 解压、资金流水 CSV 导入、确定性票据对账、Agent 集成契约、异常处理、报告审批与交付。真实 Agent 内部逻辑尚未实现。
+当前提供工作室、模拟订单、文件上传、安全 ZIP 解压、资金流水 CSV 导入、确定性票据对账、Agent 集成契约、异常处理、报告审批与交付。已用 Fake Agent 验证完整业务链；**真实 Agent、生产认证和自动调度尚未接入**。
+
+## 项目结构
+
+`app/api/v1` 提供 HTTP 路由，`app/services` 处理业务规则，`app/repositories` 访问数据，`app/models` 与 `app/schemas` 分别定义数据库和 API/Agent 数据结构，`app/integrations/agents` 定义网关与 Fake，`app/storage` 隔离本地文件存储，`alembic/versions` 保存迁移，`tests` 包含单元、接口和端到端测试。详细边界见 [架构说明](docs/architecture.md)。
 
 ## 环境与安装
 
@@ -31,7 +35,7 @@ alembic upgrade head
 uvicorn app.main:app --reload
 ```
 
-访问 `http://127.0.0.1:8000/health`，预期返回 `{"status":"ok"}`。OpenAPI 位于 `/openapi.json`，业务 API 挂载在 `/api/v1`。
+访问 `http://127.0.0.1:8000/health`，预期返回 `{"status":"ok"}`。OpenAPI 位于 `/openapi.json`，业务 API 挂载在 `/api/v1`。接口清单和身份规则见 [API 说明](docs/api.md)。
 
 ## 开发身份与 API
 
@@ -71,9 +75,9 @@ uvicorn app.main:app --reload
 
 ZIP 原包始终登记保存。坏包、路径穿越、绝对路径、符号链接、嵌套 ZIP 或超限会使原包标记为 `invalid` 并返回错误。仅允许根目录或一层文件夹中的文件；条目原始路径仅用于审计记录，实际存储键由后端生成。
 
-CSV 默认字段、列名映射、金额规则、导入步骤和模板见 [CSV 格式说明](docs/CSV.md)。
+CSV 默认字段、列名映射、金额规则、导入步骤和模板见 [CSV 格式说明](docs/csv-format.md)。
 
-票据写入契约、确定性匹配与异常规则、收支汇总口径见 [对账说明](docs/RECONCILIATION.md)。本阶段没有票据识别或 Agent 实现；未来集成方通过 `InvoiceRecordCreate` 和 `persist_invoice` 服务写入已验证的票据字段。对账只匹配两个方向均唯一的候选；每次运行保留一个新批次，查询接口返回最新批次。
+票据写入契约、确定性匹配与异常规则、收支汇总口径见 [对账说明](docs/RECONCILIATION.md)。本阶段没有真实票据识别 Agent；可信编排器先保存 `material_review` 的 `ACCEPTED` 结果，再创建 `invoice_extraction` 任务，最后调用 `persist_invoice_from_task`。发票记录保留审核任务与识别任务 ID。对账只匹配两个方向均唯一的候选；每次运行保留一个新批次，查询接口返回最新批次。
 
 五个 Agent 角色的 Pydantic 契约、`AgentGateway` 接入方法、任务状态、Fake 与 SSE 用法见 [Agent 接入说明](docs/agent-integration.md)。Agent 模块只提供集成层，不调用真实 Agent。`FakeAgentGateway` 仅供开发和测试，生产环境调用会报错。任务创建和调用是可信后端服务接口，不对客户开放 HTTP 写入入口。
 
@@ -101,7 +105,7 @@ CSV 默认字段、列名映射、金额规则、导入步骤和模板见 [CSV �
 pytest
 ```
 
-测试使用临时 SQLite 数据库，并实际运行 `alembic upgrade head`；也测试从第一阶段数据升级。不需要连接开发数据库。
+测试使用临时 SQLite 数据库，并实际运行 `alembic upgrade head`；也测试从第一阶段数据升级。不需要连接开发数据库。阶段 7 端到端测试以 Fake Agent 走通客户创建到报告发布及 CSV 下载，并检查材料审核门禁、权限、原始数据、事务回滚与外键。
 
 ## 当前模型约定
 
@@ -112,4 +116,9 @@ pytest
 - Agent 原始输入输出和事件扩展载荷使用 JSON；身份、状态、关联、时间等使用独立列。
 - Agent 任务有订单内唯一幂等键；运行和任务状态分别持久化，并保留 JSON 检查点、事件与审计记录。
 
-待确认：同一账期是否允许多个订单、订单价格策略、真实认证方式，以及 AgentRun 与 AgentTask 的最终接入语义。第一阶段旧工作室没有所有者，迁移不猜测归属，因此这些旧记录须在未来的管理流程中明确归属后才能由客户访问。
+## 尚未完成与待确认
+
+- 五个真实 Agent、OCR/模型调用、Microsoft Agent Framework 工作流及自动任务调度尚未接入；Fake 只用于本地和测试。
+- 生产认证尚未接入，生产环境受保护 API 当前返回 503。PDF、支付、外部通知与电子签署未实现。
+- 同一账期是否允许多个订单、订单价格策略、跨批次异常处理结果沿用、客户可见的事件文案与保留周期需确认。
+- 第一阶段旧工作室没有所有者，迁移不猜测归属；需要后续管理流程明确归属后客户才能访问。

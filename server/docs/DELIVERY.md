@@ -55,5 +55,5 @@ report = await report_service.create_from_agent_task(session, task.id)
 - `target_version` 与未来异常复核流程的最终绑定规则，以及待执行 `risk_analysis` 任务如何由队友工作流调度。
 - 客户补充后自动转 `waiting_owner`、旧已发布版本保持客户可读，当前作为 MVP 初始规则；产品验收时确认。
 - 第四阶段重新运行对账会生成新批次和新异常工单；旧工单决定与补充保留作历史记录，但不会自动迁移到新工单。跨批次沿用处理结果的判定规则仍需确认。
-- 报告发布已经构成版本级交付；订单状态与报告审批状态如何同步尚无明确规则，当前不会因报告发布而擅自跳转订单状态。
+- 订单状态由 `order_state` 服务同步：提交审核进入 `awaiting_owner_review`，批准进入 `approved`，发布进入 `delivered`；报告版本与订单状态仍分别保存。
 - 当前 HTML 为可打印交付格式；PDF、电子签署与外部交付通知留待后续阶段。

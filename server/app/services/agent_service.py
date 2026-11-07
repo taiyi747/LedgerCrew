@@ -14,6 +14,8 @@ from app.models import AgentRun, AgentTask, AuditLog, ExceptionTicket, Order, Re
 from app.repositories import agents as repo
 from app.repositories import reconciliation as reconciliation_repo
 from app.schemas.agent import AgentTaskCreate
+from app.services import order_state
+from app.services.material_review import accepted_invoice_review
 
 CHECKPOINT_ADAPTER = TypeAdapter(dict[str, JsonValue])
 
@@ -48,6 +50,8 @@ async def _validate_references(session: AsyncSession, data: AgentTaskCreate) -> 
             raise AppError("invalid_agent_source", "File category does not match stored metadata", 422)
         if data.task_type == "invoice_extraction" and (source.file_category != "invoice_image" or source.validation_status != "valid"):
             raise AppError("invalid_agent_source", "Invoice extraction requires a validated invoice image", 422)
+        if data.task_type == "invoice_extraction":
+            await accepted_invoice_review(session, data.order_id, source.id)
     if data.task_type == "risk_analysis":
         payload = data.input_payload
         ticket = await session.get(ExceptionTicket, payload["exception_id"])
@@ -144,10 +148,14 @@ async def _transition(session: AsyncSession, task_id: str, expected: set[str], t
         task.attempt_count += 1
         task.started_at = task.started_at or now
         run.started_at = run.started_at or now
+        if task.task_type in {"material_review", "invoice_extraction", "reconciliation_summary", "risk_analysis", "report_draft"}:
+            await order_state.begin_processing(session, task.order_id)
     if target in {"succeeded", "failed"}:
         task.ended_at = run.ended_at = now
     if output is not None:
         task.output_data = run.output_data = output
+        if task.task_type == "material_review" and output.get("review_status") in {"REJECTED", "NEEDS_REUPLOAD"}:
+            await order_state.request_customer(session, task.order_id)
     if error is not None:
         task.error_message = run.error_message = error
     if metadata is not None:

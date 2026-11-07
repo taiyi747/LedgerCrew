@@ -25,6 +25,8 @@ class InvoiceRecordRead(BaseModel):
     id: str
     order_id: str
     source_file_id: str
+    source_task_id: str | None
+    material_review_task_id: str | None
     invoice_number: str | None
     issue_date: date | None
     seller: str | None
