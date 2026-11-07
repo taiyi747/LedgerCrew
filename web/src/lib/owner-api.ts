@@ -2,7 +2,7 @@ import { api, download, subscribe, type Report } from '@/lib/api';
 
 export type OwnerView = 'overview' | 'orders' | 'intakes' | 'dashboard';
 export type OwnerOrder = { id: string; order_no: string; status: string; input_revision: number; period_start: string; period_end: string; studio_id: string; studio_name?: string };
-export type OwnerAgent = { id: string; name: string; workspace: string; model: string; status: string; current_task: string | null; queued: number; completed: number; failed: number };
+export type OwnerAgent = { id: string; name: string; workspace: string; model: string; status: string; current_task: string | null; queued: number; completed: number; failed: number; todos: { done: number; total: number } };
 export type OwnerException = { id: string; exception_no: string; type: string; status: string; difference_cents: number | null; related_amount_cents: number | null; evidence: Record<string, unknown> };
 export type OwnerDashboard = {
   orders: OwnerOrder[]; selected_order_id: string | null;
@@ -13,10 +13,11 @@ export type OwnerDashboard = {
   worker: { at: string; pid: number } | null;
   summary: { orders: number; processing: number; delivered: number; waiting: number };
 };
+export type DelegationTodo = { id: string; title: string; status: 'pending' | 'running' | 'completed' | 'blocked'; detail: string };
 export type OwnerTrace = {
   decisions: { decision_id: string; action: string; summary: string; delegation_ids?: string[] }[];
   tasks: { id: string; order_id: string; task_type: string; status: string; started_at: string | null; ended_at: string | null; delegation_id: string | null; error_message: string | null }[];
-  delegations: { id: string; decision_id: string; task_type: string; goal: string; input_revision: number; input_refs: string[]; status: string; result: { summary?: string } | null; receipts: { tool: string; [key: string]: unknown }[]; error: string | null }[];
+  delegations: { id: string; decision_id: string; task_type: string; goal: string; input_revision: number; input_refs: string[]; status: string; result: { summary?: string } | null; receipts: { tool: string; [key: string]: unknown }[]; todos: DelegationTodo[]; error: string | null }[];
 };
 export type IntakeTodo = { id: string; file_id: string; kind: string; title: string; status: 'pending' | 'running' | 'completed' | 'blocked'; detail: string };
 export type OwnerIntake = {
@@ -43,6 +44,7 @@ export const stateLabels: Record<string, string> = {
 };
 export const roleLabels: Record<string, string> = { supervisor: '财税运营总管', invoice_processing: '票据处理', data_reconciliation: '数据核对', customer_reception: '客户服务', risk_delivery: '风险与交付' };
 export const intakeTodoLabels: Record<string, string> = { pending: '待处理', running: '读取中', completed: '已完成', blocked: '待确认' };
+export const todoStatusLabels: Record<string, string> = { pending: '待办', running: '进行中', completed: '已完成', blocked: '受阻' };
 export const taskLabels: Record<string, string> = { workflow_dispatch: '决策与派工', invoice_batch: '批量票据处理', invoice_extraction: '票据识别', reconcile_order: '流水核对', intake: '材料接待', questions: '补充问题草稿', risk_summary: '风险说明', report_draft: '报告草稿', answer_question: '订单问答' };
-export const toolLabels: Record<string, string> = { process_invoice_batch: '读取、识别与保存票据', reconcile_transactions: '确定性对账', save_customer_message: '保存受理说明', save_customer_questions: '保存询问草稿', save_risk_summary: '保存风险说明', create_report_draft: '创建报告草稿', save_answer: '保存答复', read_customer_context: '读取订单上下文' };
+export const toolLabels: Record<string, string> = { process_invoice_batch: '读取、识别与保存票据', reconcile_transactions: '确定性对账', save_customer_message: '保存受理说明', save_customer_questions: '保存询问草稿', save_risk_summary: '保存风险说明', create_report_draft: '创建报告草稿', save_answer: '保存答复', read_customer_context: '读取订单上下文', plan_todos: '规划待办清单', todo_status: '更新待办进度' };
 export function timeLabel(value: string | null | undefined) { return value ? new Intl.DateTimeFormat('zh-CN', { month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false,timeZone:'Asia/Shanghai' }).format(new Date(value)) : '—'; }

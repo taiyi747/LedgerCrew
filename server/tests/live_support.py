@@ -155,11 +155,15 @@ class LiveScriptedRunner:
                 unresolved_items=["请核实尚未确认的凭证。"],
             )
         if schema is ChatReply:
+            if "plan_todos" in named:
+                await named["plan_todos"](["核对客户问题与订单数据", "撰写定性答复"])
             context = json.loads(prompt.split("\n")[-1])["context"]
             refs = [context["exceptions"][0]["exception_no"]] if context["exceptions"] else []
             return ChatReply(
                 answer="请查看当前订单的实际核对结果，未确认的事项仍需核实。", evidence_refs=refs
             )
+        if "plan_todos" in named:
+            await named["plan_todos"](["读取任务目标与真实数据", "调用业务工具完成处理", "核对成果与工具回执"])
         for name in ("process_invoice_batch", "reconcile_transactions", "create_report_draft"):
             if name in named:
                 await named[name]()
@@ -169,4 +173,6 @@ class LiveScriptedRunner:
             await named["save_customer_questions"]("请补充差额说明和缺失凭证，原因尚待核实。")
         if "save_risk_summary" in named:
             await named["save_risk_summary"]("当前差额、重复与缺票需要人工核实。")
+        if "todo_status" in named:
+            await named["todo_status"]("completed", [], "已完成本项处理。")
         return RoleResult(summary="已调用所需工具并保存成果", evidence_refs=[])

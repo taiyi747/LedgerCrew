@@ -293,6 +293,12 @@ async def dashboard(
                 "failed": supervisor_statuses.count("failed")
                 if role == "supervisor"
                 else sum(d.status == "failed" for d in mine),
+                "todos": {
+                    "done": sum(t.get("status") == "completed" for t in (last.todos or [])),
+                    "total": len(last.todos or []),
+                }
+                if last
+                else {"done": 0, "total": 0},
             }
         )
     latest_report = state.get("report") if state else None
@@ -414,6 +420,7 @@ async def trace(
                     "status",
                     "result",
                     "receipts",
+                    "todos",
                     "error",
                 )
             }
