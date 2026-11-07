@@ -6,6 +6,8 @@ test('customer materials → genuine delegations → owner decisions → publish
   const page=await customer.newPage();const boss=await owner.newPage();
   const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));boss.on('pageerror',e=>errors.push(e.message));
   await page.goto('/');
+  await page.getByRole('link',{name:'开始清账',exact:true}).first().click();
+  await expect(page).toHaveURL(/\/upload\/$/);
   await page.getByRole('button',{name:'开始咨询'}).click();
   expect(await (await page.request.get('/api/v1/orders',{headers:{'X-User-Id':'local-customer'}})).json()).toEqual([]);
   await page.getByLabel('工作室名称',{exact:true}).fill('松石设计工作室');
@@ -62,4 +64,27 @@ test('customer materials → genuine delegations → owner decisions → publish
   expect((await download).suggestedFilename()).toContain('v1.html');
   expect(errors).toEqual([]);
   await customer.close();await owner.close();
+});
+
+test('brand and preview use native customer and owner routes without legacy assets', async ({ page, request }) => {
+  await page.goto('/');
+  await expect(page.getByRole('heading', {name:'账清', exact:true})).toBeVisible();
+  await expect(page.locator('a[href="/upload/"]')).toHaveCount(3);
+  await expect(page.locator('a[href="/workspace/"]')).toHaveCount(0);
+  await page.getByRole('link', {name:'演示体验', exact:true}).click();
+  await expect(page).toHaveURL(/\/demo\/$/);
+  await expect(page.getByRole('button', {name:'上传票据和流水', exact:true})).toBeVisible();
+  await expect(page.locator('.demo-surface')).toHaveCount(1);
+  await page.goto('/');
+  await page.getByRole('link', {name:'老板控制台', exact:true}).click();
+  await expect(page).toHaveURL(/\/owner\/$/);
+  await expect(page.getByRole('navigation', {name:'老板中控导航'})).toBeVisible();
+  await expect(page.locator('.warroom-room')).toHaveCount(4);
+  await page.goto('/workspace/');
+  await expect(page).toHaveURL(/\/owner\/$/);
+  await page.goto('/workspace/index.html');
+  await expect(page).toHaveURL(/\/owner\/$/);
+  for (const asset of ['css/style.css','js/api.js','js/app.js']) {
+    expect((await request.get(`/workspace/${asset}`)).status()).toBe(404);
+  }
 });

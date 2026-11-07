@@ -4,3 +4,6 @@ out/
 *.tsbuildinfo
 .env*
 !.env.example
+
+# Retired static export; keep stale local copies out of Git
+public/workspace/

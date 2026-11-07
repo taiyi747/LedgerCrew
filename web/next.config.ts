@@ -7,6 +7,8 @@ const config: NextConfig = {
     return [
       { source: '/owner/index.html', destination: '/owner/', permanent: false },
       { source: '/owner/dashboard.html', destination: '/owner/dashboard/', permanent: false },
+      { source: '/workspace/index.html', destination: '/owner/', permanent: false },
+      { source: '/workspace/dashboard.html', destination: '/owner/dashboard/', permanent: false },
     ];
   },
   async rewrites() {
