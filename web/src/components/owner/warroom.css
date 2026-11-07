@@ -74,6 +74,29 @@ body:has(.warroom-root){
 .warroom-content-panel{padding:24px;background:#fffffd;border:1px solid rgba(36,62,76,.09);border-radius:14px}
 .warroom-view-heading{font-size:20px;font-weight:600;line-height:28px;margin-bottom:24px}
 
+/* ---- Ambient backdrop: drifting mesh, brand glows and a slow dot grid ---- */
+.warroom-root{position:relative}
+.warroom-shell{position:relative;z-index:1}
+.warroom-backdrop{position:absolute;inset:0;z-index:0;overflow:hidden;pointer-events:none}
+.warroom-backdrop-canvas{position:absolute;inset:0;display:block;width:100%;height:100%;opacity:.9}
+.warroom-glow{position:absolute;border-radius:50%;filter:blur(52px);opacity:.72}
+.warroom-glow-a{width:min(58vw,760px);aspect-ratio:1;left:-12vw;top:-14vw;background:radial-gradient(circle,#7ad5ee 0%,rgba(122,213,238,0) 68%);animation:warroomDrift 28s ease-in-out infinite}
+.warroom-glow-b{width:min(52vw,680px);aspect-ratio:1;right:-10vw;bottom:-12vw;background:radial-gradient(circle,#a8f1ff 0%,rgba(168,241,255,0) 70%);animation:warroomDrift 34s ease-in-out infinite reverse}
+.warroom-backdrop:before{content:'';position:absolute;top:-25%;bottom:-25%;left:-45%;width:34%;background:linear-gradient(100deg,rgba(122,213,238,0) 0%,rgba(122,213,238,.22) 50%,rgba(122,213,238,0) 100%);transform:skewX(-14deg);animation:warroomSweep 17s linear infinite}
+.warroom-backdrop:after{content:'';position:absolute;inset:-12%;background-image:radial-gradient(rgba(36,62,76,.18) .9px,transparent .9px);background-size:26px 26px;opacity:.7;animation:warroomGrid 90s linear infinite}
+@keyframes warroomDrift{
+  0%,100%{transform:translate3d(0,0,0) scale(1)}
+  50%{transform:translate3d(3vw,2vw,0) scale(1.14)}
+}
+@keyframes warroomSweep{
+  0%{transform:translateX(0) skewX(-14deg)}
+  100%{transform:translateX(430%) skewX(-14deg)}
+}
+@keyframes warroomGrid{
+  from{background-position:0 0}
+  to{background-position:260px 156px}
+}
+
 /* Waiting-for-a-human states wear the lemon band from the swatch. */
 .warroom-root [data-slot=alert]{border-radius:12px}
 
