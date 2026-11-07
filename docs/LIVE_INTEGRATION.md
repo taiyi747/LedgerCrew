@@ -28,7 +28,10 @@ npm ci
 npm run dev
 ```
 
-- 客户：http://127.0.0.1:3210/
+- 品牌首页：http://127.0.0.1:3210/
+- 客户：http://127.0.0.1:3210/upload/
+- 客户演示：http://127.0.0.1:3210/demo/
+- 旧版页面：http://127.0.0.1:3210/workspace/
 - 老板：http://127.0.0.1:3210/owner/
 - 仪表盘：http://127.0.0.1:3210/owner/dashboard.html
 - OpenAPI：http://127.0.0.1:8000/docs
@@ -87,7 +90,7 @@ transaction_date,counterparty,direction,amount,description,external_id
 | `GET /owner/agents/{role}/trace` | 老板可见派单、工具成果与决策摘要 |
 | `GET /owner/events/stream` | 跨订单事件续传 |
 
-复用上传、CSV 导入、异常补充/决定、报告审核和下载接口。客户事件按字段白名单过滤，不包含老板决定内容、内部任务载荷、模型私有推理或未发布报告。老板静态资产来自 `sunset@451c88a87d196cb257ceee5d9e4c0eb3d415a291`，仅通过 FastAPI 白名单提供 `HTML/owner/`；旧原型不参与生产路由。Next 关闭代理压缩以保持 SSE 逐帧到达。
+复用上传、CSV 导入、异常补充/决定、报告审核和下载接口。客户事件按字段白名单过滤，不包含老板决定内容、内部任务载荷、模型私有推理或未发布报告。老板静态资产来自 `sunset@451c88a87d196cb257ceee5d9e4c0eb3d415a291`，仅通过 FastAPI 白名单提供 `HTML/owner/`；旧原型通过独立的 `/workspace/` 路由提供历史演示，不使用真实老板端审批数据。Next 关闭代理压缩以保持 SSE 逐帧到达。
 
 ## 验证
 

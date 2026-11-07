@@ -6,10 +6,14 @@
     "dev": "next dev --hostname 127.0.0.1 --port 3210",
     "build": "next build",
     "typecheck": "tsc --noEmit",
-    "test": "node --experimental-strip-types --test src/lib/ledger.test.ts",
-    "test:e2e": "playwright test"
+    "test": "node --experimental-strip-types --test src/lib/ledger.test.ts src/lib/particle-flow.test.ts",
+    "test:e2e": "playwright test",
+    "predev": "node scripts/prepare-legacy.mjs",
+    "prebuild": "node scripts/prepare-legacy.mjs",
+    "pretest:e2e": "node scripts/prepare-legacy.mjs"
   },
   "dependencies": {
+    "gsap": "3.15.1",
     "lucide-react": "1.70.0",
     "next": "16.4.5",
     "react": "19.3.1",

@@ -88,3 +88,34 @@ test('CSV validation enforces the agreed header and one to 200 data rows', () =>
   assert.equal(validateCsvContent(csvHeader + '\n' + rows.join('\n')), null);
   assert.match(validateCsvContent(csvHeader + '\n' + [...rows, '201,2026-10-01,商户,10,out,备注'].join('\n')) ?? '', /200 条/);
 });
+
+import { getChartData } from './chart-data.ts';
+
+test('chart denominator counts six payments and excludes the duplicate invoice', () => {
+  const chart = getChartData(DEMO_ROWS);
+  assert.equal(chart.transactions.length, 6);
+  assert.equal(chart.duplicateCount, 1);
+  assert.deepEqual(chart.slices.map(slice => [slice.status, slice.count]), [['matched', 4], ['difference', 1], ['missing', 1]]);
+  assert.equal(chart.slices.reduce((sum, slice) => sum + slice.count, 0), chart.transactions.length);
+  assert.equal(chart.transactions.some(row => row.status === 'duplicate'), false);
+});
+
+test('chart preserves absent invoices and zero amounts as distinct values', () => {
+  const missing = getChartData(DEMO_ROWS).transactions.find(row => row.status === 'missing')!;
+  assert.equal(missing.invoiceCents, null);
+  assert.equal(missing.transactionCents, 56000);
+  const zero = { ...DEMO_ROWS[0], id: 'ZERO', invoiceCents: 0, transactionCents: 0 };
+  const chart = getChartData([zero]);
+  assert.equal(chart.transactions.length, 1);
+  assert.equal(chart.transactions[0].invoiceCents, 0);
+  assert.equal(chart.slices[0].count, 1);
+});
+
+test('chart totals reconcile the 270-yuan difference plus 560-yuan missing invoice', () => {
+  const chart = getChartData(DEMO_ROWS);
+  const invoiceTotal = chart.transactions.reduce((sum, row) => sum + (row.invoiceCents ?? 0), 0);
+  const paymentTotal = chart.transactions.reduce((sum, row) => sum + row.transactionCents!, 0);
+  assert.equal(invoiceTotal, 1054000);
+  assert.equal(paymentTotal, 1137000);
+  assert.equal(paymentTotal - invoiceTotal, 27000 + 56000);
+});

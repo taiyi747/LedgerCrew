@@ -6,6 +6,8 @@ test('customer materials → genuine delegations → owner decisions → publish
   const page=await customer.newPage();const boss=await owner.newPage();
   const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));boss.on('pageerror',e=>errors.push(e.message));
   await page.goto('/');
+  await page.getByRole('link',{name:'开始清账',exact:true}).first().click();
+  await expect(page).toHaveURL(/\/upload\/$/);
   await page.getByRole('button',{name:'建立本期订单'}).click();
   const dialog=page.getByRole('dialog',{name:'建立本期订单'});
   await dialog.getByLabel('工作室名称（与票据抬头一致）').fill('松石设计工作室');
@@ -51,4 +53,26 @@ test('customer materials → genuine delegations → owner decisions → publish
   expect((await download).suggestedFilename()).toContain('v1.html');
   expect(errors).toEqual([]);
   await customer.close();await owner.close();
+});
+
+
+test('brand, customer preview and preserved HTML pages share one site', async ({ page, request }) => {
+  await page.goto('/');
+  await expect(page.getByRole('heading', {name:'账清', exact:true})).toBeVisible();
+  await expect(page.locator('a[href="/upload/"]')).toHaveCount(3);
+  await page.goto('/demo/');
+  await expect(page.getByRole('button', {name:'上传票据和流水', exact:true})).toBeVisible();
+  await page.goto('/workspace/');
+  await expect(page).toHaveURL(/\/workspace\/index.html$/);
+  for (const [file, mode] of [['index','warroom'],['dashboard','dashboard'],['assistant','assistant'],['settings','settings']]) {
+    await page.goto(`/workspace/${file}.html`);
+    await expect(page.locator('body')).toHaveAttribute('data-page', mode);
+    await expect(page.locator('#view')).not.toBeEmpty();
+    await expect(page.locator('#dock')).not.toBeEmpty();
+    await expect(page.getByRole('navigation', {name:'账清项目入口'})).toBeVisible();
+  }
+  for (const asset of ['css/style.css','js/api.js','js/app.js']) {
+    const response = await request.get(`/workspace/${asset}`);
+    expect(response.ok()).toBeTruthy();
+  }
 });

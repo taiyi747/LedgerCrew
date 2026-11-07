@@ -4,3 +4,6 @@ out/
 *.tsbuildinfo
 .env*
 !.env.example
+
+# Generated from the shared HTML source at startup/build
+public/workspace/
