@@ -90,7 +90,7 @@ HTML/
 
 **2026-11-07 视觉优化**：页面底色压深到冷灰，让白色面板真正浮起来；深度靠阴影递进（`shadow-sm/md/float`），边框只做分隔；等宽体只留给机器串（编号 / 接口 / 指标 / 时间戳 / 工位铭牌），按钮、表单标签、区块标题改用无衬线。
 
-`--bg #e8ebed · --surface #fbfdfe · --raised #e9f3f8 · --text #0c2a35/#3a5c69/#748f9c · --accent #7ad5ee（亮青填充，压墨字 #243e4c）· --accent-text #0b6c89（青当文字时压深）· --highlight #fffa8d · 状态实底 var(--st-*)（工作中 #7ad5ee/墨字 · 空闲 #5c7c8a · 紧急 #c2413c · 休眠 #d3e0e6）· 圆角 6/8/10/14 · 缓动 cubic-bezier(.22,1,.36,1)`
+`--bg #fbfdfe · --surface #fbfdfe · --raised #e9f3f8 · --title-bar #e6f8fb · --text #0c2a35/#3a5c69/#748f9c · --accent #7ad5ee（亮青填充，压墨字 #243e4c）· --accent-text #0b6c89（青当文字时压深）· --highlight #fffa8d · 状态实底 var(--st-*)（工作中 #7ad5ee/墨字 · 空闲 #5c7c8a · 紧急 #c2413c · 休眠 #d3e0e6）· 圆角 6/8/10/14 · 缓动 cubic-bezier(.22,1,.36,1)`
 
 **配色取自色卡四色**（`#4ed7f1` 主青 / `#6fe6fc` 中青 / `#a8f1ff` 淡青 / `#fffa8d` 淡黄）+ 按钮参考（填充 `#7ad5ee`、字 `#243e4c`）。**亮青做「面」、压深做「字」**：`--accent` 是填充（按钮 / 选中态 / 图表主线），上压 `--on-invert` 墨色；`--accent-text` 是青当文字/描边时用的压深版，浅底上才看得清。淡黄走 `--highlight` 点睛（待办数、演示模式）。状态实底走 `--st-*`、**底与字成对**（`--st-*-ink`），全部跟昼夜切换走，JS 里不写死 hex。
 
