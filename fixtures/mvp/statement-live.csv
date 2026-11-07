@@ -1,0 +1,7 @@
+﻿transaction_date,counterparty,direction,amount,description,external_id
+2026-10-10,青禾纸业,OUT,108.00,合成验证,payment-1
+2026-10-11,云杉文具,OUT,36.90,合成验证,payment-2
+2026-10-12,林间印务,OUT,860.00,合成验证,payment-3
+2026-10-13,启明网络,OUT,450.00,合成验证,payment-4
+2026-10-14,远山设备,OUT,2850.00,合成验证,payment-5
+2026-10-15,未附票据供应商,OUT,129.00,合成验证,payment-6

@@ -33,7 +33,7 @@ Junction China 2026 人工智能赛道参赛项目：为小型工作室提供票
 ## 技术方案
 
 - 前端：Next.js App Router、TypeScript、Tailwind CSS。
-- 后端：Python 3.11、FastAPI、Pydantic 2、SQLite、SQLAlchemy 2、Alembic。
+- 后端：Python 3.14、FastAPI、Pydantic 2、SQLite、SQLAlchemy 2、Alembic。
 - AI：MiMo API、Microsoft Agent Framework Python SDK、WorkflowBuilder、FileCheckpointStorage。
 - 部署：本地服务，通过公网隧道暴露 Next.js；Next.js 代理后端 API。
 
@@ -41,6 +41,14 @@ Junction China 2026 人工智能赛道参赛项目：为小型工作室提供票
 
 ## 当前状态
 
-当前仓库提供两个阶段的团队任务计划，应用代码由三位成员按分工实现。请先按第一阶段清单完成 MVP，再领取第二阶段任务；第二阶段按里程碑推进，不计入原 MVP 的 40 小时承诺。请从各自的功能分支提交 PR。
+已接通真实客户页、老板作战室、FastAPI、独立 Worker 与 MiMo 总管委派工作流。客户上传真实材料后，总管实际派单，专业 Agent 调用受控工具执行，异常与报告交给老板审批；客户只可领取已发布结果。
+
+**[本机完整启动与联调说明](docs/LIVE_INTEGRATION.md)** · [真实 MiMo 联调记录](docs/verification/live-integration.json)
+
+客户入口为 `http://127.0.0.1:3210/`，老板入口为 `/owner/`，后端为 `127.0.0.1:8000`。运行说明分别见 [web/README.md](web/README.md) 与 [server/README.md](server/README.md)。`HTML/owner/` 采用选取的 sunset 作战室资产；其余 `HTML/` 文件保留为历史原型，不作为当前入口。
+
+AI 独立 CLI 与样例继续保留，见 [AI 模块接入说明](docs/AI_INTEGRATION.md)。本轮不扩展第二阶段税务申报。
+
+两个阶段的任务计划继续作为协作依据。请先完成并验收第一阶段 MVP，再领取第二阶段任务；第二阶段按里程碑推进，不计入原 MVP 的 40 小时承诺。请从各自的功能分支提交 PR。
 
 首版交付账目核对报告和异常清单；体验交易明确标注为模拟交易。

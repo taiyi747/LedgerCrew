@@ -1,0 +1,64 @@
+{
+  "status": "passed",
+  "verified_at_utc": "2026-11-06T15:29:57.395859+00:00",
+  "python": "3.14.2",
+  "framework_core": "1.24.0",
+  "framework_openai": "1.18.0",
+  "models": {
+    "pro": "mimo-v2.6-pro",
+    "flash": "mimo-v2.6-flash"
+  },
+  "synthetic_data": true,
+  "human_decisions": "explicitly simulated test operator",
+  "backend": "fixture-only reference reconciliation, not production backend",
+  "fresh_python_processes": 6,
+  "matched_count": 4,
+  "amount_difference_minor": 27000,
+  "duplicate_count": 1,
+  "missing_invoice_count": 1,
+  "unresolved_issues_preserved": 3,
+  "final_input_revision": 2,
+  "report_version": 1,
+  "requests": 14,
+  "duplicate_approval_replayed_without_model_request": true,
+  "steps": [
+    {
+      "command": "start",
+      "requests": 10,
+      "pending_kinds": [
+        "exception"
+      ]
+    },
+    {
+      "command": "resume",
+      "requests": 10,
+      "pending_kinds": [
+        "customer"
+      ]
+    },
+    {
+      "command": "supplement",
+      "requests": 13,
+      "pending_kinds": [
+        "exception"
+      ]
+    },
+    {
+      "command": "resume",
+      "requests": 14,
+      "pending_kinds": [
+        "delivery"
+      ]
+    },
+    {
+      "command": "resume",
+      "requests": 14,
+      "pending_kinds": []
+    },
+    {
+      "command": "resume",
+      "requests": 14,
+      "pending_kinds": []
+    }
+  ]
+}

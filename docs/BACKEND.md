@@ -2,7 +2,7 @@
 
 **LedgerCrew · 账清社｜40 小时｜角色 B**
 
-技术栈：Python 3.11、FastAPI、Pydantic 2、SQLite、SQLAlchemy 2、Alembic。
+技术栈：Python 3.14、FastAPI、Pydantic 2、SQLite、SQLAlchemy 2、Alembic。
 代码归属：`server/`，其中 `server/app/agents/` 由 AI 开发成员维护。
 
 先阅读 [公共协作约定](PLAN.md)，再按本文件的 BE 编号领取任务。H0 为团队开工时间；每完成一项，在 PR 中附运行方法与验收结果。

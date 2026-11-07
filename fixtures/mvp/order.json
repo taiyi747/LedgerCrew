@@ -1,0 +1,104 @@
+{
+  "identity": {
+    "order_id": "demo-order",
+    "run_id": "demo-run",
+    "revision": 1
+  },
+  "company_name": "松石设计工作室（合成样例）",
+  "period": "2026-10",
+  "files": [
+    {
+      "id": "receipt-01",
+      "name": "receipt-01.png",
+      "mime_type": "image/png"
+    },
+    {
+      "id": "receipt-02",
+      "name": "receipt-02.png",
+      "mime_type": "image/png"
+    },
+    {
+      "id": "receipt-03",
+      "name": "receipt-03.png",
+      "mime_type": "image/png"
+    },
+    {
+      "id": "receipt-04",
+      "name": "receipt-04.png",
+      "mime_type": "image/png"
+    },
+    {
+      "id": "receipt-05",
+      "name": "receipt-05.png",
+      "mime_type": "image/png"
+    },
+    {
+      "id": "receipt-06",
+      "name": "receipt-06.png",
+      "mime_type": "image/png"
+    }
+  ],
+  "transactions": [
+    {
+      "id": "payment-1",
+      "date": "2026-10-10",
+      "counterparty": "青禾纸业",
+      "amount_minor": 10800,
+      "direction": "out",
+      "source_file_id": "statement",
+      "source_row": 2,
+      "remark": "合成付款样例"
+    },
+    {
+      "id": "payment-2",
+      "date": "2026-10-11",
+      "counterparty": "云杉文具",
+      "amount_minor": 3690,
+      "direction": "out",
+      "source_file_id": "statement",
+      "source_row": 3,
+      "remark": "合成付款样例"
+    },
+    {
+      "id": "payment-3",
+      "date": "2026-10-12",
+      "counterparty": "林间印务",
+      "amount_minor": 86000,
+      "direction": "out",
+      "source_file_id": "statement",
+      "source_row": 4,
+      "remark": "合成付款样例"
+    },
+    {
+      "id": "payment-4",
+      "date": "2026-10-13",
+      "counterparty": "启明网络",
+      "amount_minor": 45000,
+      "direction": "out",
+      "source_file_id": "statement",
+      "source_row": 5,
+      "remark": "合成付款样例"
+    },
+    {
+      "id": "payment-5",
+      "date": "2026-10-14",
+      "counterparty": "远山设备",
+      "amount_minor": 285000,
+      "direction": "out",
+      "source_file_id": "statement",
+      "source_row": 6,
+      "remark": "合成付款样例"
+    },
+    {
+      "id": "payment-6",
+      "date": "2026-10-15",
+      "counterparty": "未附票据供应商",
+      "amount_minor": 12900,
+      "direction": "out",
+      "source_file_id": "statement",
+      "source_row": 7,
+      "remark": "缺票样例"
+    }
+  ],
+  "customer_notes": []
+}

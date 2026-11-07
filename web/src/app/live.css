@@ -1,0 +1,18 @@
+.live-modal-backdrop{position:fixed;inset:0;z-index:40;background:rgb(23 37 31/.38);display:grid;place-items:center;padding:24px;backdrop-filter:blur(4px)}
+.live-dialog{display:block;position:relative;margin:0;width:min(680px,100%);max-height:88dvh;overflow:auto;background:#fff;border:1px solid #dce4de;border-radius:18px;box-shadow:0 24px 80px rgb(21 41 32/.18)}
+.live-dialog.report-modal{width:min(920px,100%)}
+.live-dialog textarea{min-height:110px;width:100%;border:1px solid #dbe3de;border-radius:8px;padding:12px;font:inherit;resize:vertical}
+.live-checkbox{display:flex!important;align-items:center;gap:10px;font-size:13px}
+.live-checkbox input{width:16px!important;min-height:16px!important}
+.live-spin{animation:live-spin 1s linear infinite}
+@keyframes live-spin{to{transform:rotate(360deg)}}
+.live-dialog .material-content{padding:24px}
+.result-stats strong{font-variant-numeric:tabular-nums;font-size:18px}
+.row-status+small{display:block;color:#7a8680;font-size:11px;margin-top:5px}
+.main-nav a{text-decoration:none}
+.upload-error span{flex:1;overflow-wrap:anywhere}
+.history{overflow:auto;min-height:0}
+.history-item{width:100%}
+.composer textarea{min-height:55px}
+@media(max-width:900px){.sidebar{display:none}.live-modal-backdrop{padding:12px}.live-dialog{max-height:94dvh}.topbar{padding-inline:18px}.conversation-header{padding-inline:18px}.result-stats{gap:12px}.result-stats strong{font-size:15px}}
+@media(prefers-reduced-motion:reduce){.live-spin{animation:none}}

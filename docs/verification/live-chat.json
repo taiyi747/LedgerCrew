@@ -1,0 +1,16 @@
+{
+  "verified_at": "2026-11-07T04:12:24.608464+00:00",
+  "provider": "real MiMo",
+  "order_id": "37eb5f1a-06ad-4409-942c-812bc85604ca",
+  "kind": "read-only question",
+  "status": "succeeded",
+  "requests_used": 6,
+  "limit": 6,
+  "answer": "不等于。根据当前订单数据，相关事项的状态均为已接受但未解决，这意味着差额或异常仍被保留在待处理清单中，尚未被核销或关闭；系统数据中没有任何信息表明保留未解决事项会触发自动核销。如需核销差额，仍需在后续处理中单独确认并完成相应操作。当前数据未提供自动核销规则的说明，因此无法进一步确认。",
+  "evidence_refs": [
+    "552de048-9e41-4577-a924-7b931af7ffc0",
+    "97ef8247-5af3-4ba3-870d-864332899e4a",
+    "252bd29e-af85-4998-9c47-c4bfae534c7f"
+  ],
+  "financial_mutations": false
+}
