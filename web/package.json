@@ -6,7 +6,7 @@
     "dev": "next dev --hostname 127.0.0.1 --port 3210",
     "build": "next build",
     "typecheck": "tsc --noEmit",
-    "test": "node --experimental-strip-types --test src/lib/ledger.test.ts src/lib/particle-flow.test.ts",
+    "test": "node --experimental-strip-types --test src/lib/ledger.test.ts src/lib/particle-flow.test.ts src/lib/warroom-flow.test.ts",
     "test:e2e": "playwright test"
   },
   "dependencies": {
