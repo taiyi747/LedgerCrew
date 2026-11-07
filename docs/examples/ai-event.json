@@ -1,0 +1,17 @@
+{
+  "identity": {
+    "order_id": "demo-order",
+    "run_id": "demo-run",
+    "revision": 2
+  },
+  "event_id": "179a62df45e0104bf56e1869",
+  "agent": "delivery",
+  "type": "delivery_approved",
+  "message": "报告已获得人工批准，由后端发布。",
+  "evidence_refs": [],
+  "data": {
+    "report_version": 1,
+    "request_id": "57b88b18d1f0beafd02309d2"
+  },
+  "created_at": "2026-11-06T15:29:56.637460Z"
+}

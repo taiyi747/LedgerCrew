@@ -1,0 +1,68 @@
+[
+  {
+    "file_id": "receipt-01",
+    "invoice_number": "LC-DEMO-001",
+    "date": "2026-10-10",
+    "counterparty": "青禾纸业",
+    "amount_text": "108.00",
+    "currency": "CNY",
+    "direction": "out",
+    "uncertain_fields": [],
+    "evidence_text": "价税合计 108.00"
+  },
+  {
+    "file_id": "receipt-02",
+    "invoice_number": "LC-DEMO-002",
+    "date": "2026-10-11",
+    "counterparty": "云杉文具",
+    "amount_text": "36.90",
+    "currency": "CNY",
+    "direction": "out",
+    "uncertain_fields": [],
+    "evidence_text": "价税合计 36.90"
+  },
+  {
+    "file_id": "receipt-03",
+    "invoice_number": "LC-DEMO-003",
+    "date": "2026-10-12",
+    "counterparty": "林间印务",
+    "amount_text": "860.00",
+    "currency": "CNY",
+    "direction": "out",
+    "uncertain_fields": [],
+    "evidence_text": "价税合计 860.00"
+  },
+  {
+    "file_id": "receipt-04",
+    "invoice_number": "LC-DEMO-004",
+    "date": "2026-10-13",
+    "counterparty": "启明网络",
+    "amount_text": "450.00",
+    "currency": "CNY",
+    "direction": "out",
+    "uncertain_fields": [],
+    "evidence_text": "价税合计 450.00"
+  },
+  {
+    "file_id": "receipt-05",
+    "invoice_number": "LC-DEMO-005",
+    "date": "2026-10-14",
+    "counterparty": "远山设备",
+    "amount_text": "2580.00",
+    "currency": "CNY",
+    "direction": "out",
+    "uncertain_fields": [],
+    "evidence_text": "价税合计 2580.00"
+  },
+  {
+    "file_id": "receipt-06",
+    "invoice_number": "LC-DEMO-001",
+    "date": "2026-10-10",
+    "counterparty": "青禾纸业",
+    "amount_text": "108.00",
+    "currency": "CNY",
+    "direction": "out",
+    "uncertain_fields": [],
+    "evidence_text": "价税合计 108.00"
+  }
+]

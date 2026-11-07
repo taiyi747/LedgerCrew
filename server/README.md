@@ -1,23 +1,25 @@
 # LedgerCrew 后端（v0.1 阶段 7 交付检查）
 
-当前提供工作室、模拟订单、文件上传、安全 ZIP 解压、资金流水 CSV 导入、确定性票据对账、Agent 集成契约、异常处理、报告审批与交付。已用 Fake Agent 验证完整业务链；**真实 Agent、生产认证和自动调度尚未接入**。
+当前提供工作室、模拟订单、文件上传、安全 ZIP 解压、资金流水 CSV 导入、确定性票据对账、Agent 集成契约、异常处理、报告审批与交付。阶段 7 使用 Fake Agent 验证完整业务链。独立的真实 MiMo 工作流位于 `app/agents/`，但与后端 `AgentGateway` 的适配、可信任务调度及生产认证尚未完成。
 
 ## 项目结构
 
-`app/api/v1` 提供 HTTP 路由，`app/services` 处理业务规则，`app/repositories` 访问数据，`app/models` 与 `app/schemas` 分别定义数据库和 API/Agent 数据结构，`app/integrations/agents` 定义网关与 Fake，`app/storage` 隔离本地文件存储，`alembic/versions` 保存迁移，`tests` 包含单元、接口和端到端测试。详细边界见 [架构说明](docs/architecture.md)。
+`app/api/v1` 提供 HTTP 路由，`app/services` 处理业务规则，`app/repositories` 访问数据，`app/models` 与 `app/schemas` 分别定义数据库和 API/Agent 数据结构，`app/integrations/agents` 定义后端网关与 Fake，`app/agents` 放置独立 MiMo 工作流，`app/storage` 隔离本地文件存储，`alembic/versions` 保存迁移，`tests` 包含单元、接口和端到端测试。详细边界见 [架构说明](docs/architecture.md)。
 
 ## 环境与安装
 
-使用 Python 3.11，在 `server/` 目录执行：
+后端与 AI 模块统一使用 Python 3.14。在 `server/` 目录执行：
 
 ```powershell
-py -3.11 -m venv .venv
+python -m venv .venv
 .venv\Scripts\Activate.ps1
 python -m pip install -e ".[test]"
-Copy-Item .env.example .env
+if (-not (Test-Path .env)) { Copy-Item .env.example .env }
 ```
 
 默认 `DATABASE_URL=sqlite+aiosqlite:///./ledgercrew.db`，数据库文件位置相对于运行命令的当前目录。配置由环境变量或 `.env` 提供；环境变量优先。原始文件保存在 `STORAGE_ROOT` 下，API 不返回实际存储键或路径。
+
+需要同时安装开发工具时，可在仓库根目录执行 `uv sync --project server --frozen --extra dev`。后端配置与 MiMo 配置共用 `.env`，请保留已有密钥。AI 独立演示及后端依赖协议见 [AI 接入说明](../docs/AI_INTEGRATION.md)。
 
 ## 数据库迁移
 
@@ -77,9 +79,9 @@ ZIP 原包始终登记保存。坏包、路径穿越、绝对路径、符号链�
 
 CSV 默认字段、列名映射、金额规则、导入步骤和模板见 [CSV 格式说明](docs/csv-format.md)。
 
-票据写入契约、确定性匹配与异常规则、收支汇总口径见 [对账说明](docs/RECONCILIATION.md)。本阶段没有真实票据识别 Agent；可信编排器先保存 `material_review` 的 `ACCEPTED` 结果，再创建 `invoice_extraction` 任务，最后调用 `persist_invoice_from_task`。发票记录保留审核任务与识别任务 ID。对账只匹配两个方向均唯一的候选；每次运行保留一个新批次，查询接口返回最新批次。
+票据写入契约、确定性匹配与异常规则、收支汇总口径见 [对账说明](docs/RECONCILIATION.md)。后端与真实票据识别 Agent 尚未联调；可信编排器需先保存 `material_review` 的 `ACCEPTED` 结果，再创建 `invoice_extraction` 任务，最后调用 `persist_invoice_from_task`。发票记录保留审核任务与识别任务 ID。对账只匹配两个方向均唯一的候选；每次运行保留一个新批次，查询接口返回最新批次。
 
-五个 Agent 角色的 Pydantic 契约、`AgentGateway` 接入方法、任务状态、Fake 与 SSE 用法见 [Agent 接入说明](docs/agent-integration.md)。Agent 模块只提供集成层，不调用真实 Agent。`FakeAgentGateway` 仅供开发和测试，生产环境调用会报错。任务创建和调用是可信后端服务接口，不对客户开放 HTTP 写入入口。
+五个 Agent 角色的 Pydantic 契约、`AgentGateway` 接入方法、任务状态、Fake 与 SSE 用法见 [Agent 接入说明](docs/agent-integration.md)。`app/integrations/agents/` 提供后端集成边界，真实工作流实现与依赖协议见 [AI 模块接入说明](../docs/AI_INTEGRATION.md)。`FakeAgentGateway` 必须显式传入预设结果，仅供开发和测试，生产环境调用会报错。任务创建和调用是可信后端服务接口，不对客户开放 HTTP 写入入口。
 
 客户补充、老板决定、报告版本、审批、HTML 与 CSV 导出口径见 [交付说明](docs/DELIVERY.md)。报告草稿由已校验的 `report_draft` 任务输出创建，财务数字仍取自确定性对账批次；客户只能在发布后查看。
 
@@ -118,7 +120,8 @@ pytest
 
 ## 尚未完成与待确认
 
-- 五个真实 Agent、OCR/模型调用、Microsoft Agent Framework 工作流及自动任务调度尚未接入；Fake 只用于本地和测试。
+- 独立 MiMo Agent 工作流已存在，但与后端 `AgentGateway` 的适配、真实模型联调和自动任务调度尚未完成；Fake 只用于本地和测试。
+- 原定后端技术栈指定 Python 3.11；当前合并的 AI 模块将项目包要求改为 Python 3.14。安装说明按当前 `pyproject.toml` 编写，统一版本要求仍需项目负责人确认。
 - 生产认证尚未接入，生产环境受保护 API 当前返回 503。PDF、支付、外部通知与电子签署未实现。
 - 同一账期是否允许多个订单、订单价格策略、跨批次异常处理结果沿用、客户可见的事件文案与保留周期需确认。
 - 第一阶段旧工作室没有所有者，迁移不猜测归属；需要后续管理流程明确归属后客户才能访问。

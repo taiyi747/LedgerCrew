@@ -1,6 +1,6 @@
 # 架构与端到端流程
 
-LedgerCrew v0.1 使用 Python 3.11、FastAPI、Pydantic 2、SQLAlchemy 2、SQLite 和 Alembic。HTTP 路由只处理请求与响应；业务状态、校验和金额计算在服务层；仓储层负责查询；迁移负责表结构，应用启动不自动建表。
+LedgerCrew v0.1 后端原定 Python 3.11，使用 FastAPI、Pydantic 2、SQLAlchemy 2、SQLite 和 Alembic。当前合并的独立 AI 模块使项目包要求变为 Python 3.14，统一版本仍待确认。HTTP 路由只处理请求与响应；业务状态、校验和金额计算在服务层；仓储层负责查询；迁移负责表结构，应用启动不自动建表。
 
 ## 目录与边界
 
@@ -13,6 +13,7 @@ LedgerCrew v0.1 使用 Python 3.11、FastAPI、Pydantic 2、SQLAlchemy 2、SQLit
 | `app/repositories` | 数据库读取与持久化查询 |
 | `app/services` | 订单状态、文件、CSV、确定性对账、异常、审批、报告与导出 |
 | `app/integrations/agents` | Agent 契约、网关 Protocol、开发测试 Fake |
+| `app/agents` | 独立 MiMo 与 Microsoft Agent Framework 工作流；尚未适配后端网关 |
 | `app/storage` | 存储接口及本地实现；原始文件只读保留 |
 | `app/workers` | 未来工作流执行器适配接口 |
 | `alembic/versions`, `tests` | 版本化迁移和自动化验证 |

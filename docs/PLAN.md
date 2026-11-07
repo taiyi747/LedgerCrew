@@ -25,7 +25,7 @@
 | 部分 | 约定 |
 | --- | --- |
 | 前端 | Next.js App Router、TypeScript、Tailwind CSS |
-| 后端 | Python 3.11、FastAPI、Pydantic 2 |
+| 后端 | Python 3.14、FastAPI、Pydantic 2 |
 | 业务存储 | SQLite、SQLAlchemy 2、Alembic |
 | Agent 编排 | Microsoft Agent Framework Python SDK，使用 `WorkflowBuilder` 定义显式节点和异常分支 |
 | 模型 | 真实 MiMo API，经 `OpenAIChatCompletionClient` 的自定义 `base_url`、`api_key`、`model` 接入 |

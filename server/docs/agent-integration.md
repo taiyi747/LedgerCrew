@@ -1,6 +1,6 @@
 # Agent 接入说明（v0.1）
 
-后端只负责结构化契约、调用边界、状态与事件持久化。本阶段不包含 Prompt、模型调用、OCR、Agent 推理或 Microsoft Agent Framework WorkflowBuilder 实现。其他开发者可以实现 `AgentGateway`，并在其可信编排代码中调用 `agent_service`。当前没有对客户开放的任务创建或调用 HTTP 接口。
+本集成层负责结构化契约、调用边界、状态与事件持久化。独立的真实 MiMo 与 Microsoft Agent Framework 工作流已位于 `app/agents/`，接入说明见 [AI 工作流依赖协议](../../docs/AI_INTEGRATION.md)。通过适配器实现 `AgentGateway` 后，可在可信编排代码中调用 `agent_service`；当前没有对客户开放的任务创建或调用 HTTP 接口。
 
 ## 角色、任务类型与契约
 
@@ -58,7 +58,7 @@ task = await agent_service.invoke_task(session, task.id, my_gateway)
 
 `create_task` 原子性创建一个 `AgentRun`、一个 `AgentTask`、排队事件和审计记录。当前一个运行对应一个任务；同一订单内 `(order_id, idempotency_key)` 唯一。相同键、相同内容重复提交返回原任务；相同键不同内容返回 `idempotency_conflict`。运行与任务状态为 `queued`、`running`、`paused`、`succeeded`、`failed`，与订单状态独立。
 
-编排器也可调用 `start_task`、`pause_task`、`resume_task`、`complete_task`、`fail_task` 控制状态，或使用 `save_checkpoint(session, run_id, checkpoint)` 保存 JSON 检查点。每次转换和检查点写入均有数据库事件与审计记录。`app/workers/runner.py` 仅定义 `WorkflowRunner` 适配 Protocol，未来可接 WorkflowBuilder；当前没有工作流实现。大型文件检查点或 FileCheckpointStorage 的物理存储由未来适配器处理，数据库 JSON 检查点用于必要的恢复状态和关联信息。
+编排器也可调用 `start_task`、`pause_task`、`resume_task`、`complete_task`、`fail_task` 控制状态，或使用 `save_checkpoint(session, run_id, checkpoint)` 保存 JSON 检查点。每次转换和检查点写入均有数据库事件与审计记录。`app/workers/runner.py` 仅定义后端 `WorkflowRunner` 适配 Protocol；独立 MiMo 工作流实现位于 `app/agents/`，两者尚未联调。大型文件检查点或 FileCheckpointStorage 的物理存储由未来适配器处理，数据库 JSON 检查点用于必要的恢复状态和关联信息。
 
 `FakeAgentGateway` 位于 `fake_gateway.py`，必须显式传入预设结果，可模拟成功、失败和暂停。它仅供开发与测试使用；当 `ENVIRONMENT=production` 时调用会直接报错，生产环境不会自动配置 Fake。
 
@@ -75,6 +75,6 @@ Last-Event-ID: 42
 
 ## 待确认事项
 
-- 真实 Agent 运行框架、任务调度入口和认证方式由后续集成阶段确定。当前不会自动执行排队任务；完整业务流程仅由 Fake Agent 测试验证。
+- 独立真实 Agent 运行框架为 Microsoft Agent Framework；网关契约适配、任务调度入口和认证方式仍需联调。本集成层不会自动执行排队任务，后端端到端流程目前由 Fake Agent 测试验证。
 - 多任务运行与外部文件检查点的生命周期需要与队友的 WorkflowBuilder/FileCheckpointStorage 实现共同确定；当前按一个运行对应一个任务持久化。
 - 客户可见的 Agent 进度文案和事件保留周期尚未定义；事件 API 当前返回已授权订单的原始结构化事件。
