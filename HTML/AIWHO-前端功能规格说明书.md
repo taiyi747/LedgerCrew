@@ -15,8 +15,10 @@
 3. 数据层双轨：页面加载后 `hydrate()` 先用**内置演示数据**渲染，再尝试 `GET /api/v1/workspaces`，
    成功则 `adopt()` 整屏换为后端数据（`apiReady = true`）。打不通就一直用内置数据。
 4. 后端 API 全部在 `/api/v1` 下（见第三节），演示数据在 `server/store.ts`（内存态，可写、有 SSE 推送）。
-5. 设计语言：**夜班值班室 / 机场调度席** —— 石墨冷灰（graphite）中性色 + 信号橙 `#c2410c` 点缀，
+5. 设计语言：**夜班值班室 / 机场调度席** —— 冷灰底 + 青（`#0b7c98`）为主，淡黄 `#fffa8d` 点睛，
    签名元素是 8px「状态灯」小圆点。禁止彩色胶囊、渐变球、跑马灯、呼吸灯。
+   配色取自色卡四色（`#4ed7f1` / `#6fe6fc` / `#a8f1ff` / `#fffa8d`）；四色明度偏高，
+   所以亮色带只做「面」，压深一档（`--accent`）才做「字与按钮」。页面底色 `--bg` 保持冷灰不动。
 
 ---
 
@@ -208,9 +210,9 @@
        - **员工剪影**（`fill: var(--art-figure)`，最深一档）：耳朵 `circle 74,55 r8` / `circle 102,55 r8`、后脑勺 `circle 88,68 r20`、身体 `path M62 95v-6a26 26 0 0 1 52 0v6z`；头顶受光弧 `path M76 61a14 14 0 0 1 22-4`（`--art-hi` 10%，宽 3）。
        - 座椅：**画在剪影之后**，座背 `rect 52,60 72×38 rx15`、扶手 `rect 34,76 20×32 rx10` 与 `rect 122,76 20×32 rx10`，都填渐变 `d-chair`（`--art-chair-a → --art-chair-b`）。
          **三条约束**：① 剪影画在**座椅之前**，浅色椅背盖住深色身体，只露脖子以上的头（露出 12px）—— 看着就是靠在椅背上；② 头顶距屏幕底边留 1px —— 两块深色贴上就糊成一团；③ 身体收在座背的 y 范围（60..98）内，否则会从座背下面露出来。
-       - **状态灯**：`circle cx25 cy54 r3.6`，填充 = 状态 hex（working `#c2410c` / idle `#737373` / urgent `#b91c1c` / dormant `#c9c7c4`）+ 左上高光弧（`--art-hi` 55%，1.2 宽）。
+       - **状态灯**：`circle cx25 cy54 r3.6`，填充 = `var(--st-<status>)`（跟昼夜切换走）+ 左上高光弧（`--art-hi` 55%，1.2 宽）。
        - 共用渐变 defs 全站只写一份（隐藏 `<svg width=0 height=0>` 里，ID：`d-screen / d-glass / d-desk-top / d-desk-edge / d-chair / d-shadow`）。
-     - **状态胶囊 `.desk-pill`**：`position:absolute; top:6px; right:2px`、`padding:2px 10px`、圆角 999px、mono 12px **白字**、`box-shadow:0 1px 2px rgba(0,0,0,.12)`；实底色取 `STATUS_META[status].pill`（工作 `#e8963c` / 空闲 `#5b8def` / 紧急 `#c0392b` / 休眠 `#8e8d89`）。**替代原「状态灯 + 灰字」行**；`pill` 只给工位卡用，`lamp`/`color` 仍给抽屉、图例、图表用，两套互不影响。
+     - **状态胶囊 `.desk-pill`**：`position:absolute; top:6px; right:2px`、`padding:2px 10px`、圆角 999px、mono 12px、`box-shadow:0 1px 2px rgba(0,0,0,.12)`；底色取 `STATUS_META[status].pill`（= `var(--st-<status>)`）、字色取 `pillInk`（= `var(--st-<status>-ink)`）——**底与字成对**，因为亮青/淡黄这类底子白字看不清。**替代原「状态灯 + 灰字」行**；`pill` 只给工位卡用，`lamp`/`color` 仍给抽屉、图例、图表用，两套互不影响。
   3. **负载条 `.loadbar`**：`position:absolute; left:10px; right:10px; bottom:4px; height:4px; border-radius:999px; background:#e7e6e3`；
      内条 `width: max(load, 3)%`，`background:var(--text-muted)`。
      显隐：默认 `opacity:0`，`.desk:hover` 或 `.show-load`（热力开启）→ `opacity:1`，`transition:opacity .15s`（宽度不参与动画）。
@@ -231,7 +233,7 @@
   2.5 **工作轨迹**（2026-11-07 新增，`.trace`，最多 380px 内滚动）：**跟对话一样**按时间正序，每轮一条 `.trace-step`：
      - `.trace-meta`「第 {n} 轮 · {relativeTime}」
      - `.trace-say` 气泡 = 这一轮在干什么（`say`）
-     - `.trace-tool` 卡（左缩进 12px、左边框 2px 竖线）= **调用的工具**：`.tool-name`（如 `ledger.lookup`，**不翻译**，是标识符）+ `.tool-args`（入参）+ `.tool-out`（返回）。左边框按 `status` 取色：`ok` 灰、`warn` 信号橙、`error` 红。
+     - `.trace-tool` 卡（左缩进 12px、左边框 2px 竖线）= **调用的工具**：`.tool-name`（如 `ledger.lookup`，**不翻译**，是标识符）+ `.tool-args`（入参）+ `.tool-out`（返回）。左边框按 `status` 取色：`ok` 灰、`warn` 主青、`error` 红。
      数据在 `state.traces[agentId]`（种子见 `data.js` 的 `TRACES`，每轮 `{ts, say, tool, input, output, status}`）；接后端后由 `GET /workspaces/{ws}/agents/{id}/trace` 下发。
      **会跟着指令长**：派单追加一轮 `dispatch.accept`、办结追加一轮 `dispatch.complete`。
      **插值要留到渲染时** —— `say` / `output` 存 key + `sayVars`/`outputVars`，渲染时才 `t(say, sayVars)`；写入时就插好值的话切不了语言。
@@ -467,12 +469,16 @@
 
 ### 3.2 状态枚举 → 文案 / 灯 / 颜色（`lib/status.ts`，全站唯一状态表达方式：8px 小圆灯 + 文字，绝不用色块）
 
-| AgentStatus | label | lamp class | hex | 用途 |
+| AgentStatus | label | lamp class | 变量 | 用途 |
 |---|---|---|---|---|
-| `working` | 工作中 | `lamp-working` | `#c2410c` | 也用于消息 `warn` 灯 |
-| `idle` | 空闲 | `lamp-idle` | `#737373` | 也用于消息 `info` 灯 |
-| `urgent` | 紧急 | `lamp-urgent` | `#b91c1c` | 也用于消息 `critical` 灯 |
-| `dormant` | 休眠 | `lamp-dormant` | `#c9c7c4` | 也用于「无紧急」空态灯 |
+| `working` | 工作中 | `lamp-working` | `--st-working` | 也用于消息 `warn` 灯 |
+| `idle` | 空闲 | `lamp-idle` | `--st-idle` | 也用于消息 `info` 灯 |
+| `urgent` | 紧急 | `lamp-urgent` | `--st-urgent` | 也用于消息 `critical` 灯 |
+| `dormant` | 休眠 | `lamp-dormant` | `--st-dormant` | 也用于「无紧急」空态灯 |
+
+状态实底（工位卡胶囊、图表分段、插画里的状态点）取 `--st-*`，**字色取配套的 `--st-*-ink`** ——
+亮青/淡黄这类底子白字看不清，必须自带墨色。两套变量在 `:root` 与 `[data-theme="dark"]` 各给一套值，
+`STATUS_META` 只存 `var(--st-*)` 字符串，JS 里不写死 hex。
 
 `STATUS_ORDER = ["working","idle","urgent","dormant"]`（状态分布图固定此顺序）。
 
@@ -563,31 +569,45 @@ level：`escalate→critical`，`cancel/replay→warn`，其余 `info`）。
 
 ---
 
-## 四、设计令牌（`app/globals.css` / demo.html `:root`，数值完全一致）
+## 四、设计令牌（本实现 `css/style.css`；源工程是 `app/globals.css` / demo.html `:root`）
 
-> **本项目 2026-11-07 起有意偏离下列源工程数值**（视觉优化，其余实现仍照规格）：页面底色压深到冷灰 `#e8ebed`、面板 `#fcfdfd`、次级面 `#eef1f3`；文字改冷调 `#15191d / #4d545b / #79818a`；圆角 6/8/10/14；阴影分三级（`shadow-sm/md/float`）。等宽体只留给机器串，按钮 / 表单标签 / 区块标题改无衬线。详见 `README.md`「设计令牌」。
+> **本项目 2026-11-07 起有意偏离源工程数值**（视觉优化 + 按色卡重排配色，其余实现仍照规格）：
+> 配色改**冷灰底 + 青 + 淡黄**（色卡四色 `#4ed7f1` / `#6fe6fc` / `#a8f1ff` / `#fffa8d`），
+> 页面底色 `--bg` 保持冷灰 `#e8ebed` 不动；圆角 6/8/10/14；阴影分三级（`shadow-sm/md/float`）。
+> 等宽体只留给机器串，按钮 / 表单标签 / 区块标题改无衬线。**下表是本实现的实际值**，不是源工程的。
 
-### 颜色（`color-scheme: light`）
+### 颜色（浅色；`[data-theme="dark"]` 另有一套，见 `css/style.css`）
 | 变量 | 值 | 用途 |
 |---|---|---|
-| `--bg` | `#fafafa` | 页面底 |
-| `--surface` | `#ffffff` | 卡片/面板/浮层 |
-| `--raised` | `#f4f4f5` | hover 底、chip、deck 底、quiet 按钮 |
-| `--hairline` | `rgba(23,23,23,.08)` | 全部细边框 |
-| `--hairline-strong` | `rgba(23,23,23,.14)` | 输入框边框、开关边框 |
-| `--text-primary` | `#171717` | 主文字/主按钮底 |
-| `--text-secondary` | `#525252` | 次级文字 |
-| `--text-muted` | `#737373` | meta/图标默认色 |
-| `--accent` | `#c2410c` | 信号橙：主操作 hover、选中态、折线主线、第一名条、focus |
-| `--accent-soft` | `rgba(194,65,12,.1)` | focus 光环、工具按钮激活底 |
-| `--positive` | `#16a34a` | 语义正向 |
-| `--negative` | `#b91c1c` | 紧急/告警文字 |
-| `--lamp-working` | `#c2410c` | 状态灯 |
-| `--lamp-idle` | `#737373` | |
-| `--lamp-urgent` | `#b91c1c` | |
-| `--lamp-dormant` | `#c9c7c4` | |
-| 图表中性 | `#e7e6e3`（轨道）、`#bdbcb9`（填充）、`#a3a3a3`（虚线参考）、`#000` @5%/12%/14%（网格/轴/悬停线） | |
-| 按钮 hover | `#000`（primary）、`#ececee`（quiet） | |
+| `--bg` | `#e8ebed` | 页面底（**刻意比面板深，白面板才浮得起来**） |
+| `--surface` | `#fbfdfe` | 卡片/面板/浮层 |
+| `--raised` | `#e9f3f8` | hover 底、chip、deck 底、quiet 按钮 |
+| `--hairline` | `rgba(15,82,104,.11)` | 全部细边框 |
+| `--hairline-strong` | `rgba(15,82,104,.22)` | 输入框边框、开关边框 |
+| `--text-primary` | `#0c2a35` | 主文字 |
+| `--text-secondary` | `#3a5c69` | 次级文字 |
+| `--text-muted` | `#748f9c` | meta/图标默认色 |
+| `--accent` | `#0b7c98` | 主青：主按钮、选中态、折线主线、第一名条、focus |
+| `--accent-strong` | `#08677e` | 主按钮 hover |
+| `--accent-soft` | `rgba(11,124,152,.12)` | focus 光环、工具按钮激活底 |
+| `--accent-tint` | `#a8f1ff` | 淡青（色卡第 3 条）：软底、高亮条 |
+| `--highlight` | `#fffa8d` | 淡黄（色卡第 4 条）：标记、待办点睛 |
+| `--highlight-soft` | `rgba(255,250,141,.5)` | 淡黄软底 |
+| `--positive` | `#0e8f6e` | 语义正向 |
+| `--negative` | `#c2413c` | 紧急/告警文字 |
+| `--st-working` / `-ink` | `#0b7c98` / `#fff` | 状态实底 + 字色（**成对**） |
+| `--st-idle` / `-ink` | `#5c7c8a` / `#fff` | |
+| `--st-urgent` / `-ink` | `#c2413c` / `#fff` | |
+| `--st-dormant` / `-ink` | `#d3e0e6` / `#2a4450` | |
+| `--lamp-*` | 与 `--st-*` 同族、略柔 | 8px 状态灯 |
+| 图表中性 | `#d3e2e9`（轨道）、`#9db6c1`（填充）、`#87a2ae`（虚线参考）、`--grid-line #175d74` @5%/12%/14%（网格/轴/悬停线） | |
+| 按钮 hover | `--accent-strong`（primary）、`--raised`（quiet） | |
+
+**分色规则**：色卡四色明度都偏高，直接当文字会糊在浅底上 ——
+**亮色带只做「面」**（`--accent-tint` / `--highlight` / 图表次色），
+**压深一档做「字与按钮」**（`--accent`）。
+状态实底必须**底与字成对**（`--st-*` + `--st-*-ink`），因为亮青/淡黄这类底子白字看不清；
+两套变量在 `:root` 与 `[data-theme="dark"]` 各给一套值，`STATUS_META` 只存 `var(--st-*)` 字符串。
 
 ### 字体（权重只用 400 / 500）
 - UI：`"IBM Plex Sans","PingFang SC","Microsoft YaHei","Hiragino Sans GB",system-ui,sans-serif`（React 版经 next/font 注入 `--font-ui`；demo.html 走 Google Fonts CDN）。

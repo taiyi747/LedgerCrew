@@ -1,34 +1,48 @@
 /* ============================================================
    AIWHO WEBHOOK 中台 · 纯 HTML 前端
-   设计语言：夜班值班室 / 调度席（石墨冷灰 + 信号橙）
+   设计语言：夜班值班室 / 调度席（冷灰底 + 青，淡黄点睛）
    严格对照 E:\AI工作\AIWHO-Webhook-中台 规格实现
    ============================================================ */
 
 /* ---------- 设计令牌 ----------
-   石墨冷灰 + 信号橙。页面底色压得比面板深，白色面板才「浮」得起来；
+   配色取自色卡四色：#4ed7f1 主青 / #6fe6fc 中青 / #a8f1ff 淡青 / #fffa8d 淡黄。
+   这四色明度都偏高，直接当文字会糊在浅底上 —— 所以分两套用：
+   亮色带做「面」（tint / 高亮 / 图表次色），压深一档做「字与按钮」（--accent）。
+   页面底色 --bg 保持冷灰不动，白色面板才「浮」得起来；
    深度靠阴影递进，边框只做分隔。等宽体只留给机器串（编号/接口/指标/时间戳）。 */
 :root {
   --bg: #e8ebed;
-  --surface: #fcfdfd;
-  --raised: #eef1f3;
-  --hairline: rgba(20, 25, 30, .09);
-  --hairline-strong: rgba(20, 25, 30, .17);
-  --text-primary: #15191d;
-  --text-secondary: #4d545b;
-  --text-muted: #79818a;
-  --accent: #c2410c;
-  --accent-soft: rgba(194, 65, 12, .1);
-  --positive: #15803d;
-  --negative: #b91c1c;
+  --surface: #fbfdfe;
+  --raised: #e9f3f8;
+  --hairline: rgba(15, 82, 104, .11);
+  --hairline-strong: rgba(15, 82, 104, .22);
+  --text-primary: #0c2a35;
+  --text-secondary: #3a5c69;
+  --text-muted: #748f9c;
+  --accent: #0b7c98;
+  --accent-strong: #08677e;
+  --accent-soft: rgba(11, 124, 152, .12);
+  --accent-tint: #a8f1ff;
+  --highlight: #fffa8d;
+  --highlight-soft: rgba(255, 250, 141, .5);
+  --positive: #0e8f6e;
+  --negative: #c2413c;
 
-  --lamp-working: #c2410c;
-  --lamp-idle: #79818a;
-  --lamp-urgent: #b91c1c;
-  --lamp-dormant: #aeb5bb;
+  --lamp-working: #0b7c98;
+  --lamp-idle: #7c8f9c;
+  --lamp-urgent: #c2413c;
+  --lamp-dormant: #b2c3cd;
 
-  --track: #dde1e4;
-  --fill: #aeb5bb;
-  --dash: #98a0a7;
+  /* 状态实底（工位卡胶囊、图表分段、桌角状态点）——底 + 字两色成对，
+     因为亮青/淡黄这类底子白字看不清，必须自带墨色 */
+  --st-working: #0b7c98;   --st-working-ink: #fff;
+  --st-idle:    #5c7c8a;   --st-idle-ink:    #fff;
+  --st-urgent:  #c2413c;   --st-urgent-ink:  #fff;
+  --st-dormant: #d3e0e6;   --st-dormant-ink: #2a4450;
+
+  --track: #d3e2e9;
+  --fill: #9db6c1;
+  --dash: #87a2ae;
 
   /* 圆角按层级分四级，不搞一刀切 */
   --r-tag: 6px;
@@ -36,93 +50,103 @@
   --r-card: 10px;
   --r-panel: 14px;
 
-  /* 阴影按层级递进 */
-  --shadow-sm: 0 1px 2px rgba(18, 24, 30, .07), 0 1px 1px rgba(18, 24, 30, .04);
-  --shadow-md: 0 2px 8px rgba(18, 24, 30, .08), 0 1px 2px rgba(18, 24, 30, .05);
-  --shadow-float: 0 14px 36px rgba(18, 24, 30, .14), 0 3px 10px rgba(18, 24, 30, .07);
+  /* 阴影按层级递进（带一点青，跟底色同族） */
+  --shadow-sm: 0 1px 2px rgba(12, 48, 62, .07), 0 1px 1px rgba(12, 48, 62, .04);
+  --shadow-md: 0 2px 8px rgba(12, 48, 62, .08), 0 1px 2px rgba(12, 48, 62, .05);
+  --shadow-float: 0 14px 36px rgba(12, 48, 62, .14), 0 3px 10px rgba(12, 48, 62, .07);
 
   --ease: cubic-bezier(.22, 1, .36, 1);
 
   --font-ui: "IBM Plex Sans", "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", system-ui, sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
 
-  /* 工位插画配色（明暗两套，插画里的色值都走这些变量） */
-  --art-screen-a: #33333a;
-  --art-screen-b: #1c1c21;
-  --art-screen: #26262c;
-  --art-line: #3f3f46;
+  /* 工位插画配色（明暗两套，插画里的色值都走这些变量）——跟着全局转冷青 */
+  --art-screen-a: #2f3a44;
+  --art-screen-b: #172028;
+  --art-screen: #212c35;
+  --art-line: #3d4c57;
   --art-glass: #fff;
-  --art-desk-a: #fbfbfa;
-  --art-desk-b: #edecea;
-  --art-desk-edge-a: #e4e3e0;
-  --art-desk-edge-b: #d2d1cd;
-  --art-stroke: #d8d7d3;
-  --art-chair-a: #f0efec;
-  --art-chair-b: #dedcd8;
-  --art-station: #8b929b;
+  --art-desk-a: #fbfdfe;
+  --art-desk-b: #e8f0f4;
+  --art-desk-edge-a: #d7e3ea;
+  --art-desk-edge-b: #c2d2db;
+  --art-stroke: #c5d5dd;
+  --art-chair-a: #eaf3f7;
+  --art-chair-b: #d2e2ea;
+  --art-station: #8aa4b1;
   --art-hi: #fff;
-  --art-figure: #2c2c30;
+  --art-figure: #22323c;
 
   /* 反白元素（实心按钮、选中态）上的文字/悬停色 */
   --on-invert: #fff;
   --invert-hover: #000;
-  --scroll-thumb: #d4d4d4;
-  --grid-line: #000;
-  --floor-a: #e3e7e9;
-  --floor-b: #e6e9eb;
+  --scroll-thumb: #bcd0d9;
+  --grid-line: #175d74;
+  --floor-a: #dfeaf0;
+  --floor-b: #e5eef3;
 }
 
 /* ---------- 深色模式（顶栏右上昼夜切换，存 localStorage["aiwho.theme"]） ---------- */
 [data-theme="dark"] {
   --bg: #12161b;
-  --surface: #1b2128;
-  --raised: #232a32;
-  --hairline: rgba(255, 255, 255, .09);
-  --hairline-strong: rgba(255, 255, 255, .16);
-  --text-primary: #eef2f5;
-  --text-secondary: #b4bec7;
-  --text-muted: #848e97;
-  --accent: #f97316;
-  --accent-soft: rgba(249, 115, 22, .16);
-  --positive: #4ade80;
-  --negative: #f87171;
+  --surface: #19232b;
+  --raised: #222f3a;
+  --hairline: rgba(120, 214, 240, .10);
+  --hairline-strong: rgba(120, 214, 240, .19);
+  --text-primary: #e8f4f9;
+  --text-secondary: #a6c1cd;
+  --text-muted: #7b95a2;
+  --accent: #4ed7f1;
+  --accent-strong: #6fe6fc;
+  --accent-soft: rgba(78, 215, 241, .16);
+  --accent-tint: #a8f1ff;
+  --highlight: #fffa8d;
+  --highlight-soft: rgba(255, 250, 141, .2);
+  --positive: #35d6a4;
+  --negative: #ff8b84;
 
-  --lamp-working: #f97316;
+  --lamp-working: #4ed7f1;
   --lamp-idle: #8b949d;
-  --lamp-urgent: #f87171;
+  --lamp-urgent: #ff8b84;
   --lamp-dormant: #4b555e;
 
-  --track: #2d343c;
-  --fill: #7d8791;
-  --dash: #6c7680;
+  --st-working: #4ed7f1;   --st-working-ink: #06222c;
+  --st-idle:    #8fb0be;   --st-idle-ink:    #0c222c;
+  --st-urgent:  #ff8b84;   --st-urgent-ink:  #3a1210;
+  --st-dormant: #3c4c56;   --st-dormant-ink: #b6c8d1;
+
+  --track: #243440;
+  --fill: #7f9aa8;
+  --dash: #6a8695;
 
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, .35);
   --shadow-md: 0 2px 8px rgba(0, 0, 0, .4), 0 1px 2px rgba(0, 0, 0, .3);
   --shadow-float: 0 14px 36px rgba(0, 0, 0, .55), 0 3px 10px rgba(0, 0, 0, .35);
 
-  /* 插画：桌椅转中性灰、剪影压到最深，深底上才读得出来 */
-  --art-screen-a: #242a31;
-  --art-screen-b: #0d1116;
-  --art-screen: #0f141a;
-  --art-line: #39424c;
+  /* 插画：桌椅转冷灰、剪影压到最深，深底上才读得出来 */
+  --art-screen-a: #263440;
+  --art-screen-b: #0b1219;
+  --art-screen: #0e1922;
+  --art-line: #33454f;
   --art-glass: #fff;
-  --art-desk-a: #6a7078;
-  --art-desk-b: #565c64;
-  --art-desk-edge-a: #4a5058;
-  --art-desk-edge-b: #3c4249;
-  --art-stroke: #7a828c;
-  --art-chair-a: #9aa0a8;
-  --art-chair-b: #82888f;
-  --art-station: #7c8791;
+  --art-desk-a: #6d818e;
+  --art-desk-b: #586c78;
+  --art-desk-edge-a: #475b67;
+  --art-desk-edge-b: #36474f;
+  --art-stroke: #7b919d;
+  --art-chair-a: #9ab0bc;
+  --art-chair-b: #8299a5;
+  --art-station: #7b8f9b;
   --art-hi: #fff;
-  --art-figure: #0c0e10;
+  --art-figure: #080e13;
 
-  --on-invert: #12161b;
+  /* 深色下实心按钮用的是亮青，所以反白文字要转深 */
+  --on-invert: #0a222b;
   --invert-hover: #fff;
-  --scroll-thumb: #3a424b;
-  --grid-line: #fff;
-  --floor-a: #232a31;
-  --floor-b: #1c2229;
+  --scroll-thumb: #2c3c47;
+  --grid-line: #7fdcf0;
+  --floor-a: #1b2a34;
+  --floor-b: #16222b;
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -253,8 +277,8 @@ body {
   transition: background 140ms, color 140ms;
 }
 .lang-opt:hover { background: var(--raised); color: var(--text-primary); }
-.lang-opt.on { background: var(--text-primary); color: var(--on-invert); }
-.lang-opt.on:hover { background: var(--text-primary); color: var(--on-invert); }
+.lang-opt.on { background: var(--accent); color: var(--on-invert); }
+.lang-opt.on:hover { background: var(--accent-strong); color: var(--on-invert); }
 
 .stat-inline {
   display: flex;
@@ -580,11 +604,11 @@ body {
 .btn:active { transform: scale(.98); }
 .btn:disabled { opacity: .5; cursor: default; }
 .btn-primary {
-  background: var(--text-primary);
-  border-color: var(--text-primary);
+  background: var(--accent);
+  border-color: var(--accent);
   color: var(--on-invert);
 }
-.btn-primary:hover { background: var(--invert-hover); border-color: var(--invert-hover); }
+.btn-primary:hover { background: var(--accent-strong); border-color: var(--accent-strong); }
 .btn-quiet { border-color: transparent; color: var(--text-secondary); }
 .btn-quiet:hover { background: var(--raised); color: var(--text-primary); }
 
@@ -772,7 +796,7 @@ pre.code {
   transition: background 140ms, color 140ms;
 }
 .dock-item:hover { background: var(--raised); color: var(--text-primary); }
-.dock-item[aria-current="page"] { background: var(--text-primary); color: var(--on-invert); }
+.dock-item[aria-current="page"] { background: var(--accent); color: var(--on-invert); }
 .dock-item svg { width: 16px; height: 16px; }
 
 .tools {
@@ -888,8 +912,8 @@ pre.code {
   color: var(--text-primary);
 }
 .msg.me .msg-bubble {
-  background: var(--text-primary);
-  border-color: var(--text-primary);
+  background: var(--accent);
+  border-color: var(--accent);
   color: var(--on-invert);
 }
 

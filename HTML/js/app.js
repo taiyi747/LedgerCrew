@@ -213,7 +213,7 @@ function deskCard(a) {
     </div>
     <div class="desk-art-wrap">
       ${deskSVG(a.status)}
-      <span class="desk-pill" style="background:${meta.pill}">${statusLabel(a.status)}</span>
+      <span class="desk-pill" style="background:${meta.pill};color:${meta.pillInk}">${statusLabel(a.status)}</span>
     </div>
     <div class="loadbar"><i style="width:${Math.max(a.load, 3)}%"></i></div>
   </div>`;

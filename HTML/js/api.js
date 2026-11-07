@@ -8,11 +8,15 @@ const API_BASE = window.AIWHO_API_BASE || "/api/v1";
 /* ---------- 状态枚举 → 灯 / 色 / 文案 ----------
    lamp/color 给状态点与图表用（全局一致）；
    pill 只给作战室工位卡上的状态胶囊用（参考图样式：实底 + 白字） */
+/* 状态的三套表达：lamp 给抽屉/图例的小圆灯，pill 给工位卡上的实底胶囊（带 pillInk 字色），
+   color 给图表分段与工位插画里的状态点。
+   三者都指向 CSS 的 --st-* / --lamp-* 变量，所以昼夜切换时状态色跟着一起走，
+   不用在 JS 里写死两套 hex。 */
 const STATUS_META = {
-  working: { label: "工作中", lamp: "lamp-working", color: "#c2410c", pill: "#e8963c" },
-  idle:    { label: "空闲",   lamp: "lamp-idle",    color: "#737373", pill: "#5b8def" },
-  urgent:  { label: "紧急",   lamp: "lamp-urgent",  color: "#b91c1c", pill: "#c0392b" },
-  dormant: { label: "休眠",   lamp: "lamp-dormant", color: "#c9c7c4", pill: "#8e8d89" },
+  working: { label: "工作中", lamp: "lamp-working", color: "var(--st-working)", pill: "var(--st-working)", pillInk: "var(--st-working-ink)" },
+  idle:    { label: "空闲",   lamp: "lamp-idle",    color: "var(--st-idle)",    pill: "var(--st-idle)",    pillInk: "var(--st-idle-ink)" },
+  urgent:  { label: "紧急",   lamp: "lamp-urgent",  color: "var(--st-urgent)",  pill: "var(--st-urgent)",  pillInk: "var(--st-urgent-ink)" },
+  dormant: { label: "休眠",   lamp: "lamp-dormant", color: "var(--st-dormant)", pill: "var(--st-dormant)", pillInk: "var(--st-dormant-ink)" },
 };
 const STATUS_ORDER = ["working", "idle", "urgent", "dormant"];
 
