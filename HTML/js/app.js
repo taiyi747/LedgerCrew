@@ -191,7 +191,7 @@ function renderWarroom() {
         <span class="t-title">${esc(t(w.name))}</span>
         <span class="grow"></span>
         <span class="t-meta">${online}/${agents.length} ${t("在线")}</span>
-        ${urgent > 0 ? `<span class="t-meta" style="color:var(--negative)">${t("{n} 项待处理", { n: urgent })}</span>` : ""}
+        ${urgent > 0 ? `<span class="t-meta neg">${t("{n} 项待处理", { n: urgent })}</span>` : ""}
       </div>
       <div class="deck deck-floor">
         ${agents.map(deskCard).join("")}

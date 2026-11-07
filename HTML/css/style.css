@@ -24,6 +24,9 @@
   --accent-text: #0b6c89;
   --accent-soft: rgba(122, 213, 238, .32);
   --accent-tint: #a8f1ff;
+  /* 标题栏整条铺 --accent-text，条内文字 / 告警字要配对给 */
+  --accent-text-ink: #fff;
+  --accent-text-warn: #fffa8d;
   --highlight: #fffa8d;
   --highlight-soft: rgba(255, 250, 141, .5);
   --positive: #0e8f6e;
@@ -101,6 +104,9 @@
   --accent-text: #7ad5ee;
   --accent-soft: rgba(122, 213, 238, .2);
   --accent-tint: #a8f1ff;
+  /* 深色下 --accent-text 转亮青，标题栏随之变亮，条内改压墨字 */
+  --accent-text-ink: #243e4c;
+  --accent-text-warn: #8f2b26;
   --highlight: #fffa8d;
   --highlight-soft: rgba(255, 250, 141, .2);
   --positive: #35d6a4;
@@ -389,7 +395,9 @@ body {
   align-items: center;
   gap: 10px;
   padding: 0 20px;
-  border-bottom: 1px solid var(--hairline);
+  /* 标题栏整条铺标题色 */
+  background: var(--accent-text);
+  color: var(--accent-text-ink);
 }
 .panel-head .grow { flex: 1; }
 .panel-head .t-title {
@@ -398,8 +406,10 @@ body {
   line-height: 24px;
   font-weight: 600;
   letter-spacing: -.005em;
-  color: var(--accent-text);
+  color: var(--accent-text-ink);
 }
+.panel-head .t-meta { color: var(--accent-text-ink); opacity: .82; }
+.panel-head .neg { color: var(--accent-text-warn); opacity: 1; font-weight: 500; }
 
 .deck {
   flex: 1;
