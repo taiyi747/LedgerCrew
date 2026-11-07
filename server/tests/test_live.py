@@ -11,8 +11,8 @@ from test_stage2 import exercise
 from app.db.session import make_engine
 from app.live import service
 from app.live.models import Delegation, WorkflowRun
-from app.models import WorkflowEvent
 from app.live.worker import execute_run
+from app.models import WorkflowEvent
 
 
 async def run_worker(tmp_path, runner, kind="processing"):
@@ -55,7 +55,7 @@ async def create_live_order(client):
 
 def test_delegation_todos_are_planned_tracked_and_traced(tmp_path, monkeypatch):
     async def scenario(client, storage):
-        order_id, customer, _created_run = await prepare_live_order(client)
+        order_id, _customer, _created_run = await prepare_live_order(client)
         runner = LiveScriptedRunner()
         await run_worker(tmp_path, runner)
         owner = {"X-User-Id": "owner"}
@@ -91,7 +91,7 @@ def test_delegation_todos_are_planned_tracked_and_traced(tmp_path, monkeypatch):
 
 def test_work_tools_refuse_before_the_agent_plans(tmp_path, monkeypatch):
     async def scenario(client, storage):
-        order_id, customer, _created_run = await prepare_live_order(client)
+        _order_id, _customer, _created_run = await prepare_live_order(client)
         refusals = []
 
         class GuardProbe(LiveScriptedRunner):
@@ -104,6 +104,17 @@ def test_work_tools_refuse_before_the_agent_plans(tmp_path, monkeypatch):
         await run_worker(tmp_path, GuardProbe())
         assert refusals, "业务工具应先拒绝未规划的调用"
         assert "plan_todos" in refusals[0]["error"], refusals
+
+    exercise(tmp_path, monkeypatch, scenario)
+
+
+def test_run_budget_covers_large_material_batches(tmp_path, monkeypatch):
+    async def scenario(client, storage):
+        order_id, customer, created = await prepare_live_order(client)
+        # 6 张票据图片 + 1 份流水 CSV：运行预算统一 300 次模型请求。
+        assert created["request_limit"] == 300, created
+        state = (await client.get(f"/api/v1/orders/{order_id}/runs/current", headers=customer)).json()
+        assert state["request_limit"] == created["request_limit"], state
 
     exercise(tmp_path, monkeypatch, scenario)
 

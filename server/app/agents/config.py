@@ -19,6 +19,12 @@ class Settings(DataModel):
     transient_retries: int = Field(default=2, ge=0, le=2)
     output_retries: int = Field(default=2, ge=0, le=2)
     max_requests: int = Field(default=64, ge=1)
+    # Per-conversation tool-loop caps. The persisted RequestBudget is the real
+    # cost bound (every model request reserves against it), so these only stop a
+    # single conversation from looping; keep them generous so plan-then-work
+    # turns and large batches orchestrated inside one tool call are never cut.
+    max_function_calls: int = Field(default=300, ge=1)
+    max_iterations: int = Field(default=300, ge=1)
     data_dir: Path = Path("data")
 
     @classmethod
@@ -36,5 +42,7 @@ class Settings(DataModel):
             transient_retries=int(os.environ.get("MIMO_TRANSIENT_RETRIES", "2")),
             output_retries=int(os.environ.get("MIMO_OUTPUT_RETRIES", "2")),
             max_requests=int(os.environ.get("MIMO_MAX_REQUESTS", "64")),
+            max_function_calls=int(os.environ.get("MIMO_MAX_FUNCTION_CALLS", "300")),
+            max_iterations=int(os.environ.get("MIMO_MAX_ITERATIONS", "300")),
             data_dir=Path(os.environ.get("LEDGERCREW_DATA_DIR", "data")),
         )

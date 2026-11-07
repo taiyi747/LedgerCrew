@@ -183,7 +183,10 @@ class MiMoRunner:
             client = OpenAIChatCompletionClient(
                 model=model,
                 async_client=openai_client,
-                function_invocation_configuration={"max_iterations": 4, "max_function_calls": 4},
+                function_invocation_configuration={
+                    "max_iterations": self.settings.max_iterations,
+                    "max_function_calls": self.settings.max_function_calls,
+                },
             )
             agent = Agent(
                 client=client,

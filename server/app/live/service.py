@@ -326,6 +326,11 @@ async def start_run(session, order_id, principal, key, expected_revision, *, com
     order = await order_for_user(session, order_id, principal)
     if order.input_revision != expected_revision:
         raise AppError("stale_revision", "材料版本已变化，请刷新后重试。", 409)
+    # Model request ceiling for one processing run. Every recognised image or
+    # document costs one or more requests; 300 covers a couple hundred materials
+    # plus workflow overhead and still bounds a runaway loop. Raise the constant
+    # when bigger batches arrive.
+    request_limit = 300
     existing = await session.scalar(
         select(WorkflowRun).where(WorkflowRun.order_id == order_id, WorkflowRun.idempotency_key == key)
     )
@@ -334,6 +339,7 @@ async def start_run(session, order_id, principal, key, expected_revision, *, com
     active = await current_run(session, order_id)
     if active and active.status in {"queued", "running", "paused", "failed"}:
         if active.status == "paused" and active.input_revision != order.input_revision:
+            active.request_limit = max(active.request_limit, request_limit)
             await wake_supervisor(session, order_id)
             if commit:
                 await session.commit()
@@ -346,6 +352,7 @@ async def start_run(session, order_id, principal, key, expected_revision, *, com
         input_revision=order.input_revision,
         idempotency_key=key,
         created_by=principal.user_id,
+        request_limit=request_limit,
     )
     session.add(run)
     try:
