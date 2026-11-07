@@ -12,6 +12,9 @@ server/.venv/
 server/data/
 server/.coverage
 server/htmlcov/
+output/
+outputs/
+tmp/
 *.log
 node_modules/
 .next/
