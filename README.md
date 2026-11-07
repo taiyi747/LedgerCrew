@@ -47,7 +47,7 @@ Junction China 2026 人工智能赛道参赛项目：为小型工作室提供票
 
 **[本机完整启动与联调说明](docs/LIVE_INTEGRATION.md)** · [真实 MiMo 联调记录](docs/verification/live-integration.json)
 
-客户入口为 `http://127.0.0.1:3210/`，老板入口为 `/owner/`，后端为 `127.0.0.1:8000`。运行说明分别见 [web/README.md](web/README.md) 与 [server/README.md](server/README.md)。老板控制台是 Next.js 原生页面，保留原作战室布局、网格工位和插画；交互组件使用 shadcn/ui。`HTML/owner/` 及其余 `HTML/` 文件保留为历史原型，不作为当前入口。
+客户入口为 `http://127.0.0.1:3210/`，老板入口为 `/owner/`，后端为 `127.0.0.1:8000`。运行说明分别见 [web/README.md](web/README.md) 与 [server/README.md](server/README.md)。老板控制台是 Next.js 原生页面，保留原作战室布局、网格工位和插画；交互组件使用 shadcn/ui。客户页、老板作战室及其组件和工位资源统一在 `web/` 中维护。
 
 AI 独立 CLI 与样例继续保留，见 [AI 模块接入说明](docs/AI_INTEGRATION.md)。本轮不扩展第二阶段税务申报。
 

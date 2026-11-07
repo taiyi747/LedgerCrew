@@ -2,9 +2,9 @@ name: LedgerCrew integration
 
 on:
   push:
-    paths: ["server/**", "fixtures/**", "web/**", "HTML/owner/**", ".github/workflows/agents.yml"]
+    paths: ["server/**", "fixtures/**", "web/**", ".github/workflows/agents.yml"]
   pull_request:
-    paths: ["server/**", "fixtures/**", "web/**", "HTML/owner/**", ".github/workflows/agents.yml"]
+    paths: ["server/**", "fixtures/**", "web/**", ".github/workflows/agents.yml"]
 
 permissions:
   contents: read
