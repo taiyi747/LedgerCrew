@@ -22,8 +22,8 @@ async def scripted_worker():
 
     from app.db.session import SessionLocal
     from app.db.types import utc_now
-    from app.live import service
-    from app.live.worker import DATA, execute_run
+    from app.intake.engine import execute_job
+    from app.live.worker import DATA, claim_slot, execute_run
 
     DATA.mkdir(parents=True, exist_ok=True)
     runner = LiveScriptedRunner()
@@ -34,9 +34,10 @@ async def scripted_worker():
         for kind in ("processing", "chat"):
             token = str(uuid4())
             async with SessionLocal() as session:
-                run_id = await service.claim_run(session, kind, token)
-            if run_id:
-                await execute_run(SessionLocal, run_id, token, runner=runner)
+                work = await claim_slot(session, kind, token)
+            if work:
+                executor = execute_job if work[0] == "intake" else execute_run
+                await executor(SessionLocal, work[1], token, runner=runner)
         await asyncio.sleep(0.15)
 
 

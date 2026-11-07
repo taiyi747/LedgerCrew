@@ -37,9 +37,11 @@ Junction China 2026 人工智能赛道参赛项目：为小型工作室提供票
 - AI：MiMo API、Microsoft Agent Framework Python SDK、WorkflowBuilder、FileCheckpointStorage。
 - 部署：本地服务，通过公网隧道暴露 Next.js；Next.js 代理后端 API。
 
-核心流程：**模拟下单 → 上传材料 → 识别票据 → 核对流水 → 人工处理异常 → 审核报告 → 客户领取。**
+核心流程：**聊天上传 → 材料预检 → 客户确认服务 → 总管派工 → 正式核对 → 人工审核 → 报告交付。**
 
 ## 当前状态
+
+新增下单前接洽、混合 ZIP、客服轻量预检与服务确认卡，详见 **[接单迭代说明](docs/INTAKE_RECEPTION.md)**。客户点击确认前不生成订单；确认后自动接入现有总管与交付流程。
 
 已接通真实客户页、老板作战室、FastAPI、独立 Worker 与 MiMo 总管委派工作流。客户上传真实材料后，总管实际派单，专业 Agent 调用受控工具执行，异常与报告交给老板审批；客户只可领取已发布结果。
 

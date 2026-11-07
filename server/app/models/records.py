@@ -35,6 +35,7 @@ class Order(Base):
         CheckConstraint("status IN ('draft','awaiting_materials','ready_to_process','processing','awaiting_customer','awaiting_owner_review','approved','delivered','failed')", name="ck_orders_status"),
         Index("ix_orders_studio_created", "studio_id", "created_at"),
         UniqueConstraint("order_no", name="uq_orders_order_no"),
+        UniqueConstraint("intake_id", name="uq_order_intake"),
         CheckConstraint("period_end >= period_start", name="ck_orders_period_range"),
     )
 
@@ -46,6 +47,8 @@ class Order(Base):
     period_year: Mapped[int] = mapped_column(Integer, nullable=False)
     period_month: Mapped[int] = mapped_column(Integer, nullable=False)
     status: Mapped[str] = mapped_column(String(32), default="draft", nullable=False)
+    intake_id: Mapped[str | None] = mapped_column(ForeignKey("intake_sessions.id", name="fk_order_intake"), nullable=True)
+    service_snapshot: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     price_cents: Mapped[int | None] = mapped_column(Integer, nullable=True)
     service_scope: Mapped[str | None] = mapped_column(String(200), nullable=True)
     is_simulated: Mapped[bool] = mapped_column(default=True, nullable=False)

@@ -1,5 +1,7 @@
 # LedgerCrew 客户端与老板入口
 
+真实客户入口增加先咨询、上传 ZIP、材料预检与服务确认卡；确认后转入原订单聊天界面。详见 [接单说明](../docs/INTAKE_RECEPTION.md)。
+
 真实客户入口使用 Next.js 聊天界面；老板作战室、仪表盘与审批通过 `/owner/` 提供。两个页面均使用真实业务 API 和 fetch SSE，无演示数据回退。
 
 ```powershell

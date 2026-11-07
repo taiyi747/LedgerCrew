@@ -37,6 +37,8 @@ npm run dev
 
 `server/.env` 需要配置 `MIMO_API_KEY`、`MIMO_BASE_URL=https://api.xiaomimimo.com/v1`、`MIMO_MODEL_PRO=mimo-v2.6-pro`、`MIMO_MODEL_FLASH=mimo-v2.6-flash`。密钥缺失或调用失败时明确失败，不使用 Fake 回退。预算固定为每处理运行 64 次、每问答 6 次，包含 HTTP 重试，恢复和人工重试不清零。
 
+当前客户首页已增加下单前接洽与预检，请优先按 [接单迭代说明](INTAKE_RECEPTION.md) 操作。以下订单 API 和后半程流程继续兼容。
+
 ## 操作
 
 1. 客户建立工作室和账期，添加 JPG/PNG 与一份标准 CSV，发送。上传成功、CSV 实际导入后才建立处理运行。

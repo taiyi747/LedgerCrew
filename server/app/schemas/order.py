@@ -21,6 +21,9 @@ class OrderRead(BaseModel):
     status: str
     input_revision: int
     service_scope: str | None
+    price_cents: int | None
+    intake_id: str | None
+    service_snapshot: dict | None
     is_simulated: bool
     created_at: datetime
     updated_at: datetime

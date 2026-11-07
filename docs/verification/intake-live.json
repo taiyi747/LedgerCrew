@@ -1,0 +1,18 @@
+{
+  "verified_at": "2026-11-07T05:30:39.442224+00:00",
+  "provider": "real MiMo Flash",
+  "intake_id": "8a53f8e4-7121-4c44-bfb8-0e2de345b92a",
+  "order_id": "8371ed8b-38f6-4cf6-8984-c811b69cffc8",
+  "status": "confirmed",
+  "precheck_requests": 12,
+  "precheck_limit": 12,
+  "sampled_images": 3,
+  "price_cents": 1990,
+  "materials": "six synthetic invoice images and canonical CSV in a mixed ZIP",
+  "human_actions": "explicitly simulated customer profile, warning acknowledgments and order confirmation",
+  "precheck_summary": "轻量预检结果：代码检查未发现阻塞项（blockers 为空），可提交老板审核后受理。材料清单共 7 份纳入检查，含 6 张发票图片与 1 份银行流水 CSV；CSV 共 6 行、6 行有效、无错误。已按清单顺序抽查 3 张不同图片（receipt-01/02/03.png），均为发票版式、文字清晰可读，但标注为合成测试样例，仅作分类与清晰度判断，未识别具体财务字段，不保证真实性。警告 1 项：receipt-06.png 与其他材料内容重复（duplicate_file），正式处理时将检查重复。本预检不构成完整票据识别、对账或税务计算，不承诺材料齐全或账目正确；正式识别仍可能发现未知字段、缺票和差额。未创建订单，需客户点击确认卡后方可下单。",
+  "warning_codes": [
+    "duplicate_file"
+  ],
+  "note": "历史联调在取消硬上限前运行；现行预检无总次数硬上限，见 intake-precheck-live.json。"
+}

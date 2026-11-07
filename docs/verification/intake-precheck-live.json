@@ -1,0 +1,11 @@
+{
+  "verified_at": "2026-11-07T05:49:31.938063+00:00",
+  "provider": "real MiMo Flash",
+  "intake_id": "ccb343f8-a52f-44d2-8e3a-dc02a447ef1b",
+  "status": "ready_with_warnings",
+  "precheck_requests": 11,
+  "request_limit": null,
+  "sampled_images": 3,
+  "order_created": false,
+  "summary": "本次材料预检已完成：检查结果中无阻断项（blockers 为空）。缺失与范围方面：materials.zip（archive 类，id 1466b9ee-6323-4118-8a04-e8082eb2dc9b）标记为未纳入本次材料范围（included=false），其余 7 份文件纳入检查；据此不声称材料齐全。重复方面：发现 1 条重复警告——receipt-06.png（id 815b1ee7-0517-40da-94cd-9317e8a831f6）与另一份材料内容相同，正式处理时将检查重复。抽查范围：按最多抽查三张不同图片的限制，本次对三张票据图像（89116ae6-bdc0-48c5-ab7c-5113f5fbf810、ca02e782-1d60-442e-b442-c87494767a88、9b3ec68a-51b5-44fb-8ffc-fbdb15fc07f3）进行抽查，均判定文字可读并归类为 invoice_image；该判断仅基于版面结构，不构成真实性核验，未读取或记录任何金额、号码等财务字段值。statement.csv（id 20848725-8a8e-4150-9045-8de421bb2a51）检查 6 行、有效 6 行、无错误。本次仅检查材料能否开展服务；正式识别仍可能发现未知字段、缺票和差额。未进行对账，未创建订单。"
+}
