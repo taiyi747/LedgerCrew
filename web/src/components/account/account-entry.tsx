@@ -28,9 +28,8 @@ export function AccountEntry() {
       // Retain the same key across a lost response or a reload; clear only once navigation succeeds.
       if(!requestId.current) requestId.current=sessionStorage.getItem(`ledgercrew.trial-request.${current.id}`)||crypto.randomUUID();
       sessionStorage.setItem(`ledgercrew.trial-request.${current.id}`,requestId.current);
-      const order = await accountApi.trial(requestId.current);
-      sessionStorage.setItem('ledgercrew.trial-notice',`${order.order_no} · 免费体验已开启，无需支付`);
-      setSuccess('免费体验已开启，无需支付。正在进入资料提交页…');
+      await accountApi.trial(requestId.current);
+      setSuccess('正在进入资料提交页…');
       router.replace(uploadDestination(new URLSearchParams(window.location.search).get('next')));
     } catch(e) { setError(e instanceof Error ? e.message : '操作未完成，请重试');lock.current=false;setBusy(false); }
   }
@@ -54,11 +53,10 @@ export function AccountEntry() {
           {!user && <div className={styles.tabs} role="tablist" aria-label="账号操作"><button id="register-tab" type="button" role="tab" aria-selected={tab==='register'} aria-controls="account-form" disabled={busy||checking} onClick={()=>switchTab('register')}>注册账号</button><button id="login-tab" type="button" role="tab" aria-selected={tab==='login'} aria-controls="account-form" disabled={busy||checking} onClick={()=>switchTab('login')}>登录账号</button></div>}
           <form id="account-form" onSubmit={submit} className={styles.form} aria-labelledby={user?'account-title':`${tab}-tab`}>
             {!user && <><label htmlFor="account-username">用户名<input id="account-username" name="username" autoComplete="username" value={username} maxLength={64} onChange={e=>setUsername(e.target.value)} disabled={busy||checking} placeholder="给你的账号起个名字" required/></label><label htmlFor="account-password">{tab==='register'?'设置密码':'密码'}<input id="account-password" name="password" type="password" autoComplete={tab==='register'?'new-password':'current-password'} value={password} maxLength={256} onChange={e=>setPassword(e.target.value)} disabled={busy||checking} required/></label>{tab==='register'&&<label htmlFor="account-confirm">确认密码<input id="account-confirm" name="confirm-password" type="password" autoComplete="new-password" value={confirm} maxLength={256} onChange={e=>setConfirm(e.target.value)} disabled={busy||checking} required/></label>}</>}
-            <div className={styles.summary}><span>已选方案<strong>免费体验</strong></span><span>应付金额<strong>¥0<small>无需支付</small></strong></span></div>
             {error&&<p role="alert" className={styles.error}>{error}</p>}{success&&<p role="status" className={styles.success}>{success}</p>}
             <button className={styles.submit} type="submit" disabled={busy||checking}>{busy||checking?<LoaderCircle size={18} className={styles.spin}/>:null}{checking?'正在确认登录状态…':busy?'正在开启免费体验…':user?'开始免费体验':tab==='register'?'注册并开始免费体验':'登录并继续体验'}{!busy&&!checking&&<ArrowRight size={18}/>}</button>
             {user&&<button type="button" className={styles.switchAccount} disabled={busy} onClick={logout}>退出登录 / 更换账号</button>}
-          </form><p className={styles.footnote}>仅开通免费体验，不涉及付款。<br/>清账结果中的待核实事项将单独保留，报告经审核后交付。</p>
+          </form>
         </section>
       </div>
     </main><footer className={styles.footer}><span><span className={styles.brandName}>小账房</span> LedgerCrew</span><span>让每一笔账，都有迹可循。</span></footer>

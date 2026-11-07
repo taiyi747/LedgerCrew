@@ -7,3 +7,4 @@ from app.live.models import WorkflowRun, Delegation, WorkflowArtifact, OrderMess
 __all__ = ["Studio", "Order", "UploadedFile", "AgentRun", "AgentTask", "WorkflowEvent", "AuditLog", "StatementImport", "StatementImportError", "BankTransaction", "InvoiceRecord", "ReconciliationBatch", "ReconciliationMatch", "ExceptionTicket", "ExceptionSupplement", "ExceptionDecision", "ReportVersion", "ReportReviewAction"]
 
 from app.intake.models import IntakeSession, IntakeFile, IntakeMessage, IntakeJob, IntakeEvent
+from app.models.identity import TrialRequest, User, UserSession

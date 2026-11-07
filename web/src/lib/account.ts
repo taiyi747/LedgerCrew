@@ -1,5 +1,5 @@
 import { api } from './api';
-export type Account = { id: string; username: string };
+export type Account = { id: string; username: string; role: 'customer' | 'owner' };
 export type Trial = { order_no: string; user_id: string; username: string; plan_id: 'FREE'; plan_name: string; amount_cents: number; payment_status: 'not_required'; status: 'pending'; created_at: string };
 export const accountApi = {
   me: () => api<Account>('/auth/me'),

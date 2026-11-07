@@ -101,7 +101,7 @@ async def create(session, principal):
         IntakeMessage(
             intake_id=item.id,
             role="assistant",
-            content="欢迎咨询账清社。可以先发送问题或上传原始材料，材料 Agent 会列出待办并读取，再确认工作室和账期。本次服务为模拟交易，确认前不会创建订单。",
+            content="欢迎咨询账清社。可以先发送问题或上传原始材料，材料 Agent 会列出待办并读取，再确认工作室和账期。确认前不会创建订单。",
         )
     )
     await event(session, item.id, "intake.created")
@@ -652,7 +652,7 @@ async def confirm(session, item, data, principal, storage):
         OrderMessage(
             order_id=order.id,
             role="assistant",
-            content="服务已确认，模拟交易 ¥19.90。总管将安排正式识别与核对，已知待确认事项会继续保留。",
+            content="服务已确认。总管将安排正式识别与核对，已知待确认事项会继续保留。",
             input_revision=order.input_revision,
         )
     )
