@@ -55,6 +55,7 @@ def main():
             ENVIRONMENT="test",
             LEDGERCREW_LIVE_DATA_DIR=str(Path(temporary, "runtime")),
             LEDGERCREW_API_ORIGIN="http://127.0.0.1:8010",
+            FRONTEND_ORIGIN="http://127.0.0.1:3211",
             LEDGERCREW_NEXT_DIST=".next-e2e",
             PYTHONUTF8="1",
         )

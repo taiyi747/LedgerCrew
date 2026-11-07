@@ -11,7 +11,7 @@ npm run dev
 
 客户：`http://127.0.0.1:3210/`；老板：`http://127.0.0.1:3210/owner/`。另需启动 8000 端口的 FastAPI 和独立 Python Worker，完整配置及操作见 [联调说明](../docs/LIVE_INTEGRATION.md)。
 
-Next.js 将 `/api` 和 `/owner` 同源代理到 FastAPI，后端地址可通过 `LEDGERCREW_API_ORIGIN` 配置。已取消静态导出，生产构建使用 `npm run build`，再通过 `npx next start --hostname 127.0.0.1 --port 3210` 运行，不能使用静态服务器托管 `out/`。
+老板 `/owner/` 是 Next.js 原生页面，保留原作战室、总管区、四个网格工位区及原 SVG 插画；按钮、表单和审批抽屉使用 shadcn/ui。只有 `/api` 同源代理到 FastAPI，后端地址可通过 `LEDGERCREW_API_ORIGIN` 配置。旧 `/owner/dashboard.html` 会跳转到 `/owner/dashboard/`。已取消静态导出，生产构建使用 `npm run build`，再通过 `npx next start --hostname 127.0.0.1 --port 3210` 运行，不能使用静态服务器托管 `out/`。
 
 ```powershell
 npm test
