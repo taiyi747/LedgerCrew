@@ -7,7 +7,7 @@ server/.venv/
 *.py[cod]
 .pytest_cache/
 .pytest_tmp/
-.pytest_run_tmp/
+.pytest_*/
 .ruff_cache/
 *.egg-info/
 server/data/

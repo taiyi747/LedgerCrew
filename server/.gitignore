@@ -6,7 +6,7 @@ __pycache__/
 .pip-cache/
 *.egg-info/
 pytest-of-*/
-.pytest_run_tmp/
+.pytest_*/
 pip-build-tracker-*/
 pip-ephem-wheel-cache-*/
 pip-install-*/

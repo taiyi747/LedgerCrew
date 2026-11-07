@@ -1,11 +1,34 @@
 # 应用与数据库回退
 
-状态：**现有 MVP 的恢复原则；v0.2 无迁移可回退。** 任何真实数据库回退都需要负责人批准、维护窗口和经校验备份。不要把 `alembic downgrade` 当作用户数据备份。
+状态：**现有 MVP 的恢复原则；v0.2 无迁移可回退。** 任何真实数据库回退都需要负责人批准、维护窗口和经校验备份。**未经开发者批准，不允许对生产数据库执行恢复、迁移或其他操作。** 不要把 `alembic downgrade` 当作用户数据备份。
+
+本文覆盖上线要点 8–11：数据库恢复、应用回滚、版本兼容性、故障处理；部署与备份前置见 [DEPLOYMENT.md](DEPLOYMENT.md)。
+
+## 8. 数据库恢复
+
+1. 核对升级前由 `scripts/sqlite_snapshot.py backup` 生成的 `.db` 与 `.manifest.json`。工具使用 SQLite backup API，在 WAL 模式下取得一致快照并记录 UTC 时间、revision 与 SHA256；配套核对 `STORAGE_ROOT` 的同一时间点备份。
+2. 恢复到**全新路径**：`python scripts/sqlite_snapshot.py restore <备份库> <全新恢复路径>`。恢复工具拒绝覆盖已有文件，并验证 manifest（含被篡改的 manifest 一律拒绝）、数据库完整性、外键及 revision。
+3. 将配置（`DATABASE_URL`、`STORAGE_ROOT`）指向恢复路径与相应文件存储副本，核对旧业务（订单、文件、流水、对账、报告、审计）后才切流。
+4. 升级后写入的数据不会自动进入旧快照；记录差异、暂停相关操作，由负责人决定人工补录。**不得静默删除原始文件、历史报告或审计。**
+
+## 9. 应用回滚
 
 1. 停止入口流量、API 和 Worker 写入，记录当前提交、Alembic revision、错误、数据库及文件存储路径；保留失败现场。
-2. 核对升级前由 `scripts/sqlite_snapshot.py backup` 生成的 `.db` 与 `.manifest.json`。工具使用 SQLite backup API，在 WAL 模式下取得一致快照并记录 UTC 时间、revision 与 SHA256。配套核对 `STORAGE_ROOT` 的同一时间点备份。
-3. 若只是应用代码回退，先确认旧应用能读取当前 schema；不能假设前后版本兼容。先在隔离副本启动旧应用并回归旧订单、文件、对账、报告和审计。
-4. 若数据库 schema 或数据需要回退，优先使用 `python scripts/sqlite_snapshot.py restore <备份库> <全新恢复路径>`。恢复工具拒绝覆盖，并验证 manifest、数据库完整性、外键及 revision。将配置指向恢复路径与相应文件存储副本，核对旧业务后才切流。
-5. 升级后写入的数据不会自动进入旧快照；记录差异、暂停相关操作，由负责人决定人工补录。不得静默删除原始文件、历史报告或审计。
+2. 若只是应用代码回退，先确认旧应用能读取当前 schema；不能假设前后版本兼容。先在隔离副本启动旧应用并回归旧订单、文件、对账、报告和审计。
+3. 若数据库 schema 或数据需要回退，优先使用上述备份快照恢复，而不是 `alembic downgrade`。`0008_invoice_provenance` 的 downgrade 删除发票来源任务外键列；有值时会丢失该来源关联。更早 revision 的 downgrade 含删表。自动化只验证了**无新增列数据**时 `0008→0007→0008` 的合成数据演练，不能声称真实库完全可逆（详见 [数据库迁移手册](DATABASE_MIGRATION.md)、[备份恢复报告](BE2_10_04_BACKUP_RESTORE.md)）。
+4. 回滚后重跑健康检查与 MVP 关键 API 回归（含权限隔离、上传/ZIP 限制、CSV 导入、对账、报告审批与发布），确认无误再逐步恢复流量。
 
-`0008_invoice_provenance` 的 downgrade 删除发票来源任务外键列；有值时会丢失该来源关联。更早 revision 的 downgrade 含删表。自动化只验证了**无新增列数据**时 `0008→0007→0008` 的合成数据演练，不能声称真实库完全可逆。详细步骤及验证见 [数据库迁移手册](DATABASE_MIGRATION.md)。
+## 10. 版本兼容性
+
+- **数据库**：Alembic `0001`～`0008` 为单 head 线性链；旧库升级经合成历史数据验证（`0007→0008` 保留行与关联，见 [BE2-10-03](BE2_10_03_MVP_UPGRADE_TEST.md)）。当前仓库**没有 v0.2 revision**，因此 v0.1→v0.2 数据兼容性尚未验收。
+- **API**：原 MVP API（URL、Method、Request/Response Schema、状态枚举、错误码）保持兼容；`contracts/openapi.json` 中的 32 条已挂载路径与运行时 FastAPI 一致，`proposed` 操作未挂载、不可调用。新增第二阶段接口不得无理由破坏旧接口。
+- **应用版本**：前后版本 schema 是否可互读必须在副本实测；不得假设旧应用可直接读取新 schema 或反之。
+- **错误外形**：`{"error":{"code":"...","message":"..."}}` 保持不变；401/403/404/409/422/503 语义分离（跨租户 404 隐藏、生产认证 503）。
+
+## 11. 故障处理
+
+1. **现场保留**：任何迁移、恢复、发布失败，先停止写入，记录提交、revision、时间、错误日志与数据库/存储路径，保留失败现场后再分析。
+2. **数据一致性异常**（`integrity_check`/`foreign_key_check` 不通过、manifest 校验失败）：立即停止切流，回退到最近一次经校验备份的恢复流程，不手工修补生产数据。
+3. **应用启动/接口故障**：确认 `ENVIRONMENT`、`DATABASE_URL`、`STORAGE_ROOT` 与依赖版本是否符合本文 1–3 节；生产 503 是预期的认证门禁，不是应用故障。
+4. **安全事件**（疑似越权、数据泄露、密钥泄漏）：立即关闭入口、吊销相关凭据、保全日志与审计记录，上报负责人；审计日志（`audit_logs`）不得被清空或改写以掩盖事件。
+5. 每次故障处理后补充复盘记录，并在下一次上线验收（[V2 验收清单](V2_ACCEPTANCE_CHECKLIST.md)）中更新对应门槛状态。
