@@ -1,10 +1,10 @@
-name: AI module
+name: LedgerCrew integration
 
 on:
   push:
-    paths: ["server/**", "fixtures/**", ".github/workflows/agents.yml"]
+    paths: ["server/**", "fixtures/**", "web/**", "HTML/owner/**", ".github/workflows/agents.yml"]
   pull_request:
-    paths: ["server/**", "fixtures/**", ".github/workflows/agents.yml"]
+    paths: ["server/**", "fixtures/**", "web/**", "HTML/owner/**", ".github/workflows/agents.yml"]
 
 permissions:
   contents: read
@@ -18,5 +18,32 @@ jobs:
         with:
           python-version: "3.14"
       - run: uv sync --project server --frozen --extra dev
-      - run: uv run --project server --frozen --extra dev ruff check server/app/agents server/scripts server/tests/agents
+      - run: uv run --project server --frozen --extra dev ruff check server/app/agents server/app/live server/scripts server/tests/agents server/tests/test_live.py server/tests/live_support.py server/tests/browser_stack.py
       - run: uv run --project server --frozen --extra dev pytest server/tests -q
+
+  browser:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.14"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: uv sync --project server --frozen --extra dev
+      - run: npm ci
+        working-directory: web
+      - run: npm test && npm run build && npm run typecheck
+        working-directory: web
+      - run: npx playwright install --with-deps chromium
+        working-directory: web
+      - run: npm run test:e2e
+        working-directory: web
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: browser-traces
+          path: web/test-results/

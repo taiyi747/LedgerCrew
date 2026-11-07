@@ -27,8 +27,12 @@ async def persist_invoice(session: AsyncSession, order_id: str, data: InvoiceRec
     return invoice
 
 
-async def run(session: AsyncSession, order_id: str, principal: Principal) -> ReconciliationBatch:
+async def run(session: AsyncSession, order_id: str, principal: Principal, *, delegated_run_id: str | None = None) -> ReconciliationBatch:
     order = await order_for_user(session, order_id, principal)
+    from app.live.service import current_run
+    live = await current_run(session, order_id)
+    if live and delegated_run_id != live.id:
+        raise AppError("supervisor_required", "当前订单的对账必须由总管委派给数据核对 Agent。", 409)
     studio = await session.get(Studio, order.studio_id)
     invoices = await repo.list_invoices(session, order_id)
     transactions = await repo.list_transactions(session, order_id)

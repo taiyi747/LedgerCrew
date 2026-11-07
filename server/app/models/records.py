@@ -49,6 +49,7 @@ class Order(Base):
     price_cents: Mapped[int | None] = mapped_column(Integer, nullable=True)
     service_scope: Mapped[str | None] = mapped_column(String(200), nullable=True)
     is_simulated: Mapped[bool] = mapped_column(default=True, nullable=False)
+    input_revision: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
     created_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now, onupdate=utc_now, nullable=False)
 
@@ -76,6 +77,8 @@ class UploadedFile(Base):
     validation_status: Mapped[str] = mapped_column(String(16), nullable=False)
     archive_file_id: Mapped[str | None] = mapped_column(ForeignKey("uploaded_files.id"), nullable=True)
     archive_entry_path: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    is_active: Mapped[bool] = mapped_column(default=True, nullable=False)
+    replaced_by_file_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
     created_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now, nullable=False)
 
 
@@ -88,6 +91,7 @@ class AgentRun(Base):
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
     order_id: Mapped[str] = mapped_column(ForeignKey("orders.id"), nullable=False)
+    workflow_run_id: Mapped[str | None] = mapped_column(ForeignKey("workflow_runs.id"), nullable=True)
     agent_name: Mapped[str] = mapped_column(String(64), nullable=False)
     task_type: Mapped[str] = mapped_column(String(64), nullable=False)
     input_schema_version: Mapped[str | None] = mapped_column(String(20), nullable=True)
@@ -115,6 +119,9 @@ class AgentTask(Base):
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
     order_id: Mapped[str] = mapped_column(ForeignKey("orders.id"), nullable=False)
     run_id: Mapped[str] = mapped_column(ForeignKey("agent_runs.id"), nullable=False)
+    workflow_run_id: Mapped[str | None] = mapped_column(ForeignKey("workflow_runs.id"), nullable=True)
+    delegation_id: Mapped[str | None] = mapped_column(ForeignKey("workflow_delegations.id"), nullable=True)
+    source_revision: Mapped[int | None] = mapped_column(Integer, nullable=True)
     task_key: Mapped[str] = mapped_column(String(100), nullable=False)
     idempotency_key: Mapped[str | None] = mapped_column(String(100), nullable=True)
     correlation_id: Mapped[str | None] = mapped_column(String(100), nullable=True)

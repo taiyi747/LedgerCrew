@@ -1,6 +1,6 @@
 # LedgerCrew 后端（v0.1 开发阶段 6）
 
-当前提供工作室、模拟订单、文件上传、安全 ZIP 解压、资金流水 CSV 导入、确定性票据对账、Agent 集成契约、异常处理、报告审批与交付。真实 MiMo 工作流已位于 `app/agents/`；后端集成层通过 `AgentGateway` 契约接入，适配与可信任务调度仍需联调。
+当前已接通客户页、老板作战室与 `app/live/` 的总管委派工作流。总管实际调用派单工具，专业 Agent 调用现有业务服务完成识别、对账和草稿；后台 Worker 持久化预算、租约及检查点。完整启动和新增接口见 [实时联调说明](../docs/LIVE_INTEGRATION.md)。`app/agents/` 的独立 CLI 保留。
 
 ## 环境与安装
 
@@ -30,7 +30,9 @@ alembic upgrade head
 ## 启动
 
 ```powershell
-uvicorn app.main:app --reload
+uvicorn app.main:app --host 127.0.0.1 --port 8000
+# 另一个终端同样在 server/ 启动：
+python -m app.live.worker
 ```
 
 访问 `http://127.0.0.1:8000/health`，预期返回 `{"status":"ok"}`。OpenAPI 位于 `/openapi.json`，业务 API 挂载在 `/api/v1`。

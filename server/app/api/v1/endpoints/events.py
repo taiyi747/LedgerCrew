@@ -45,10 +45,16 @@ async def stream_events(
                 batch = await repo.events_after(poll_session, order_id, cursor)
             for event in batch:
                 cursor = event.id
+                public_payload = event.payload
+                if principal.role != "owner":
+                    allowed = {"workflow_run_id", "agent_role", "task_type", "status", "input_revision",
+                               "exception_id", "supplement_id", "has_error", "batch_id", "matched_count",
+                               "exception_count", "message_id"}
+                    public_payload = {key: value for key, value in (event.payload or {}).items() if key in allowed}
                 payload = WorkflowEventRead(
-                    event_id=event.id, order_id=event.order_id, run_id=event.run_id,
-                    task_id=event.task_id, event_type=event.event_type,
-                    payload=event.payload, created_at=event.created_at,
+                    event_id=event.id, order_id=event.order_id, run_id=event.run_id if principal.role == "owner" else None,
+                    task_id=event.task_id if principal.role == "owner" else None, event_type=event.event_type,
+                    payload=public_payload, created_at=event.created_at,
                 )
                 yield f"id: {event.id}\nevent: {event.event_type}\ndata: {payload.model_dump_json()}\n\n"
             if len(batch) == 100:
@@ -61,4 +67,4 @@ async def stream_events(
             await asyncio.sleep(settings.sse_poll_seconds)
 
     return StreamingResponse(events(), media_type="text/event-stream",
-                             headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
+                             headers={"Cache-Control": "no-cache, no-transform", "X-Accel-Buffering": "no"})

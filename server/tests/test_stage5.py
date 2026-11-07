@@ -174,7 +174,7 @@ def test_task_state_idempotency_checkpoint_and_event_stream(tmp_path, monkeypatc
             assert len(frames) == 6
             first_id = int(frames[0].splitlines()[0].removeprefix("id: "))
             last_payload = json.loads(frames[-1].split("data: ", 1)[1])
-            assert last_payload["task_id"] == task_id
+            assert last_payload["task_id"] is None  # Customer SSE omits internal Agent task identifiers.
             assert last_payload["event_type"] == "agent.task.succeeded"
             resumed = await client.get(f"/api/v1/orders/{order_id}/events/stream?follow=false",
                                        headers={**alice, "Last-Event-ID": str(first_id)})

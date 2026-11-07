@@ -66,7 +66,7 @@ test('CSV data-row count skips BOM, CRLF, blank lines and quoted newlines', () =
 });
 
 
-const csvHeader = 'transaction_id,date,counterparty,amount,direction,remark';
+const csvHeader = 'transaction_date,counterparty,direction,amount,description,external_id';
 
 test('CSV validation accepts six columns with BOM, escaped quotes and multiline fields', () => {
   const input = '\uFEFF' + csvHeader + '\r\n1,2026-10-01,"方圆,印务",2580,out,"备注\r\n含""引号"""\r\n\r\n';

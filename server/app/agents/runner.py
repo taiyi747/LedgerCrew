@@ -93,11 +93,39 @@ def _find_cause(error: BaseException, cls: type[BaseException]) -> BaseException
     return None
 
 
+class LimitedTransport(httpx.AsyncBaseTransport):
+    def __init__(self, inner, semaphore=None, timeout_seconds=60):
+        self.inner, self.semaphore = inner, semaphore or asyncio.Semaphore(2)
+        self.timeout_seconds = timeout_seconds
+
+    async def handle_async_request(self, request):
+        async with self.semaphore:
+            try:
+                async with asyncio.timeout(self.timeout_seconds):
+                    response = await self.inner.handle_async_request(request)
+                    await response.aread()
+                    return response
+            except TimeoutError:
+                raise httpx.ReadTimeout(
+                    "Model HTTP request exceeded its wall-clock deadline", request=request
+                ) from None
+
+    async def aclose(self):
+        await self.inner.aclose()
+
+
 class MiMoRunner:
-    def __init__(self, settings: Settings, *, transport: httpx.AsyncBaseTransport | None = None):
+    def __init__(
+        self,
+        settings: Settings,
+        *,
+        transport: httpx.AsyncBaseTransport | None = None,
+        request_semaphore: asyncio.Semaphore | None = None,
+    ):
         self.settings = settings
         self.schema_supported = True
         self.transport = transport
+        self.request_semaphore = request_semaphore
 
     async def generate(
         self,
@@ -134,11 +162,15 @@ class MiMoRunner:
         model = (
             self.settings.model_flash if role in {"invoice", "customer_service"} else self.settings.model_pro
         )
+        transport = self.transport
+        transport = LimitedTransport(
+            transport or httpx.AsyncHTTPTransport(), self.request_semaphore, self.settings.timeout_seconds
+        )
         async with (
             httpx.AsyncClient(
                 timeout=self.settings.timeout_seconds,
                 event_hooks={"request": [before_request]},
-                transport=self.transport,
+                transport=transport,
             ) as http_client,
             AsyncOpenAI(
                 api_key=key,
@@ -199,7 +231,16 @@ class MiMoRunner:
             token = _active_budget.set(budget)
             try:
                 response = await agent.run([Message("user", contents=contents)], options=options)
-                text = response.text.strip()
+                # AgentResponse.text concatenates every assistant turn, including pre-tool prose.
+                # Structured validation must consume only the final non-empty assistant message.
+                text = next(
+                    (
+                        message.text.strip()
+                        for message in reversed(response.messages)
+                        if message.role == "assistant" and message.text.strip()
+                    ),
+                    "",
+                )
                 if text.startswith("```"):
                     text = text.removeprefix("```json").removeprefix("```").removesuffix("```").strip()
                 output = schema.model_validate_json(text)

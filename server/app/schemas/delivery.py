@@ -22,6 +22,7 @@ class ExceptionDecisionCreate(BaseModel):
     decision: Literal["resolve", "request_supplement", "reanalyze", "correct_classification", "accept_unresolved"]
     reason: str = Field(min_length=1, max_length=5000)
     target_version: StrictInt = Field(ge=1)
+    expected_revision: StrictInt | None = Field(default=None, ge=1)
     classification_after: str | None = Field(default=None, max_length=100)
 
     @field_validator("reason")
@@ -63,6 +64,7 @@ class ReportVersionRead(BaseModel):
     version: int
     status: str
     reconciliation_batch_id: str
+    source_revision: int | None
     report_content: str
     financial_summary: dict[str, int]
     reconciliation_summary: dict[str, Any]

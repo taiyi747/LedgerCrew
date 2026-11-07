@@ -6,7 +6,8 @@
     "dev": "next dev --hostname 127.0.0.1 --port 3210",
     "build": "next build",
     "typecheck": "tsc --noEmit",
-    "test": "node --experimental-strip-types --test src/lib/ledger.test.ts"
+    "test": "node --experimental-strip-types --test src/lib/ledger.test.ts",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "lucide-react": "1.70.0",
@@ -15,6 +16,7 @@
     "react-dom": "19.3.1"
   },
   "devDependencies": {
+    "@playwright/test": "^1.65.0",
     "@tailwindcss/postcss": "4.3.5",
     "@types/node": "26.6.6",
     "@types/react": "19.3.0",

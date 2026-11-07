@@ -1,4 +1,4 @@
-transaction_id,date,counterparty,amount,direction,remark
+transaction_date,counterparty,direction,amount,description,external_id
 TX-1,2026-10-03,示例商户,1.00,out,前端上传测试
 TX-2,2026-10-03,示例商户,1.00,out,前端上传测试
 TX-3,2026-10-03,示例商户,1.00,out,前端上传测试

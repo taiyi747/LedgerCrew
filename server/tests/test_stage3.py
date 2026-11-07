@@ -86,9 +86,9 @@ def test_column_map_request_override(tmp_path, monkeypatch) -> None:
 
 def test_encoding_and_empty_file_errors_at_import(tmp_path, monkeypatch) -> None:
     async def scenario(client, _storage):
-        _, order_id = await create_order(client)
         headers = {"X-User-Id": "alice"}
         for content, code in [(b"", "empty_csv"), (b"\xff\xfe", "invalid_csv_encoding")]:
+            _, order_id = await create_order(client)
             file_id = await upload_csv(client, order_id, content)
             response = await client.post(f"/api/v1/orders/{order_id}/imports/csv", json={"file_id": file_id}, headers=headers)
             assert response.status_code == 422

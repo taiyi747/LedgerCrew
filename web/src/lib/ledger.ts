@@ -216,9 +216,9 @@ export function validateCsvContent(text: string): string | null {
   finishRecord();
   if (!records.length) return 'CSV 文件为空，请添加包含表头和流水记录的文件';
 
-  const columns = ['transaction_id', 'date', 'counterparty', 'amount', 'direction', 'remark'];
+  const columns = ['transaction_date', 'counterparty', 'direction', 'amount', 'description', 'external_id'];
   if (records[0].length !== columns.length || records[0].some((value, index) => value.trim() !== columns[index])) {
-    return 'CSV 表头必须依次为 transaction_id,date,counterparty,amount,direction,remark';
+    return 'CSV 表头必须依次为 transaction_date,counterparty,direction,amount,description,external_id';
   }
   if (records.length === 1) return 'CSV 仅包含表头，请至少添加 1 条流水记录';
   if (records.length - 1 > 200) return 'CSV 最多支持 200 条流水，请拆分后重新添加';
