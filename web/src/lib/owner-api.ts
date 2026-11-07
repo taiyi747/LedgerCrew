@@ -3,7 +3,11 @@ import { api, download, subscribe, type Report } from '@/lib/api';
 export type OwnerView = 'overview' | 'orders' | 'intakes' | 'dashboard';
 export type OwnerOrder = { id: string; order_no: string; status: string; input_revision: number; period_start: string; period_end: string; studio_id: string; studio_name?: string };
 export type OwnerAgent = { id: string; name: string; workspace: string; model: string; status: string; current_task: string | null; queued: number; completed: number; failed: number; todos: { done: number; total: number }; waiting_on: string[] };
-export type OwnerException = { id: string; exception_no: string; type: string; status: string; difference_cents: number | null; related_amount_cents: number | null; evidence: Record<string, unknown> };
+export type OwnerEvidenceLocation = {
+  table: string; table_label: string; row_number: number | null; row_unit?: string;
+  record_id: string | null; record_label: string | null; source_file: string | null; occurred_on: string | null;
+};
+export type OwnerException = { id: string; exception_no: string; type: string; status: string; difference_cents: number | null; related_amount_cents: number | null; evidence: Record<string, unknown>; location?: OwnerEvidenceLocation | null };
 export type OwnerDashboard = {
   orders: OwnerOrder[]; selected_order_id: string | null;
   run: { id: string; status: string; stage: string; input_revision: number; requests_used: number; request_limit: number; wait_reason: string | null } | null;
