@@ -26,6 +26,9 @@ const ICONS = {
 const DEFS_SVG = `
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
   <defs>
+    <linearGradient id="d-screen" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="var(--art-screen-a)"/><stop offset="1" stop-color="var(--art-screen-b)"/>
+    </linearGradient>
     <linearGradient id="d-glass" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0" stop-color="var(--art-glass)" stop-opacity=".10"/><stop offset="1" stop-color="var(--art-glass)" stop-opacity="0"/>
     </linearGradient>
@@ -45,75 +48,64 @@ const DEFS_SVG = `
 </svg>`;
 
 /* ---------- 工位 SVG（viewBox 176×126，坐标照规格书） ----------
-   场景照着「人在原木桌前的背影」来画：
-   银灰显示器 + 支架 + 键盘 + 原木台灯（右）+ 原木桌板与桌腿，
-   人物背影（头发 + 浅色衬衫肩背）坐在桌前，椅背压住下背、露出上背。
-   working / urgent 时屏幕跑「工作流程」进度条，空闲 / 休眠时是静止内容线。 */
+   working / urgent 时屏幕跑「工作流程」动画（工件过站），
+   空闲 / 休眠时是静止的四条内容线。 */
 function deskSVG(status) {
   const color = STATUS_META[status].color;
   const busy = status === "working" || status === "urgent";
-  // 三条进度条长度随机（屏宽 68 单位，取 26~48 —— 都在 1/3 以上）
-  const barW = [0, 0, 0].map(() => 26 + Math.round(Math.random() * 22));
+  // 三条进度条长度随机（屏宽 82 单位，取 30~66 —— 都在 1/3 以上）
+  const barW = [0, 0, 0].map(() => 30 + Math.round(Math.random() * 36));
   return `
   <svg class="desk-art" viewBox="0 0 176 126" aria-hidden="true">
-    <!-- 地面投影 -->
-    <ellipse cx="88" cy="121" rx="76" ry="7" fill="url(#d-shadow)"/>
-    <!-- 桌腿 -->
-    <rect x="20" y="88" width="10" height="34" fill="url(#d-desk-edge)"/>
-    <rect x="146" y="88" width="10" height="34" fill="url(#d-desk-edge)"/>
-
-    <!-- 显示器：银灰外壳 + 深色屏 -->
-    <rect x="50" y="2" width="76" height="48" rx="5" fill="var(--art-bezel)"/>
-    <rect x="54" y="6" width="68" height="40" rx="3" fill="var(--art-screen)"/>
-    <path d="M54 6h28L62 46h-8z" fill="url(#d-glass)"/>
+    <!-- 玻璃屏 -->
+    <rect x="42" y="2" width="92" height="44" rx="5" fill="url(#d-screen)"/>
+    <rect x="47" y="6" width="82" height="36" rx="3" fill="var(--art-screen)"/>
+    <path d="M47 6h34L55 42h-8z" fill="url(#d-glass)"/>
     ${busy ? `
-    <!-- 屏上工作流程：三条长度随机的进度条依次填满 -->
-    <circle cx="61" cy="14" r="3" fill="var(--art-station)"/>
-    <rect x="68" y="12.2" width="48" height="3.2" rx="1.6" fill="var(--art-line)"/>
-    <rect class="bar-fill s1" x="68" y="12.2" width="${barW[0]}" height="3.2" rx="1.6" fill="${color}"/>
-    <circle cx="61" cy="24" r="3" fill="var(--art-station)"/>
-    <rect x="68" y="22.2" width="48" height="3.2" rx="1.6" fill="var(--art-line)"/>
-    <rect class="bar-fill s2" x="68" y="22.2" width="${barW[1]}" height="3.2" rx="1.6" fill="${color}"/>
-    <circle cx="61" cy="34" r="3" fill="var(--art-station)"/>
-    <rect x="68" y="32.2" width="48" height="3.2" rx="1.6" fill="var(--art-line)"/>
-    <rect class="bar-fill s3" x="68" y="32.2" width="${barW[2]}" height="3.2" rx="1.6" fill="${color}"/>
+    <!-- 工作流程：三条进度条依次填满，每满一条工件下移一站，以此类推 -->
+    <rect x="65" y="10.5" width="${barW[0]}" height="3" rx="1.5" fill="var(--art-line)"/>
+    <rect class="bar-fill s1" x="65" y="10.5" width="${barW[0]}" height="3" rx="1.5" fill="${color}"/>
+    <rect x="65" y="22.5" width="${barW[1]}" height="3" rx="1.5" fill="var(--art-line)"/>
+    <rect class="bar-fill s2" x="65" y="22.5" width="${barW[1]}" height="3" rx="1.5" fill="${color}"/>
+    <rect x="65" y="34.5" width="${barW[2]}" height="3" rx="1.5" fill="var(--art-line)"/>
+    <rect class="bar-fill s3" x="65" y="34.5" width="${barW[2]}" height="3" rx="1.5" fill="${color}"/>
+    <circle class="station s1" cx="55" cy="12" r="3.4" fill="var(--art-station)"/>
+    <circle class="station s2" cx="55" cy="24" r="3.4" fill="var(--art-station)"/>
+    <circle class="station s3" cx="55" cy="36" r="3.4" fill="var(--art-station)"/>
+    <rect class="workpiece" x="50" y="7" width="10" height="10" rx="3" fill="${color}"/>
     ` : `
-    <rect x="60" y="12" width="30" height="2.4" rx="1.2" fill="var(--art-line)"/>
-    <rect x="60" y="19" width="46" height="2.4" rx="1.2" fill="var(--art-line)"/>
-    <rect x="60" y="26" width="21" height="2.4" rx="1.2" fill="var(--art-line)"/>
-    <rect x="60" y="33" width="36" height="2.4" rx="1.2" fill="var(--art-line)"/>
+    <rect x="53" y="11" width="36" height="2.4" rx="1.2" fill="var(--art-line)"/>
+    <rect x="53" y="18" width="54" height="2.4" rx="1.2" fill="var(--art-line)"/>
+    <rect x="53" y="25" width="25" height="2.4" rx="1.2" fill="var(--art-line)"/>
+    <rect x="53" y="32" width="42" height="2.4" rx="1.2" fill="var(--art-line)"/>
     `}
-    <!-- 支架 -->
-    <rect x="83" y="50" width="12" height="16" fill="var(--art-bezel)"/>
-    <rect x="68" y="65" width="40" height="7" rx="3" fill="var(--art-bezel)"/>
-
-    <!-- 桌板：原木 -->
-    <rect x="4" y="73" width="168" height="16" rx="2" fill="url(#d-desk-top)" stroke="var(--art-stroke)"/>
-    <path d="M14 79h148M26 85h124" stroke="var(--art-desk-edge-a)" stroke-width="1" opacity=".45" stroke-linecap="round"/>
-
-    <!-- 键盘（坐在桌板上，中间被人物挡住） -->
-    <rect x="48" y="68" width="80" height="8" rx="2" fill="var(--art-key)"/>
-    <rect x="54" y="71.2" width="68" height="1.6" rx=".8" fill="var(--art-stroke)"/>
-
-    <!-- 台灯（原木）：灯臂 + 灯罩 + 底座，压在桌板上 -->
-    <path d="M156 76V44l-6-16" stroke="var(--art-lamp)" stroke-width="5" stroke-linecap="round" fill="none"/>
-    <path d="M146 24l12 4-5 24-18-6z" fill="var(--art-lamp)"/>
-    <circle cx="140" cy="47" r="3.6" fill="var(--art-hi)" opacity=".32"/>
-    <ellipse cx="156" cy="76" rx="12" ry="4" fill="var(--art-lamp)"/>
-
-    <!-- 人物背影：脖子 → 头发 → 浅色衬衫肩背；肩线高出桌板，人在桌前 -->
-    <rect x="82" y="60" width="12" height="14" rx="3" fill="var(--art-hair)"/>
-    <ellipse cx="88" cy="52" rx="13" ry="13" fill="var(--art-hair)"/>
-    <path d="M81 45a11 11 0 0 1 12-2" stroke="var(--art-hi)" stroke-width="2.2" fill="none" opacity=".18" stroke-linecap="round"/>
-    <path d="M56 126V108c0-16 6-30 17-33l9-3h12l9 3c11 3 17 17 17 33v18z" fill="var(--art-shirt)"/>
-    <path d="M82 74c2 3 10 3 12 0" stroke="var(--art-hair)" stroke-width="2" fill="none" opacity=".22" stroke-linecap="round"/>
-
-    <!-- 椅背：原木板压在人物下背之上，人靠在椅背上 -->
-    <rect x="56" y="92" width="68" height="34" rx="10" fill="url(#d-chair)"/>
-    <rect x="63" y="95" width="54" height="3.4" rx="1.7" fill="var(--art-hi)" opacity=".18"/>
-    <rect x="62" y="101" width="56" height="21" rx="5" fill="none" stroke="var(--art-hi)" stroke-width="1.4" opacity=".16"/>
+    <!-- 桌板：比原版略拉长（12 → 18px） -->
+    <rect x="14" y="46" width="148" height="18" rx="2" fill="url(#d-desk-top)" stroke="var(--art-stroke)"/>
+    <rect x="14" y="63" width="148" height="5" fill="url(#d-desk-edge)"/>
     <!-- 桌角状态灯 -->
-    <circle cx="16" cy="74" r="3.4" fill="${color}"/>
+    <circle cx="25" cy="54" r="3.6" fill="${color}"/>
+    <path d="M22.6 52.4a3.6 3.6 0 0 1 2.2-1.7" stroke="var(--art-hi)" stroke-opacity=".55" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+    <!-- 桌腿 -->
+    <rect x="28" y="68" width="8" height="26" fill="var(--art-desk-edge-a)"/>
+    <rect x="140" y="68" width="8" height="26" fill="var(--art-desk-edge-a)"/>
+    <!-- 投影 -->
+    <ellipse cx="88" cy="110" rx="62" ry="15" fill="url(#d-shadow)"/>
+    <!-- 员工剪影：画在座椅**之前**，所以浅色椅背盖住深色身体，
+         只露脖子以上的头 —— 看着就是靠在椅子上。
+         「往前挪」= 朝桌面方向（图面上为向上）移，露出的头从 9px 增到 12px；
+         耳朵收到 r8，头顶距屏幕仍有 1px，避免两块深色叠在一起。 -->
+    <g fill="var(--art-figure)">
+      <circle cx="74" cy="55" r="8"/>
+      <circle cx="102" cy="55" r="8"/>
+      <circle cx="88" cy="68" r="20"/>
+      <path d="M62 95v-6a26 26 0 0 1 52 0v6z"/>
+    </g>
+    <path d="M76 61a14 14 0 0 1 22-4" stroke="var(--art-hi)" stroke-opacity=".1" stroke-width="3" fill="none" stroke-linecap="round"/>
+
+    <!-- 座椅（盖在员工身体之上） -->
+    <rect x="52" y="60" width="72" height="38" rx="15" fill="url(#d-chair)"/>
+    <rect x="34" y="76" width="20" height="32" rx="10" fill="url(#d-chair)"/>
+    <rect x="122" y="76" width="20" height="32" rx="10" fill="url(#d-chair)"/>
   </svg>`;
 }
 

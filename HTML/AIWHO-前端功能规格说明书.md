@@ -153,7 +153,7 @@
 > 原先锁是「传输已加密」的装饰图标、第三个是跳设置（底部导航已有设置，故改用）。
 
 **深色模式**：`[data-theme="dark"]` 整套覆盖 CSS 变量 —— 常规令牌（bg/surface/raised/hairline/text/track/shadow）、
-反白元素（`--on-invert` / `--invert-hover`）、地面渐变（`--floor-a/b`）、滚动条，以及**工位插画配色 `--art-*`**（桌椅台灯转深胡桃木、头发压到最深、衬衫转暖灰，深底上才读得出）。
+反白元素（`--on-invert` / `--invert-hover`）、地面渐变（`--floor-a/b`）、滚动条，以及**工位插画配色 `--art-*`**（桌椅转中性灰、剪影压到最深，深底上才读得出）。
 插画里的色值都走 `var(--art-*)`（只有接地投影的黑是写死的，跟主题无关），`DEFS_SVG` 的渐变 stop 也用变量 —— 换肤不用改插画。
 - 展示：时钟 `HH:mm:ss`（`clockTime()`，每秒 `setInterval`）、演示模式灯、品牌、4 组计数、3 个图标按钮。
 - 字段映射（React 版取 `SystemOverview`）：`totalMessages`→消息、`urgent`→紧急、`online`/`agents`→在线工位（显示 `17/18`）、
@@ -192,27 +192,24 @@
      - `.queue-badge` 绝对定位 `left:0`、垂直居中，mono 13px `--text-secondary`，仅 `queue > 0` 时渲染。
      - `.nameplate` 绝对定位水平垂直居中（`left:50%; top:50%; translate(-50%,-50%)`），`max-width:calc(100% - 18px)`、`height:24px`、`padding:0 8px`、白底 + `1px --hairline-strong`、圆角 8px（`--r-control`）、mono 12px；名称过长 `text-overflow:ellipsis`（完整名看 `title` / 抽屉）。
   2. 插画容器 `.desk-art-wrap`（`position:relative`）内两件：
-     - **工位插画 SVG**（`viewBox="0 0 176 126"`，宽 100%）：场景照着「**人在原木桌前的背影**」来画 —— 银灰显示器 + 支架 + 键盘 + 原木台灯（右）+ 原木桌板与桌腿 + **人物背影**（头发 + 浅色衬衫肩背）+ 原木椅背。桌椅走暖木色，屏幕保持冷黑做对比，衬衫近白。所有色值走 `--art-*` 变量（明暗两套）。关键几何（可直接照抄坐标）：
-       - **绘制顺序**（决定遮挡关系）：地面投影 → 桌腿 → 显示器 → 支架 → 桌板 → 键盘 → 台灯 → 人物 → 椅背 → 状态灯。
-       - 显示器：外壳 `rect 50,2 76×48 rx5`（`--art-bezel` 银灰）；内屏 `rect 54,6 68×40 rx3`（`--art-screen` 冷黑）+ 玻璃反光 `path M54 6h28L62 46h-8z`（`d-glass`，白 10%→0 斜向）。
-       - **工作流程动画**（`working` / `urgent` 才有；`idle` / `dormant` 是四条静止内容线）：
-         屏上是**三条进度条**：每条 = 左侧站点圆点 `circle 61,14/24/34 r3`（`--art-station`）+ 轨道 `rect 68,12.2/22.2/32.2 48×3.2 rx1.6`（`--art-line`）+ 填充 `bar-fill`（状态色）。
-         **进度条长度随机**（`barW = 26 + rand(0..22)` 单位，屏宽 68、轨道宽 48，**全部 > 1/3**），每次重绘重新随机。
-         周期 `4.05s` = 3 站 × `1.35s`，三条用同一周期 + `animation-delay` 0 / 1.35s / 2.7s 依次起跑。
-         `@keyframes barFill`（`scaleX(0→1)` 占前 1/3 周期，92% 后收回 0），`transform-box: fill-box` + `transform-origin: left center`。
+     - **工位插画 SVG**（`viewBox="0 0 176 126"`，宽 100%）：**玻璃屏 + 桌板 + 座椅 + 员工剪影 + 桌角状态灯**。屏与剪影压深、桌椅走浅灰白，冷暖靠明度拉开。所有色值走 `--art-*` 变量（明暗两套）。关键几何（可直接照抄坐标）：
+       - 玻璃屏：外壳 `rect 42,2 92×44 rx5` 渐变 `d-screen`（`--art-screen-a → --art-screen-b`）；内屏 `rect 47,6 82×36 rx3`（`--art-screen`）+ 玻璃反光 `path M47 6h34L55 42h-8z`（`d-glass`，白 10%→0 斜向）。
+       - **工作流程动画**（`working` / `urgent` 才有；`idle` / `dormant` 是静止的四条内容线）：
+         屏上是**三条进度条 + 一个工件**：每条进度条 = 轨道 `rect 65,10.5/22.5/34.5 h3 rx1.5`（`--art-line`）+ 填充 `bar-fill`（状态色）；站点圆点 `circle class="station s1/s2/s3" 55,12/24/36 r3.4`（`--art-station`）；工件 `rect class="workpiece" 50,7 10×10 rx3`（状态色）。
+         **进度条长度随机**（`barW = 30 + rand(0..36)` 单位，屏宽 82，**全部 > 1/3**），每次重绘重新随机。
+         节奏：**每满一条，工件下移一站、该站点亮**，三条都满后淡出重来。
+         周期 `4.05s` = 3 站 × `1.35s`，三个元素（进度条 / 工件 / 站点）用同一周期 + `animation-delay` 0 / 1.35s / 2.7s 对齐到站时刻。
+         `@keyframes barFill`（`scaleX(0→1)` 占前 1/3 周期）、`flowPiece`（`translateY(0→12→24px)` + 落定 squash `scale 1→1.18→1`）、`stationPulse`（`scale 1→1.3` + 透明度）。
          全部带 `animation-fill-mode: backwards`（延迟期间停在 0% 帧，不会闪一下满条）。
-         **`prefers-reduced-motion` 时动画关掉**，三条进度条保持满格。
-       - 支架：立柱 `rect 83,50 12×16` + 底座 `rect 68,65 40×7 rx3`，都用 `--art-bezel`。
-       - 桌板：**原木风**。`rect 4,73 168×16 rx2` 渐变 `d-desk-top`（`--art-desk-a → --art-desk-b`）+ 描边 `--art-stroke`；木纹两笔 `path M14 79h148M26 85h124`（`--art-desk-edge-a`，45% 透明）。
-       - 桌腿：`rect 20,88 10×34`、`rect 146,88 10×34`，渐变 `d-desk-edge`。
-       - 键盘：`rect 48,68 80×8 rx2`（`--art-key`）+ 键位线 `rect 54,71.2 68×1.6 rx.8`（`--art-stroke`）。**画在桌板之后**，压在桌面上；中间被人物挡住，两端露出来。
-       - 台灯（原木，画面右侧）：灯臂 `path M156 76V44l-6-16`（`--art-lamp`，5 宽圆头）→ 灯罩 `path M146 24l12 4-5 24-18-6z`（开口朝左下的锥形）+ 灯泡高光 `circle 140,47 r3.6`（白 32%）+ 底座 `ellipse 156,76 12×4`。灯罩左缘 x=135 要在显示器右缘 x=126 之外。
-       - **人物背影**（背对镜头坐在桌前）：脖子 `rect 82,60 12×14 rx3`、后脑勺 `ellipse 88,52 13×13`（都用 `--art-hair` 深棕）+ 头顶受光弧 `path M81 45a11 11 0 0 1 12-2`（白 18%，宽 2.2）；**衬衫肩背** `path M56 126V108c0-16 6-30 17-33l9-3h12l9 3c11 3 17 17 17 33v18z`（`--art-shirt` 近白）+ 领口一笔 `path M82 74c2 3 10 3 12 0`（`--art-hair` 22%）。
-       - 椅背：**原木板** `rect 56,92 68×34 rx10`（渐变 `d-chair`）+ 顶沿高光 `rect 63,95 54×3.4 rx1.7`（白 18%）+ 内框线 `rect 62,101 56×21 rx5`（白 14% 描边）。**画在人物之后**，盖住下背。
-       - **四条约束**：① 衬衫肩线顶点 y=72 要**高出桌板上沿 y=73**，人物才是「坐在桌前」，否则桌板会横着切过躯干；② 进度条底边 y=35.4 要低于头顶 y=39，别被后脑勺挡住第三条；③ 头顶 y=39 要低于屏幕底边 y=46 一段，两块深色贴上会糊成一团；④ 椅背顶 y=92 收在衬衫下背，露出上背 72..92 一段白 —— 看着就是靠在椅背上。
-       - 接地投影：`ellipse cx88 cy121 rx76 ry7` 径向渐变 `d-shadow`（黑 14%→0）。
-       - **状态灯**：`circle cx16 cy74 r3.4`，坐在桌板左端，填充 = 状态 hex（working `#c2410c` / idle `#737373` / urgent `#b91c1c` / dormant `#c9c7c4`）。
-       - 共用渐变 defs 全站只写一份（隐藏 `<svg width=0 height=0>` 里，ID：`d-glass / d-desk-top / d-desk-edge / d-chair / d-shadow`）。
+         **`prefers-reduced-motion` 时动画关掉**，三条进度条保持满格、工件常显、站位常亮。
+       - 桌板：`rect 14,46 148×18 rx2` 渐变 `d-desk-top`（`--art-desk-a → --art-desk-b`）+ 描边 `--art-stroke`；前沿厚度 `rect 14,63 148×5` 渐变 `d-desk-edge`。
+       - 桌腿：`rect 28,68 8×26`、`rect 140,68 8×26`（`--art-desk-edge-a`）。
+       - 接地投影：`ellipse cx88 cy110 rx62 ry15` 径向渐变 `d-shadow`（黑 14%→0）。
+       - **员工剪影**（`fill: var(--art-figure)`，最深一档）：耳朵 `circle 74,55 r8` / `circle 102,55 r8`、后脑勺 `circle 88,68 r20`、身体 `path M62 95v-6a26 26 0 0 1 52 0v6z`；头顶受光弧 `path M76 61a14 14 0 0 1 22-4`（`--art-hi` 10%，宽 3）。
+       - 座椅：**画在剪影之后**，座背 `rect 52,60 72×38 rx15`、扶手 `rect 34,76 20×32 rx10` 与 `rect 122,76 20×32 rx10`，都填渐变 `d-chair`（`--art-chair-a → --art-chair-b`）。
+         **三条约束**：① 剪影画在**座椅之前**，浅色椅背盖住深色身体，只露脖子以上的头（露出 12px）—— 看着就是靠在椅背上；② 头顶距屏幕底边留 1px —— 两块深色贴上就糊成一团；③ 身体收在座背的 y 范围（60..98）内，否则会从座背下面露出来。
+       - **状态灯**：`circle cx25 cy54 r3.6`，填充 = 状态 hex（working `#c2410c` / idle `#737373` / urgent `#b91c1c` / dormant `#c9c7c4`）+ 左上高光弧（`--art-hi` 55%，1.2 宽）。
+       - 共用渐变 defs 全站只写一份（隐藏 `<svg width=0 height=0>` 里，ID：`d-screen / d-glass / d-desk-top / d-desk-edge / d-chair / d-shadow`）。
      - **状态胶囊 `.desk-pill`**：`position:absolute; top:6px; right:2px`、`padding:2px 10px`、圆角 999px、mono 12px **白字**、`box-shadow:0 1px 2px rgba(0,0,0,.12)`；实底色取 `STATUS_META[status].pill`（工作 `#e8963c` / 空闲 `#5b8def` / 紧急 `#c0392b` / 休眠 `#8e8d89`）。**替代原「状态灯 + 灰字」行**；`pill` 只给工位卡用，`lamp`/`color` 仍给抽屉、图例、图表用，两套互不影响。
   3. **负载条 `.loadbar`**：`position:absolute; left:10px; right:10px; bottom:4px; height:4px; border-radius:999px; background:#e7e6e3`；
      内条 `width: max(load, 3)%`，`background:var(--text-muted)`。
