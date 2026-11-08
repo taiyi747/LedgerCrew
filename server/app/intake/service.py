@@ -101,7 +101,7 @@ async def create(session, principal):
         IntakeMessage(
             intake_id=item.id,
             role="assistant",
-            content="欢迎咨询账清社。可以先发送问题或上传原始材料，材料 Agent 会列出待办并读取，再确认工作室和账期。确认前不会创建订单。",
+            content="欢迎咨询小账房。可以先发送问题或上传原始材料，材料 Agent 会列出待办并读取，再确认工作室和账期。确认前不会创建订单。",
         )
     )
     await event(session, item.id, "intake.created")
