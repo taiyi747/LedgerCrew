@@ -127,7 +127,7 @@ export default function ReceptionClient(){
     return [images?`${images} 张图片`:'',statements?`${statements} 份流水文件`:'',other?`${other} 份其他材料`:''].filter(Boolean).join('、');
   }
   function confirmationWarning(issue:Issue){
-    return issue.id.startsWith('duplicate_file')?'发现内容相同的文件，正式处理时会单独标记重复项。请确认按当前提交材料继续。':issue.message;
+    return issue.id.startsWith('duplicate_file')?'请确认按当前提交材料继续。':issue.message;
   }
   const lastMessage=messages.at(-1);
   useEffect(()=>{
