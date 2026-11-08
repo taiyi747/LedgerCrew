@@ -269,3 +269,48 @@ def test_approved_report_content_hash_blocks_unreviewed_changes(tmp_path, monkey
         assert (await client.get(url, headers=ALICE)).status_code == 404
 
     exercise(tmp_path, monkeypatch, scenario)
+
+
+def test_report_deliverables_are_human_readable():
+    import re
+
+    report = ReportVersion(
+        id="r1", order_id="o1", version=1, status="published", source_revision=1,
+        reconciliation_batch_id="b1",
+        report_content="本期核对已完成，两笔差异待补充说明。",
+        financial_summary={"income_total_cents": 4980500, "expense_total_cents": 2731433,
+                           "net_cash_change_cents": 2249067},
+        reconciliation_summary={"matched_count": 3, "unmatched_count": 42, "exception_count": 39,
+                                "match_ids": [], "exception_ids": []},
+        exception_snapshot=[{"exception_no": "EX-AB12CD", "exception_type": "DUPLICATE_INVOICE",
+                             "status": "accepted_unresolved", "related_amount_cents": 12900,
+                             "difference_cents": None}],
+        evidence_references=["a", "b", "c"],
+        unresolved_items=["EX-AB12CD（重复发票）· 保留未解决"], content_hash="",
+    )
+    rendered = report_service.printable_html(report, studio_name="杭州青禾数字科技", period="2025-10-01 — 2025-10-31")
+    assert "¥49,805.00" in rendered
+    assert "重复发票" in rendered and "保留未解决" in rendered
+    assert "整数分" not in rendered
+    assert not re.search(r"[0-9a-f]{8}-[0-9a-f]{4}-", rendered), rendered
+    assert "3 项对账与材料记录" in rendered
+
+
+def test_report_draft_output_rejects_internal_identifiers():
+    import pytest
+    from pydantic import ValidationError
+
+    from app.integrations.agents.contracts import ReportDraftOutput
+
+    base = {"order_id": "o1", "report_version": 1}
+    ReportDraftOutput(**base, report_content="本期核对已完成，差异另行披露。", unresolved_items=["请补充三月凭证。"])
+    for bad in (
+        "批次 5a73aa8b-39b1-4577-b1b8-bb637722622c 已完成",
+        "EX-B56FE0831A3C4D029FF699E0ACC5484B 保留披露",
+        "eligible_tasks 为空，无法继续派发",
+        "合计 4980500 分",
+    ):
+        with pytest.raises(ValidationError):
+            ReportDraftOutput(**base, report_content=bad)
+        with pytest.raises(ValidationError):
+            ReportDraftOutput(**base, report_content="正文合规。", unresolved_items=[bad])

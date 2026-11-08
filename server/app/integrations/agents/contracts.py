@@ -147,6 +147,23 @@ class ReportDraftOutput(StrictContract):
     evidence_references: list[str] = Field(default_factory=list)
     unresolved_items: list[str] = Field(default_factory=list)
 
+    @model_validator(mode="after")
+    def human_readable_delivery_text(self) -> "ReportDraftOutput":
+        """交付文字面向客户：内部标识和以分计的金额一律退回重写。"""
+        import re
+
+        machine = re.compile(
+            r"([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-|EX-[0-9A-F]{6,}|\b[a-z]+_[a-z_]+\b|\d{3,}\s*分)",
+            re.IGNORECASE,
+        )
+        for text in (self.report_content, *self.unresolved_items):
+            if machine.search(text):
+                raise ValueError(
+                    "报告文字不得包含内部编号、UUID、字段名或以「分」计的金额；"
+                    "金额与编号由后端明细表展示，正文与未解决事项只写业务描述。"
+                )
+        return self
+
 
 TASK_CONTRACTS: dict[str, tuple[AgentRole, type[StrictContract], type[StrictContract]]] = {
     "customer_reception": ("customer_reception", CustomerReceptionInput, CustomerReceptionOutput),
