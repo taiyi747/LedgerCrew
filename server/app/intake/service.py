@@ -101,7 +101,7 @@ async def create(session, principal):
         IntakeMessage(
             intake_id=item.id,
             role="assistant",
-            content="欢迎咨询账清社。可以先发送问题或上传原始材料，材料 Agent 会列出待办并读取，再确认工作室和账期。本次服务为模拟交易，确认前不会创建订单。",
+            content="欢迎咨询小账房。可以先发送问题或上传原始材料，材料 Agent 会列出待办并读取，再确认工作室和账期。确认前不会创建订单。",
         )
     )
     await event(session, item.id, "intake.created")
@@ -321,7 +321,8 @@ async def inspect_materials(session, item, storage, samples=None):
         "invoice_count": len(invoices),
         "active_count": len(active),
         "sampled_file_ids": list(samples or {}),
-        "note": "Agent 按待办读取材料并整理启动条件；图片先判断用途和可读性，正式识别仍可能发现未知字段、缺票和差额。",
+        "skipped_file_ids": [f.id for f in active if f.mime_type.startswith("image/")],
+        "note": "接洽阶段只收取票据图片并跳过预读；正式下单后再识别图片。流水文档由工具整理，后续仍可能发现未知字段、缺票和差额。",
     }
 
 
@@ -652,7 +653,7 @@ async def confirm(session, item, data, principal, storage):
         OrderMessage(
             order_id=order.id,
             role="assistant",
-            content="服务已确认，模拟交易 ¥19.90。总管将安排正式识别与核对，已知待确认事项会继续保留。",
+            content="服务已确认。总管将安排正式识别与核对，已知待确认事项会继续保留。",
             input_revision=order.input_revision,
         )
     )
