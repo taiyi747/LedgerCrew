@@ -1,9 +1,12 @@
+from urllib.parse import quote
+
 from fastapi import APIRouter, Depends
 from fastapi.responses import Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.security import Principal, get_current_principal
 from app.db.session import get_session
+from app.models import Order, Studio
 from app.schemas.delivery import ReportReviewRequest, ReportVersionRead
 from app.services import export_service, report_service
 
@@ -25,9 +28,17 @@ async def get_report(report_id: str, session: AsyncSession = Depends(get_session
 @router.get("/reports/{report_id}/download")
 async def download_report(report_id: str, session: AsyncSession = Depends(get_session),
                           principal: Principal = Depends(get_current_principal)):
+    """交付下载：可打印 HTML 报告。"""
     report = await report_service.get_report(session, report_id, principal)
-    return Response(report_service.printable_html(report), media_type="text/html; charset=utf-8",
-                    headers={"Content-Disposition": f'attachment; filename="ledgercrew-report-v{report.version}.html"'})
+    order = await session.get(Order, report.order_id)
+    studio = await session.get(Studio, order.studio_id) if order else None
+    context = {
+        "studio_name": studio.name if studio else None,
+        "period": f"{order.period_start} — {order.period_end}" if order and order.period_start else None,
+    }
+    filename = quote(f"小账房-账目核对报告-v{report.version}.html")
+    return Response(report_service.printable_html(report, **context), media_type="text/html; charset=utf-8",
+                    headers={"Content-Disposition": f"attachment; filename*=UTF-8''{filename}"})
 
 
 @router.post("/reports/{report_id}/submit-review", response_model=ReportVersionRead)

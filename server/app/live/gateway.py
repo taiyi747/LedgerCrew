@@ -101,7 +101,8 @@ class RealMiMoAgentGateway:
             tools = [reconcile_transactions]
         result = await self.generate(
             role,
-            "按后端契约处理任务，仅使用提供的真实数据。不得编造金额、数量、来源或已经完成的审批。报告摘要使用定性说明，精确数字只复用输入中提供的字段。保留 accepted_unresolved 异常披露，不能说差额已消除。\n"
+            "按后端契约处理任务，仅使用提供的真实数据。不得编造金额、数量、来源或已经完成的审批。报告摘要使用定性说明，精确数字只复用输入中提供的字段。保留 accepted_unresolved 异常披露，不能说差额已消除。"
+            "输出文字面向客户：不得出现 UUID、异常编号、字段名或以「分」计的金额，这些由后端明细表展示。\n"
             + json.dumps(request.input_payload, ensure_ascii=False),
             output_model,
             image=image,

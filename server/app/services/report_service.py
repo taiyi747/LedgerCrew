@@ -16,6 +16,28 @@ from app.repositories import delivery as delivery_repo
 from app.repositories import reconciliation as reconciliation_repo
 from app.services.access import order_for_user
 
+# 交付文档是给客户看的：类型与状态一律人话，金额以元呈现。
+EXCEPTION_TYPE_LABELS = {
+    "DUPLICATE_INVOICE": "重复发票",
+    "INVOICE_FIELD_MISSING": "票据字段缺失",
+    "COUNTERPARTY_OR_DATE_CONFLICT": "交易方或日期不一致",
+    "AMOUNT_MISMATCH": "金额不一致",
+    "MULTIPLE_CANDIDATES": "多笔疑似对应",
+    "MISSING_TRANSACTION": "流水缺少对应记录",
+    "MISSING_INVOICE": "缺少票据",
+}
+EXCEPTION_STATUS_LABELS = {
+    "open": "待处理",
+    "waiting_customer": "待客户补充",
+    "waiting_owner": "待老板决定",
+    "resolved": "已处理",
+    "accepted_unresolved": "保留未解决",
+}
+
+
+def money(cents: int | None) -> str:
+    return "—" if cents is None else f"¥{cents / 100:,.2f}"
+
 
 def _content_hash(report: ReportVersion) -> str:
     content = {
@@ -113,8 +135,11 @@ async def create_from_agent_task(session: AsyncSession, task_id: str) -> ReportV
         for item in snapshot
     ):
         raise AppError("stale_report_source", "Exception details changed after the Agent task was created", 409)
-    required_disclosures = [f"{item['exception_no']}: {item['exception_type']} ({item['status']})"
-                            for item in snapshot if item["status"] != "resolved"]
+    required_disclosures = [
+        f"{item['exception_no']}（{EXCEPTION_TYPE_LABELS.get(item['exception_type'], item['exception_type'])}）"
+        f"· {EXCEPTION_STATUS_LABELS.get(item['status'], item['status'])}"
+        for item in snapshot if item["status"] != "resolved"
+    ]
     unresolved = list(dict.fromkeys(output.unresolved_items + required_disclosures))
     evidence_references = list(dict.fromkeys(
         output.evidence_references + source.reconciliation_summary.match_ids +
@@ -277,29 +302,78 @@ async def publish(session: AsyncSession, report_id: str, principal: Principal) -
     return report
 
 
-def printable_html(report: ReportVersion) -> str:
-    title = f"LedgerCrew 月度报告 v{report.version}"
-    lines = ["<!doctype html><html lang='zh-CN'><head><meta charset='utf-8'>",
-             f"<title>{html.escape(title)}</title>",
-             "<style>body{font-family:sans-serif;max-width:900px;margin:2rem auto;line-height:1.6}"
-             "table{border-collapse:collapse;width:100%}td,th{border:1px solid #aaa;padding:.4rem}"
-             "pre{white-space:pre-wrap}@media print{body{margin:0}}</style></head><body>",
-             f"<h1>{html.escape(title)}</h1>",
-             f"<p>订单：{html.escape(report.order_id)} · 版本：{report.version}</p>",
-             "<h2>资金收支（整数分）</h2><ul>"]
-    for key, label in (("income_total_cents", "收入"), ("expense_total_cents", "支出"),
-                       ("net_cash_change_cents", "净资金变动")):
-        lines.append(f"<li>{label}：{report.financial_summary[key]}</li>")
-    lines.extend(["</ul><p>净资金变动不等于会计利润或应税所得。</p>",
-                  "<h2>报告正文</h2>", f"<pre>{html.escape(report.report_content)}</pre>",
-                  "<h2>异常披露</h2><table><tr><th>编号</th><th>类型</th><th>状态</th><th>金额（分）</th></tr>"])
-    for item in report.exception_snapshot:
-        lines.append("<tr>" + "".join(f"<td>{html.escape(str(value))}</td>" for value in (
-            item["exception_no"], item["exception_type"], item["status"],
-            item["related_amount_cents"] if item["related_amount_cents"] is not None else "")) + "</tr>")
-    lines.append("</table><h2>证据引用</h2><ul>")
-    lines.extend(f"<li>{html.escape(reference)}</li>" for reference in report.evidence_references)
-    lines.append("</ul><h2>未解决事项</h2><ul>")
-    lines.extend(f"<li>{html.escape(note)}</li>" for note in report.unresolved_items)
-    lines.append("</ul></body></html>")
+def _report_model(report: ReportVersion, studio_name: str | None, period: str | None) -> dict:
+    """HTML 与 Word 共用的展示模型：全部人话，金额以元呈现。"""
+    info = " · ".join(
+        part for part in (
+            studio_name,
+            f"{period} 账期" if period else None,
+            f"报告版本 v{report.version}",
+            f"生成于 {report.created_at:%Y-%m-%d}" if report.created_at else None,
+        ) if part
+    )
+    return {
+        "title": "账目核对报告",
+        "info": info,
+        "summary": [
+            ("收入", money(report.financial_summary.get("income_total_cents"))),
+            ("支出", money(report.financial_summary.get("expense_total_cents"))),
+            ("净资金变动", money(report.financial_summary.get("net_cash_change_cents"))),
+        ],
+        "summary_note": "净资金变动不等于会计利润或应税所得。",
+        "content": [line for line in (report.report_content or "").splitlines() if line.strip()],
+        "exceptions": [
+            [
+                item.get("exception_no", ""),
+                EXCEPTION_TYPE_LABELS.get(item.get("exception_type"), item.get("exception_type", "")),
+                money(item.get("related_amount_cents")),
+                money(item.get("difference_cents")),
+                EXCEPTION_STATUS_LABELS.get(item.get("status"), item.get("status", "")),
+            ]
+            for item in (report.exception_snapshot or [])
+        ],
+        "exception_head": ["异常编号", "事项类型", "关联金额", "待核实差额", "处理状态"],
+        "unresolved": list(report.unresolved_items or []),
+        "evidence_note": f"本报告依据 {len(report.evidence_references or [])} 项对账与材料记录生成，可在平台逐项追溯。",
+        "disclaimer": "本报告仅用于经营核对，不构成审计、鉴证或税务意见。",
+    }
+
+
+def printable_html(report: ReportVersion, *, studio_name: str | None = None, period: str | None = None) -> str:
+    model = _report_model(report, studio_name, period)
+    esc = html.escape
+    lines = [
+        "<!doctype html><html lang='zh-CN'><head><meta charset='utf-8'>",
+        f"<title>小账房 · {esc(model['title'])} v{report.version}</title>",
+        "<style>body{font-family:sans-serif;max-width:900px;margin:2rem auto;line-height:1.8;color:#243e4c}"
+        "table{border-collapse:collapse;width:100%}td,th{border:1px solid #bbb;padding:.5rem .6rem;text-align:left}"
+        "h1{font-size:1.6rem}h2{font-size:1.15rem;margin-top:2rem}@media print{body{margin:0}}</style></head><body>",
+        f"<h1>小账房 · {esc(model['title'])}</h1>",
+        f"<p>{esc(model['info'])}</p>",
+        "<h2>财务摘要</h2><table><tr><th>项目</th><th>金额</th></tr>",
+    ]
+    for label, value in model["summary"]:
+        lines.append(f"<tr><td>{esc(label)}</td><td>{esc(value)}</td></tr>")
+    lines.append("</table>")
+    lines.append(f"<p>{esc(model['summary_note'])}</p>")
+    lines.append("<h2>核对结论</h2>")
+    lines.extend(f"<p>{esc(paragraph)}</p>" for paragraph in model["content"])
+    lines.append("<h2>异常披露</h2>")
+    if model["exceptions"]:
+        lines.append("<table><tr>" + "".join(f"<th>{esc(head)}</th>" for head in model["exception_head"]) + "</tr>")
+        for row in model["exceptions"]:
+            lines.append("<tr>" + "".join(f"<td>{esc(str(cell))}</td>" for cell in row) + "</tr>")
+        lines.append("</table>")
+    else:
+        lines.append("<p>本期没有待披露的异常事项。</p>")
+    lines.append("<h2>未解决事项</h2>")
+    if model["unresolved"]:
+        lines.append("<ul>")
+        lines.extend(f"<li>{esc(note)}</li>" for note in model["unresolved"])
+        lines.append("</ul>")
+    else:
+        lines.append("<p>无。</p>")
+    lines.append(f"<h2>依据说明</h2><p>{esc(model['evidence_note'])}</p>")
+    lines.append(f"<p>{esc(model['disclaimer'])}</p>")
+    lines.append("</body></html>")
     return "".join(lines)
