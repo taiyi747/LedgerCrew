@@ -3,7 +3,7 @@ import { GeistSans } from 'geist/font/sans';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: { default: '账清社 LedgerCrew', template: '%s · 账清社' },
+  title: { default: '小账房 LedgerCrew', template: '%s · 小账房' },
   description: '由一位经营者统筹多 Agent 团队，完成材料接洽、票据核对与报告交付。',
 };
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
